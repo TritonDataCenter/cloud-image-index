@@ -57,6 +57,19 @@ fn newest_build_dir(listing: &str) -> Option<String> {
         })
 }
 
+/// The point release a dated build (`YYYYMMDD-NNNN`) contains: the
+/// suite's current point release `version` if the build is from after
+/// the day it was released, otherwise unknown. A build from that same
+/// day may predate the release, so it is unknown too.
+fn point_release_of_build(
+    version: &str,
+    released: Option<chrono::NaiveDate>,
+    build: &str,
+) -> Option<String> {
+    let built = chrono::NaiveDate::parse_from_str(build.get(..8)?, "%Y%m%d").ok()?;
+    (built > released?).then(|| version.to_string())
+}
+
 /// Image URL, SHA512SUMS URL and image filename for one dated build.
 fn build_urls(codename: &str, major: u32, build: &str) -> Result<(Url, Url, String)> {
     let dir = format!("{CLOUD_BASE}{codename}/{build}/");
@@ -141,6 +154,7 @@ impl VendorProfile for Debian {
 
         let codename = info.codename;
         let version = info.version;
+        let release_date = info.date;
         let major = release_file::major_of(&version).ok_or_else(|| {
             anyhow::anyhow!(
                 "could not parse major version from upstream {version:?} for {codename}"
@@ -161,6 +175,7 @@ impl VendorProfile for Debian {
         let build = newest_build_dir(&listing)
             .ok_or_else(|| anyhow::anyhow!("no dated build directory under {codename_dir}"))?;
         let (url, sums_url, filename) = build_urls(&codename, major, &build)?;
+        let point_release = point_release_of_build(&version, release_date, &build);
 
         Ok(ResolvedImage {
             url,
@@ -184,7 +199,7 @@ impl VendorProfile for Debian {
             // sha256 is known before download.
             expected_sha256: None,
             facts: ImageFacts {
-                point_release: Some(version.clone()),
+                point_release,
                 ..ImageFacts::default()
             },
         })
@@ -251,6 +266,7 @@ mod tests {
         Ok(release_file::ReleaseInfo {
             codename: codename.to_string(),
             version: version.to_string(),
+            date: None,
         })
     }
 
@@ -276,6 +292,28 @@ mod tests {
         .map(|e| format!("{e:#}"))
         .unwrap_or_default();
         assert!(e.contains("stable") && e.contains("503"), "{e}");
+    }
+
+    #[test]
+    fn a_build_names_the_point_release_only_if_built_after_it() {
+        // The apt Release file describes today's point release; a dated
+        // build from before it does not contain it.
+        let released = chrono::NaiveDate::from_ymd_opt(2026, 9, 12);
+        assert_eq!(
+            point_release_of_build("13.7", released, "20261001-2618"),
+            Some("13.7".to_string())
+        );
+        assert_eq!(
+            point_release_of_build("13.7", released, "20260901-2590"),
+            None
+        );
+        assert_eq!(
+            point_release_of_build("13.7", released, "20260912-2600"),
+            None,
+            "same day: the build may predate the release"
+        );
+        assert_eq!(point_release_of_build("13.7", None, "20261001-2618"), None);
+        assert_eq!(point_release_of_build("13.7", released, "garbage"), None);
     }
 
     #[test]

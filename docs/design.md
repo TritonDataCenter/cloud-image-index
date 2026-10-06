@@ -394,8 +394,8 @@ tree. It is a first approximation. Known gaps, as of a full run on 2026-10-05:
   Alpine, Fedora); signing-key URLs are not yet known. EOL dates come
   only from Alpine and Ubuntu feeds and Fedora's Bodhi; publish dates only from GitHub
   (OpenBSD, Talos `latest`); point releases from Alma, Rocky, Oracle,
-  Alpine and Debian (Debian's describe today's apt point release, which
-  may be newer than the dated build). No osinfo ids (needs a decision on where the ids
+  Alpine and Debian (Debian's only when the dated build is newer than
+  the current apt point release; otherwise it is unknown). No osinfo ids (needs a decision on where the ids
   come from) and no firmware (no vendor states it, beyond Alpine's
   older `uefi` filenames).
 - Vendor servers close idle keep-alive connections, and reusing one
