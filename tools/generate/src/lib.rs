@@ -790,7 +790,10 @@ mod tests {
             Ok(l) => l,
             Err(e) => return anyhow::Error::new(e),
         };
-        let addr = listener.local_addr().map(|a| a.to_string()).unwrap_or_default();
+        let addr = listener
+            .local_addr()
+            .map(|a| a.to_string())
+            .unwrap_or_default();
         std::thread::spawn(move || {
             if let Ok((mut conn, _)) = listener.accept() {
                 let mut buf = [0u8; 1024];
