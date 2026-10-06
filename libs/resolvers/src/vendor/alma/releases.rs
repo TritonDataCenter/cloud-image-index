@@ -106,7 +106,8 @@ fn parse_major(input: &str) -> Result<String> {
 /// Look up the sha256 of the `-latest.x86_64.qcow2` pointer in
 /// CHECKSUM, then find a sibling line with the same hash that is
 /// *not* the latest pointer — that's the dated form we want for
-/// the manifest version.
+/// the manifest version. No dated sibling is an error: the pointer
+/// itself is not an exact build.
 fn resolve_dated_for_latest(
     body: &str,
     major: &str,
@@ -148,7 +149,9 @@ fn resolve_dated_for_latest(
             Some(name.to_string())
         })
         .next()
-        .unwrap_or_else(|| latest_filename.to_string());
+        .ok_or_else(|| {
+            anyhow::anyhow!("CHECKSUM has no dated image with the same hash as {latest_filename}")
+        })?;
     Ok((dated, sha256))
 }
 
@@ -196,14 +199,16 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc  AlmaLinux-9-Ge
     }
 
     #[test]
-    fn resolve_dated_falls_back_to_latest_when_no_dated_alias() {
+    fn resolve_dated_errors_when_no_dated_alias() {
+        // The rolling pointer is not an exact build: its contents
+        // change while the URL stays, so it must not be published.
         let body = "\
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc  AlmaLinux-9-GenericCloud-latest.x86_64.qcow2
 ";
-        let (filename, _) =
+        assert!(
             resolve_dated_for_latest(body, "9", "AlmaLinux-9-GenericCloud-latest.x86_64.qcow2")
-                .unwrap();
-        assert_eq!(filename, "AlmaLinux-9-GenericCloud-latest.x86_64.qcow2");
+                .is_err()
+        );
     }
 
     #[test]
