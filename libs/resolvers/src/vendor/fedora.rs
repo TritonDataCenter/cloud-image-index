@@ -51,7 +51,13 @@ impl VendorProfile for Fedora {
     }
 
     async fn list_versions(&self, http: &reqwest::Client) -> Result<Vec<VersionEntry>> {
-        Ok(releases::catalog(&releases::fetch(http).await?))
+        let entries = releases::fetch(http).await?;
+        let mut lifecycles = std::collections::BTreeMap::new();
+        for version in releases::release_versions(&entries) {
+            let life = releases::fetch_lifecycle(http, &version).await?;
+            lifecycles.insert(version, life);
+        }
+        releases::catalog(&entries, &lifecycles)
     }
 
     async fn resolve_release(

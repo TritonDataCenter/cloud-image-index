@@ -392,7 +392,7 @@ tree. It is a first approximation. Known gaps, as of a full run on 2026-10-05:
 - Every digest records the vendor document it came from. Signatures
   are published where the vendor serves them (Ubuntu, Alma, Rocky 9/10,
   Alpine, Fedora); signing-key URLs are not yet known. EOL dates come
-  only from Alpine and Ubuntu feeds; publish dates only from GitHub
+  only from Alpine and Ubuntu feeds and Fedora's Bodhi; publish dates only from GitHub
   (OpenBSD, Talos `latest`); point releases from Alma, Rocky, Oracle,
   Alpine and Debian (Debian's describe today's apt point release, which
   may be newer than the dated build). No osinfo ids (needs a decision on where the ids
@@ -405,7 +405,7 @@ tree. It is a first approximation. Known gaps, as of a full run on 2026-10-05:
   3 times, 20 seconds apart, before it counts as failed.
 - A single 404/410 removes a release; the two-consecutive-runs rule is
   not implemented, so a release served by some mirrors and not others
-  (Fedora 42) flaps between runs.
+  flaps between runs (as Fedora 42 did after its end of life).
 - Debian lists `stable` and `oldstable` only. `testing` and `unstable`
   have no `Version` in their apt Release files, so they cannot be
   resolved, and there is no `dev` alias for Debian.
@@ -413,8 +413,9 @@ tree. It is a first approximation. Known gaps, as of a full run on 2026-10-05:
   - FreeBSD lists point releases (15.1, 15.0, ...) as separate releases,
     unlike the release-is-the-major-version rule above; grouping them
     needs more than one build per release.
-  - Fedora 42 is still in Fedora's feed but some mirrors no longer serve
-    it (it is moving to `archives.fedoraproject.org`); it needs the
+  - Fedora's `releases.json` keeps listing a release after its end of
+    life, while mirrors stop serving it. Releases Bodhi has archived are
+    left out; their images, on `archives.fedoraproject.org`, need the
     vault handling above.
 
 Resolver problems found on 2026-10-05 and fixed here: Alpine filenames
