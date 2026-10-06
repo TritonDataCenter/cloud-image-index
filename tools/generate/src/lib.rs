@@ -105,10 +105,14 @@ where
 
 /// If `err` came from an HTTP request, the response status (`None` when
 /// there was no response). `None` overall for errors that did not come
-/// from HTTP, such as a vendor page the resolver could not parse.
+/// from HTTP, such as a vendor page the resolver could not parse. A
+/// response body that does not decode (e.g. JSON that changed shape)
+/// counts as a vendor page that did not parse, not as a missing
+/// response, and so does a request that could not be built.
 pub fn http_failure(err: &anyhow::Error) -> Option<Option<u16>> {
     err.chain()
         .find_map(|e| e.downcast_ref::<reqwest::Error>())
+        .filter(|e| !e.is_decode() && !e.is_builder())
         .map(|e| e.status().map(|s| s.as_u16()))
 }
 
@@ -776,6 +780,52 @@ mod tests {
         };
         assert!(is_transient_error(&err), "context hid the cause: {err:#}");
         assert!(err.to_string().contains("ubuntu: transient failure"));
+    }
+
+    /// A real decode error: a local server answers 200 with a body that
+    /// is not JSON, as a vendor that changed its format would.
+    async fn undecodable_response() -> anyhow::Error {
+        use std::io::{Read, Write};
+        let listener = match std::net::TcpListener::bind("127.0.0.1:0") {
+            Ok(l) => l,
+            Err(e) => return anyhow::Error::new(e),
+        };
+        let addr = listener.local_addr().map(|a| a.to_string()).unwrap_or_default();
+        std::thread::spawn(move || {
+            if let Ok((mut conn, _)) = listener.accept() {
+                let mut buf = [0u8; 1024];
+                let _ = conn.read(&mut buf);
+                let body = "<html>not json</html>";
+                let _ = write!(
+                    conn,
+                    "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                    body.len()
+                );
+            }
+        });
+        let result = async {
+            reqwest::get(format!("http://{addr}/"))
+                .await?
+                .json::<serde_json::Value>()
+                .await
+        }
+        .await;
+        match result {
+            Ok(v) => anyhow::anyhow!("unexpectedly decoded: {v}"),
+            Err(e) => anyhow::Error::new(e),
+        }
+    }
+
+    #[tokio::test]
+    async fn a_response_that_does_not_decode_is_not_transient() {
+        // Retrying a vendor whose format changed only delays the failure.
+        let err = undecodable_response().await;
+        assert!(format!("{err:#}").contains("decoding"), "{err:#}");
+        assert!(!is_transient_error(&err), "{err:#}");
+        assert_eq!(
+            on_resolve_failure(http_failure(&err)),
+            OnResolveFailure::FailVendor
+        );
     }
 
     #[test]
