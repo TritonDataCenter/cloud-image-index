@@ -127,8 +127,9 @@ fn parse_major(input: &str) -> Result<String> {
 }
 
 /// Find the highest-versioned dated `-Base-` build in an image
-/// directory listing. Lex sort works because all candidates share
-/// the same major and the build suffix is `<minor>.<minor>-<date>.<n>`.
+/// directory listing. All candidates share the same major and the
+/// build suffix is `<major>.<minor>-<date>.<n>`, compared with
+/// numbers as numbers (`9.10` after `9.9`).
 fn find_latest_dated(body: &str, major: &str) -> Option<String> {
     let prefix = format!("Rocky-{major}-GenericCloud-Base-");
     let suffix = ".x86_64.qcow2";
@@ -145,7 +146,7 @@ fn find_latest_dated(body: &str, major: &str) -> Option<String> {
             !middle.contains(".latest")
         })
         .collect();
-    candidates.sort();
+    candidates.sort_by(|a, b| crate::vendor::natural_cmp(a, b));
     candidates.dedup();
     candidates.last().map(|s| s.to_string())
 }
@@ -184,6 +185,18 @@ mod tests {
         assert_eq!(
             find_latest_dated(body, "9").unwrap(),
             "Rocky-9-GenericCloud-Base-9.7-20251123.2.x86_64.qcow2"
+        );
+    }
+
+    #[test]
+    fn find_latest_dated_orders_point_releases_numerically() {
+        let body = r#"
+            <a href="Rocky-9-GenericCloud-Base-9.9-20260601.0.x86_64.qcow2">…</a>
+            <a href="Rocky-9-GenericCloud-Base-9.10-20261201.0.x86_64.qcow2">…</a>
+        "#;
+        assert_eq!(
+            find_latest_dated(body, "9").unwrap(),
+            "Rocky-9-GenericCloud-Base-9.10-20261201.0.x86_64.qcow2"
         );
     }
 

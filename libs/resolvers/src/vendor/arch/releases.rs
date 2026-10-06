@@ -17,8 +17,8 @@
 //! - `<file>.sig` and `<file>.SHA256.sig` — detached GPG signatures
 //!   (TLS-only trust for now; GPG verification is a follow-up)
 //!
-//! We list `/images/`, pick the highest `v…/` entry by lexicographic
-//! sort (the `vYYYYMMDD.NNNNNN` format sorts correctly), then fetch
+//! We list `/images/`, pick the highest `v…/` entry
+//! (`vYYYYMMDD.NNNNNN`, numbers compared as numbers), then fetch
 //! the dated cloudimg's sidecar so the upstream sha256 is known at
 //! metadata time.
 
@@ -93,7 +93,7 @@ fn parse_builds_from_html(body: &str) -> Vec<String> {
         .captures_iter(body)
         .filter_map(|c| Some(c.get(1)?.as_str().to_string()))
         .collect();
-    builds.sort();
+    builds.sort_by(|a, b| crate::vendor::natural_cmp(a, b));
     builds.dedup();
     builds
 }
@@ -165,6 +165,15 @@ mod tests {
         assert_eq!(
             parse_builds_from_html(body),
             vec!["20260215.491172".to_string(), "20260501.523211".to_string()]
+        );
+    }
+
+    #[test]
+    fn parse_builds_orders_build_numbers_numerically() {
+        let body = r#"href="v20260501.99999/" href="v20260501.100000/""#;
+        assert_eq!(
+            parse_builds_from_html(body).last().map(String::as_str),
+            Some("20260501.100000")
         );
     }
 
