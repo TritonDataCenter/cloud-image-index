@@ -1,0 +1,42 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# Copyright 2026 Edgecast Cloud LLC.
+
+[workspace]
+members = [
+    "apis/cloud-image-index-api",
+    "libs/resolvers",
+    "tools/generate",
+    "tests/typify-client",
+]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+
+[workspace.dependencies]
+anyhow = "1.0.104"
+async-trait = "0.1.92"
+clap = { version = "4.6.7", features = ["derive"] }
+regex = "1.13.1"
+regress = "0.12.0"
+reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls"] }
+sha2 = "0.11.0"
+tokio = { version = "1.53.2" }
+typify = "0.8.0"
+url = "2.5.8"
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "serde"] }
+dropshot = { version = "0.17.1" }
+# The response type of raw (non-JSON) dropshot endpoints.
+http = "1.5.0"
+# dropshot 0.17 is built on schemars 0.8; schemars 1.x is not compatible.
+schemars = { version = "0.8.22", features = ["chrono", "derive"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+semver = "1.0.28"

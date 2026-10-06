@@ -1,0 +1,53 @@
+{
+  "distro": "rocky",
+  "release": "9",
+  "builds": [
+    {
+      "build": "9.7-20251123.2",
+      "point_release": "9.7",
+      "published_at": null,
+      "first_seen": "2026-10-05T17:00:00Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "base",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "qcow2",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 648806400,
+          "locations": [
+            {
+              "url": "https://dl.rockylinux.org/vault/rocky/9.7/images/x86_64/Rocky-9-GenericCloud-Base-9.7-20251123.2.x86_64.qcow2",
+              "kind": "vault",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "15d81d3434b298142b2fdd8fb54aef2662684db5c082cc191c3c79762ed6360c",
+                "source": {
+                  "url": "https://dl.rockylinux.org/vault/rocky/9.7/images/x86_64/Rocky-9-GenericCloud-Base-9.7-20251123.2.x86_64.qcow2.CHECKSUM",
+                  "format": "bsd",
+                  "filename": "Rocky-9-GenericCloud-Base-9.7-20251123.2.x86_64.qcow2"
+                }
+              }
+            ],
+            "signatures": [],
+            "http": {
+              "last_modified": "Sun, 23 Nov 2025 18:28:30 GMT",
+              "etag": "\"6923524e-26ac0000\""
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

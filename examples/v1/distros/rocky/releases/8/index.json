@@ -1,0 +1,91 @@
+{
+  "distro": "rocky",
+  "release": "8",
+  "builds": [
+    {
+      "build": "8.10-20240528.0",
+      "point_release": "8.10",
+      "published_at": null,
+      "first_seen": "2026-10-05T17:00:00Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "base",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "qcow2",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 2065760256,
+          "locations": [
+            {
+              "url": "https://download.rockylinux.org/pub/rocky/8/images/x86_64/Rocky-8-GenericCloud-Base-8.10-20240528.0.x86_64.qcow2",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "e56066c58606191e96184de9a9183a3af33c59bcbd8740d8b10ca054a7a89c14",
+                "source": {
+                  "url": "https://download.rockylinux.org/pub/rocky/8/images/x86_64/Rocky-8-GenericCloud-Base-8.10-20240528.0.x86_64.qcow2.CHECKSUM",
+                  "format": "bsd",
+                  "filename": "Rocky-8-GenericCloud-Base-8.10-20240528.0.x86_64.qcow2"
+                }
+              }
+            ],
+            "signatures": [],
+            "http": {
+              "last_modified": "Wed, 29 May 2024 14:14:04 GMT",
+              "etag": "\"6657382c-7b210000\""
+            }
+          }
+        },
+        {
+          "variant": "lvm",
+          "default_variant": false,
+          "arch": "x86_64",
+          "format": "qcow2",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 2225078272,
+          "locations": [
+            {
+              "url": "https://download.rockylinux.org/pub/rocky/8/images/x86_64/Rocky-8-GenericCloud-LVM-8.10-20240528.0.x86_64.qcow2",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "13916bb426c7abf71f2d7f8523f2588a05e8cc9248d08b24d95241fce913e095",
+                "source": {
+                  "url": "https://download.rockylinux.org/pub/rocky/8/images/x86_64/Rocky-8-GenericCloud-LVM-8.10-20240528.0.x86_64.qcow2.CHECKSUM",
+                  "format": "bsd",
+                  "filename": "Rocky-8-GenericCloud-LVM-8.10-20240528.0.x86_64.qcow2"
+                }
+              }
+            ],
+            "signatures": [],
+            "http": {
+              "last_modified": "Wed, 29 May 2024 14:15:23 GMT",
+              "etag": "\"6657387b-84a00000\""
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

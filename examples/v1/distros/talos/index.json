@@ -1,0 +1,19 @@
+{
+  "id": "talos",
+  "name": "Talos Linux",
+  "os_family": "linux",
+  "homepage": "https://www.talos.dev/",
+  "dev_channel": null,
+  "releases": [
+    {
+      "id": "1.14",
+      "version": "1.14",
+      "title": "Talos Linux 1.14",
+      "aliases": [
+        "latest"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    }
+  ]
+}

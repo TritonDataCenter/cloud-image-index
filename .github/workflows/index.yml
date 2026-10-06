@@ -1,0 +1,196 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# Copyright 2026 Edgecast Cloud LLC.
+#
+# Regenerate the index once a day, one job per vendor, then assemble,
+# commit site/ if anything changed, and deploy it to GitHub Pages.
+#
+# The same commands run locally with scripts/run-matrix-locally.sh.
+#
+# A vendor whose job fails keeps its previous files in site/; its job
+# shows red so the failure is visible per vendor. "Run workflow" can
+# re-run a single vendor.
+
+name: index
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+    inputs:
+      vendor:
+        description: "Only this vendor (e.g. fedora); empty for all"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# One run at a time, so two runs never race to commit site/.
+concurrency:
+  group: index
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  GENERATE: target/release/cloud-image-index-generate
+
+# `shell: bash` runs steps with `-eo pipefail`; the default for `run`
+# is `bash -e` without pipefail.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      vendors: ${{ steps.vendors.outputs.vendors }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # rust-toolchain.toml selects the toolchain; rustup installs it.
+      - name: Build the generator
+        run: cargo build --release --locked -p cloud-image-index-generate
+      - name: Choose vendors
+        id: vendors
+        env:
+          ONLY: ${{ inputs.vendor }}
+        run: |
+          if [ -n "$ONLY" ]; then
+            # One vendor id, and one the generator knows. (Not grep -q:
+            # it stops reading at the first match, and the generator
+            # then dies of SIGPIPE, which pipefail turns into a failure.)
+            [[ "$ONLY" =~ ^[a-z0-9-]+$ ]] &&
+              "$GENERATE" vendors | grep -x -- "$ONLY" > /dev/null || {
+              echo "unknown vendor: $ONLY" >&2
+              exit 1
+            }
+            echo "vendors=[\"$ONLY\"]" >> "$GITHUB_OUTPUT"
+          else
+            echo "vendors=$("$GENERATE" vendors --json)" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: generator
+          path: ${{ env.GENERATE }}
+          retention-days: 1
+
+  vendor:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        vendor: ${{ fromJSON(needs.build.outputs.vendors) }}
+    steps:
+      # The published tree, for keeping known builds' first_seen. The
+      # branch's current head, not the commit the run started from: a
+      # re-run or a queued run must build on the latest site/.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: generator
+          path: target/release
+      - name: Generate ${{ matrix.vendor }}
+        env:
+          VENDOR: ${{ matrix.vendor }}
+        run: |
+          chmod +x "$GENERATE"
+          "$GENERATE" vendor "$VENDOR" --previous site --out "fragments/$VENDOR"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fragment-${{ matrix.vendor }}
+          path: fragments/${{ matrix.vendor }}
+          retention-days: 1
+
+  assemble:
+    needs: [build, vendor]
+    # Assemble whatever succeeded, even when some vendors failed, but not
+    # after the run was cancelled.
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
+    steps:
+      # The branch's current head, as in the vendor jobs.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: generator
+          path: target/release
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: fragment-*
+          path: fragments
+      - name: Assemble
+        run: |
+          chmod +x "$GENERATE"
+          mkdir -p fragments
+          # A fragment is any directory holding v1/index.json, however
+          # the artifacts were laid out when downloaded.
+          find fragments -path '*/v1/index.json' | sed 's#/v1/index.json$##' > fragments.txt
+          cat fragments.txt
+          # Every vendor failed: there is nothing to update, and on a
+          # first run there would be nothing to publish.
+          if [ ! -s fragments.txt ]; then
+            echo "no vendor produced a fragment" >&2
+            exit 1
+          fi
+          # shellcheck disable=SC2046
+          "$GENERATE" assemble --site site $(cat fragments.txt) 2>&1 | tee assemble.log
+          exit "${PIPESTATUS[0]}"
+      - name: Commit site/ if it changed
+        id: commit
+        run: |
+          git add site
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -q -m "index: update site/" -m "$(tail -n 1 assemble.log)"
+          # The checkout was the branch head when this job started, and
+          # runs never overlap (see concurrency), so site/ is unchanged
+          # upstream and rebasing onto other changes cannot conflict.
+          git pull --rebase -q origin "$GITHUB_REF_NAME"
+          git push -q origin "HEAD:$GITHUB_REF_NAME"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: assemble
+    # Deploy when the index changed, or on a manual run (e.g. the first
+    # deployment). The status check is explicit: without one, GitHub
+    # requires every earlier job to have succeeded, and one failed
+    # vendor would stop the deployment of what assemble committed.
+    if: ${{ !cancelled() && needs.assemble.result == 'success' && (needs.assemble.outputs.changed == 'true' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

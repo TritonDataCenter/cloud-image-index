@@ -1,0 +1,60 @@
+{
+  "distro": "ubuntu",
+  "release": "resolute",
+  "builds": [
+    {
+      "build": "20260927",
+      "point_release": null,
+      "published_at": null,
+      "first_seen": "2026-10-05T17:00:00Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "server",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "qcow2",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 865115136,
+          "locations": [
+            {
+              "url": "https://cloud-images.ubuntu.com/releases/resolute/release-20260927/ubuntu-26.04-server-cloudimg-amd64.img",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "8800651811af9a85465ad1d552add729947bb16488dddb4a9b5305a3d97332b2",
+                "source": {
+                  "url": "https://cloud-images.ubuntu.com/releases/resolute/release-20260927/SHA256SUMS",
+                  "format": "gnu",
+                  "filename": "ubuntu-26.04-server-cloudimg-amd64.img"
+                }
+              }
+            ],
+            "signatures": [
+              {
+                "url": "https://cloud-images.ubuntu.com/releases/resolute/release-20260927/SHA256SUMS.gpg",
+                "kind": "pgp_detached",
+                "signs": "https://cloud-images.ubuntu.com/releases/resolute/release-20260927/SHA256SUMS",
+                "key_url": null
+              }
+            ],
+            "http": {
+              "last_modified": "Tue, 29 Sep 2026 00:41:16 GMT",
+              "etag": "\"33909c00-65c9470b9e7b6\""
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
