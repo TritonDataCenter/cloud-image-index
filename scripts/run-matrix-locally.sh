@@ -24,13 +24,17 @@ site=${1:-site}
 work=${2:-target/matrix}
 
 cargo build --quiet -p cloud-image-index-generate || exit 1
-gen=target/debug/cloud-image-index-generate
+gen=${CARGO_TARGET_DIR:-target}/debug/cloud-image-index-generate
+vendors=$("$gen" vendors) || {
+	echo "cannot list vendors" >&2
+	exit 1
+}
 
 rm -rf "$work"
 mkdir -p "$work/fragments" "$work/logs"
 
 pids=""
-for vendor in $("$gen" vendors); do
+for vendor in $vendors; do
 	"$gen" vendor "$vendor" --previous "$site" --out "$work/fragments/$vendor" \
 	    >"$work/logs/$vendor.log" 2>&1 &
 	pids="$pids $vendor:$!"
