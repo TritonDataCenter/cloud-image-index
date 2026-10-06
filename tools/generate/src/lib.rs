@@ -15,6 +15,7 @@
 //! [`policy`]. Network access is in `main.rs`; everything here is pure
 //! so it can be tested without vendors.
 
+pub mod lifecycle;
 pub mod policy;
 pub mod write;
 

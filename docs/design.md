@@ -293,6 +293,18 @@ Breaking changes go to a new `v2/` tree published alongside `v1/`.
   instead of removing anything. Git history is the record of removed
   builds. **Not built yet**: the second run; a single 404/410 removes
   the build (see "Generator status").
+- **End of life**: the index offers only releases worth installing. A
+  release is offered only if the vendor lists it as supported and
+  endoflife.date does not say it has ended (`isEol`, or its `eolFrom`
+  date has passed). endoflife.date covers 11 of our distros (not Arch,
+  OmniOS, SmartOS or Talos); it only removes releases, never adds one,
+  and nothing from it is published: `eol_date` is the vendor's or empty.
+  It catches what vendor data misses: Oracle, Rocky, Alma, CentOS
+  Stream, FreeBSD and OpenBSD publish no lifecycle the resolvers read,
+  and openSUSE's own feed still called Leap 15.6 stable months after its
+  end. If endoflife.date cannot be read, those vendors fail and keep
+  their previous files; `apply_lifecycle` in `tools/generate/src/main.rs`
+  says how to publish without pruning instead.
 - **Timeouts**: every request has a 30-second connect timeout and a
   2-minute total timeout. A timeout is a transient failure.
 - **Resolver errors**: a resolver that fails on one release with a
@@ -438,7 +450,9 @@ in monitor-reef or the second copy.
   potential collaborator.
 - **Canonical Simple Streams**: a static-file image feed format with
   hashes inline; a possible additional output format.
-- **endoflife.date**: the model for "a directory, not a distributor".
+- **endoflife.date**: the model for "a directory, not a distributor",
+  and the source used to prune end-of-life releases (see "Update
+  policy"); its data is MIT licensed.
 - **redhatcloudx/cloud-image-directory-frontend**: an existing Red Hat
   repository by a similar name (last updated 2023-03-30); not yet
   investigated.
