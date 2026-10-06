@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<!--
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+Copyright 2026 Edgecast Cloud LLC.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cloud-image-index</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: system-ui, sans-serif;
+    line-height: 1.5;
+    max-width: 42rem;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+  code { font-size: 0.95em; }
+</style>
+</head>
+<body>
+<h1>cloud-image-index</h1>
+
+<p>A machine-readable directory of operating system cloud images
+published by their upstream vendors: which images exist, the exact
+current builds, and where to download and verify them. It is updated
+daily from the vendors' own sites.</p>
+
+<p>This is a directory, not a distributor. Images are always downloaded
+from the vendor, and each entry carries the vendor's own checksums and
+signatures where they publish them, so clients can decide how far to
+trust the index.</p>
+
+<h2>Files</h2>
+<ul>
+  <li><a href="v1/index.json"><code>v1/index.json</code></a>: every distro</li>
+  <li><code>v1/distros/&lt;distro&gt;/index.json</code>: a distro's releases and aliases</li>
+  <li><code>v1/distros/&lt;distro&gt;/aliases/latest.json</code> (also <code>lts.json</code>, <code>dev.json</code>): the builds of the release holding that alias</li>
+  <li><code>v1/distros/&lt;distro&gt;/releases/&lt;release&gt;/index.json</code>: a release's current builds</li>
+  <li><a href="v1/openapi.json"><code>v1/openapi.json</code></a>: the OpenAPI description of all of the above</li>
+</ul>
+
+<p>Source, design and issues:
+<a href="https://github.com/TritonDataCenter/cloud-image-index">github.com/TritonDataCenter/cloud-image-index</a>.</p>
+</body>
+</html>

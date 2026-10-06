@@ -1,0 +1,60 @@
+{
+  "distro": "ubuntu",
+  "release": "jammy",
+  "builds": [
+    {
+      "build": "20261004",
+      "point_release": null,
+      "published_at": null,
+      "first_seen": "2026-10-06T20:41:54.153023691Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "server",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "qcow2",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 730497536,
+          "locations": [
+            {
+              "url": "https://cloud-images.ubuntu.com/server/releases/jammy/release-20261004/ubuntu-22.04-server-cloudimg-amd64.img",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "012d81fade7e8ff4428fc35dfeee711d66d1f47d5ea9c5c8ced96a85b959835c",
+                "source": {
+                  "url": "https://cloud-images.ubuntu.com/releases/streams/v1/com.ubuntu.cloud:released:download.json",
+                  "format": "vendor_document",
+                  "filename": null
+                }
+              }
+            ],
+            "signatures": [
+              {
+                "url": "https://cloud-images.ubuntu.com/server/releases/jammy/release-20261004/SHA256SUMS.gpg",
+                "kind": "pgp_detached",
+                "signs": "https://cloud-images.ubuntu.com/server/releases/jammy/release-20261004/SHA256SUMS",
+                "key_url": null
+              }
+            ],
+            "http": {
+              "last_modified": "Sun, 04 Oct 2026 21:11:35 GMT",
+              "etag": "\"2b8a8200-65d0a35e5ca58\""
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "distro": "omnios",
+  "release": "r151054r",
+  "builds": [
+    {
+      "build": "r151054r",
+      "point_release": null,
+      "published_at": null,
+      "first_seen": "2026-10-06T20:41:53.370983747Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "cloud",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "vmdk",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 1088028672,
+          "locations": [
+            {
+              "url": "https://downloads.omnios.org/media/lts/omnios-r151054r.cloud.vmdk",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "77cda3ac6d108f9bf8366d27453bc1aaee529032fbac588d9f9728b54f379b09",
+                "source": {
+                  "url": "https://downloads.omnios.org/media/lts/omnios-r151054r.cloud.vmdk.sha256",
+                  "format": "bare",
+                  "filename": null
+                }
+              }
+            ],
+            "signatures": [],
+            "http": {
+              "last_modified": "Sun, 07 Sep 2025 22:17:07 GMT",
+              "etag": "\"68be0463-40da0000\""
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "distro": "alpine",
+  "release": "3.24",
+  "builds": [
+    {
+      "build": "3.24.2",
+      "point_release": "3.24.2",
+      "published_at": null,
+      "first_seen": "2026-10-06T20:41:51.428123068Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "cloudinit",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "qcow2",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 175636480,
+          "locations": [
+            {
+              "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/cloud/alpine-3.24.2-x86_64-cloudinit-r0.qcow2",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha512",
+                "value": "c9504d23613f304e0cfb6f5fec872e29e5a5a62e2bc64796daf19c14fdddaa87dc252912fd8bdd17f7b8ebf0cd03305e4075993d54de175e6028d6b50414c67f",
+                "source": {
+                  "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/cloud/alpine-3.24.2-x86_64-cloudinit-r0.qcow2.sha512",
+                  "format": "bare",
+                  "filename": null
+                }
+              }
+            ],
+            "signatures": [
+              {
+                "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/cloud/alpine-3.24.2-x86_64-cloudinit-r0.qcow2.asc",
+                "kind": "pgp_detached",
+                "signs": "https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/cloud/alpine-3.24.2-x86_64-cloudinit-r0.qcow2",
+                "key_url": null
+              }
+            ],
+            "http": {
+              "last_modified": "Sat, 19 Sep 2026 03:38:57 GMT",
+              "etag": "\"6aae03d1-a780000\""
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

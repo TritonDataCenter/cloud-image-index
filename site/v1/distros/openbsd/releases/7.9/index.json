@@ -1,0 +1,53 @@
+{
+  "distro": "openbsd",
+  "release": "7.9",
+  "builds": [
+    {
+      "build": "v7.9_2026-08-31-22-45",
+      "point_release": null,
+      "published_at": "2026-08-31T22:49:09Z",
+      "first_seen": "2026-10-06T20:41:50.154694051Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "min",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "qcow2",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 634976256,
+          "locations": [
+            {
+              "url": "https://github.com/hcartiaux/openbsd-cloud-image/releases/download/v7.9_2026-08-31-22-45/openbsd-min.qcow2",
+              "kind": "primary",
+              "redirects_off_host": true
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "253a2093f42af4e307a392e34ee899219ce33352495e2d1eba6d222d711bb620",
+                "source": {
+                  "url": "https://github.com/hcartiaux/openbsd-cloud-image/releases/download/v7.9_2026-08-31-22-45/openbsd-min.qcow2.sha256",
+                  "format": "bare",
+                  "filename": null
+                }
+              }
+            ],
+            "signatures": [],
+            "http": {
+              "last_modified": null,
+              "etag": null
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

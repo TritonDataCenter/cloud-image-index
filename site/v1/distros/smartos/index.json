@@ -1,0 +1,19 @@
+{
+  "id": "smartos",
+  "name": "SmartOS",
+  "os_family": "illumos",
+  "homepage": "https://smartos.org/",
+  "dev_channel": null,
+  "releases": [
+    {
+      "id": "rolling",
+      "version": "rolling",
+      "title": "SmartOS rolling",
+      "aliases": [
+        "latest"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    }
+  ]
+}

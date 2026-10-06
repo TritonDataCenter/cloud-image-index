@@ -1,0 +1,60 @@
+{
+  "distro": "alpine",
+  "release": "3.23",
+  "builds": [
+    {
+      "build": "3.23.4",
+      "point_release": "3.23.4",
+      "published_at": null,
+      "first_seen": "2026-10-06T20:41:51.428123068Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "cloudinit",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "qcow2",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 200671232,
+          "locations": [
+            {
+              "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/releases/cloud/nocloud_alpine-3.23.4-x86_64-uefi-cloudinit-r0.qcow2",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha512",
+                "value": "849196e26640b33fb1f106d46cebdf341c715f7f49363564eacece8097464b6af7041618e94c4eb1a006394663252a86c0fb3158fee5d0ffb094899730679a71",
+                "source": {
+                  "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/releases/cloud/nocloud_alpine-3.23.4-x86_64-uefi-cloudinit-r0.qcow2.sha512",
+                  "format": "bare",
+                  "filename": null
+                }
+              }
+            ],
+            "signatures": [
+              {
+                "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/releases/cloud/nocloud_alpine-3.23.4-x86_64-uefi-cloudinit-r0.qcow2.asc",
+                "kind": "pgp_detached",
+                "signs": "https://dl-cdn.alpinelinux.org/alpine/v3.23/releases/cloud/nocloud_alpine-3.23.4-x86_64-uefi-cloudinit-r0.qcow2",
+                "key_url": null
+              }
+            ],
+            "http": {
+              "last_modified": "Sat, 18 Apr 2026 00:33:08 GMT",
+              "etag": "\"69e2d144-bf60000\""
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

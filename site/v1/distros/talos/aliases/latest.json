@@ -1,0 +1,43 @@
+{
+  "distro": "talos",
+  "release": "1.14",
+  "builds": [
+    {
+      "build": "1.14.2",
+      "point_release": null,
+      "published_at": "2026-09-29T20:44:07Z",
+      "first_seen": "2026-10-06T20:41:53.281344117Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "nocloud",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "raw",
+          "compression": "xz",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": false,
+          "size": 232010648,
+          "locations": [
+            {
+              "url": "https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.14.2/nocloud-amd64.raw.xz",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [],
+            "signatures": [],
+            "http": {
+              "last_modified": null,
+              "etag": null
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

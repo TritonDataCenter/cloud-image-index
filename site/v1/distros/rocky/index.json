@@ -1,0 +1,35 @@
+{
+  "id": "rocky",
+  "name": "Rocky Linux",
+  "os_family": "linux",
+  "homepage": "https://rockylinux.org/",
+  "dev_channel": null,
+  "releases": [
+    {
+      "id": "10",
+      "version": "10",
+      "title": "Rocky Linux 10",
+      "aliases": [
+        "latest"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "9",
+      "version": "9",
+      "title": "Rocky Linux 9",
+      "aliases": [],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "8",
+      "version": "8",
+      "title": "Rocky Linux 8",
+      "aliases": [],
+      "eol_date": null,
+      "osinfo": null
+    }
+  ]
+}

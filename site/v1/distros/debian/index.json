@@ -1,0 +1,27 @@
+{
+  "id": "debian",
+  "name": "Debian",
+  "os_family": "linux",
+  "homepage": "https://www.debian.org/",
+  "dev_channel": null,
+  "releases": [
+    {
+      "id": "trixie",
+      "version": "13.7",
+      "title": "Debian 13.7 (trixie) — stable",
+      "aliases": [
+        "latest"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "bookworm",
+      "version": "12.15",
+      "title": "Debian 12.15 (bookworm) — oldstable",
+      "aliases": [],
+      "eol_date": null,
+      "osinfo": null
+    }
+  ]
+}

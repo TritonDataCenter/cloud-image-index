@@ -1,0 +1,45 @@
+{
+  "id": "fedora",
+  "name": "Fedora",
+  "os_family": "linux",
+  "homepage": "https://fedoraproject.org/",
+  "dev_channel": "beta",
+  "releases": [
+    {
+      "id": "45_Beta",
+      "version": "45 Beta",
+      "title": "Fedora 45 Beta",
+      "aliases": [
+        "dev"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "44",
+      "version": "44",
+      "title": "Fedora 44",
+      "aliases": [
+        "latest"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "43",
+      "version": "43",
+      "title": "Fedora 43",
+      "aliases": [],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "42",
+      "version": "42",
+      "title": "Fedora 42",
+      "aliases": [],
+      "eol_date": null,
+      "osinfo": null
+    }
+  ]
+}

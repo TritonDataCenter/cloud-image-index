@@ -1,0 +1,51 @@
+{
+  "distro": "smartos",
+  "release": "rolling",
+  "builds": [
+    {
+      "build": "20260903T001557Z",
+      "point_release": null,
+      "published_at": null,
+      "first_seen": "2026-10-06T20:41:54.164106712Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "usb",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "raw",
+          "compression": "gzip",
+          "firmware": [],
+          "datasources": [],
+          "ssh_key_injection": false,
+          "size": 224365028,
+          "locations": [
+            {
+              "url": "https://us-central.manta.mnx.io/Joyent_Dev/public/SmartOS/20260903T001557Z/smartos-20260903T001557Z-USB.img.gz",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "a068fd8289852de05721a2ddad3988d717954e0a153010eb9df9ee3d9bd49ba5",
+                "source": {
+                  "url": "https://us-central.manta.mnx.io/Joyent_Dev/public/SmartOS/20260903T001557Z/sha256sums.txt",
+                  "format": "gnu",
+                  "filename": "smartos-20260903T001557Z-USB.img.gz"
+                }
+              }
+            ],
+            "signatures": [],
+            "http": {
+              "last_modified": "Thu, 03 Sep 2026 03:06:22 GMT",
+              "etag": "8ab1d8c2-c5fc-415d-8f68-035923b818cf"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

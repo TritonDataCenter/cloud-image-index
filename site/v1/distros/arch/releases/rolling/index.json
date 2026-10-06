@@ -1,0 +1,53 @@
+{
+  "distro": "arch",
+  "release": "rolling",
+  "builds": [
+    {
+      "build": "20261001.604814",
+      "point_release": null,
+      "published_at": null,
+      "first_seen": "2026-10-06T20:41:51.309888513Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "cloudimg",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "qcow2",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 578080256,
+          "locations": [
+            {
+              "url": "https://geo.mirror.pkgbuild.com/images/v20261001.604814/Arch-Linux-x86_64-cloudimg-20261001.604814.qcow2",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "360f0fa49db6813bdc8e35bed230a2dc2ae3567b7b5ab74719c0a706e4e34e87",
+                "source": {
+                  "url": "https://geo.mirror.pkgbuild.com/images/v20261001.604814/Arch-Linux-x86_64-cloudimg-20261001.604814.qcow2.SHA256",
+                  "format": "gnu",
+                  "filename": "Arch-Linux-x86_64-cloudimg-20261001.604814.qcow2"
+                }
+              }
+            ],
+            "signatures": [],
+            "http": {
+              "last_modified": "Thu, 01 Oct 2026 12:21:15 GMT",
+              "etag": "\"6abe503b-2274ce00\""
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

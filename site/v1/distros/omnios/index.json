@@ -1,0 +1,39 @@
+{
+  "id": "omnios",
+  "name": "OmniOS",
+  "os_family": "illumos",
+  "homepage": "https://omnios.org/",
+  "dev_channel": "bloody",
+  "releases": [
+    {
+      "id": "r151058",
+      "version": "r151058",
+      "title": "OmniOS r151058",
+      "aliases": [
+        "latest"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "r151054r",
+      "version": "r151054r",
+      "title": "OmniOS r151054r",
+      "aliases": [
+        "lts"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "20260907",
+      "version": "20260907",
+      "title": "OmniOS 20260907",
+      "aliases": [
+        "dev"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    }
+  ]
+}

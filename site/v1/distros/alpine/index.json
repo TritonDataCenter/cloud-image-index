@@ -1,0 +1,43 @@
+{
+  "id": "alpine",
+  "name": "Alpine Linux",
+  "os_family": "linux",
+  "homepage": "https://alpinelinux.org/",
+  "dev_channel": null,
+  "releases": [
+    {
+      "id": "3.24",
+      "version": "3.24.2",
+      "title": "Alpine Linux v3.24",
+      "aliases": [
+        "latest"
+      ],
+      "eol_date": "2028-06-01",
+      "osinfo": null
+    },
+    {
+      "id": "3.23",
+      "version": "3.23.6",
+      "title": "Alpine Linux v3.23",
+      "aliases": [],
+      "eol_date": "2027-11-01",
+      "osinfo": null
+    },
+    {
+      "id": "3.22",
+      "version": "3.22.6",
+      "title": "Alpine Linux v3.22",
+      "aliases": [],
+      "eol_date": "2027-05-01",
+      "osinfo": null
+    },
+    {
+      "id": "3.21",
+      "version": "3.21.8",
+      "title": "Alpine Linux v3.21",
+      "aliases": [],
+      "eol_date": "2026-11-01",
+      "osinfo": null
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "distro": "freebsd",
+  "release": "14.4",
+  "builds": [
+    {
+      "build": "14.4",
+      "point_release": null,
+      "published_at": null,
+      "first_seen": "2026-10-06T20:41:50.751492110Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "basic-cloudinit-zfs",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "raw",
+          "compression": "xz",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 662875280,
+          "locations": [
+            {
+              "url": "https://download.freebsd.org/releases/VM-IMAGES/14.4-RELEASE/amd64/Latest/FreeBSD-14.4-RELEASE-amd64-BASIC-CLOUDINIT-zfs.raw.xz",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "fa8bfb305cf4efe784c157d3fc6164a1ac36f347b1d3122fc98cca85caada59f",
+                "source": {
+                  "url": "https://download.freebsd.org/releases/VM-IMAGES/14.4-RELEASE/amd64/Latest/CHECKSUM.SHA256",
+                  "format": "bsd",
+                  "filename": "FreeBSD-14.4-RELEASE-amd64-BASIC-CLOUDINIT-zfs.raw.xz"
+                }
+              }
+            ],
+            "signatures": [],
+            "http": {
+              "last_modified": "Fri, 06 Mar 2026 12:38:52 GMT",
+              "etag": "\"69aacadc-2782ac90\""
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "distro": "omnios",
+  "release": "20260907",
+  "builds": [
+    {
+      "build": "20260907",
+      "point_release": null,
+      "published_at": null,
+      "first_seen": "2026-10-06T20:41:53.370983747Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "cloud",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "vmdk",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 1068498944,
+          "locations": [
+            {
+              "url": "https://downloads.omnios.org/media/bloody/omnios-bloody-20260907.cloud.vmdk",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "e6db87dba7fde7948f9abe15ccb631a5b1ff94ebfdc5adf9d1bac01a6b35973c",
+                "source": {
+                  "url": "https://downloads.omnios.org/media/bloody/omnios-bloody-20260907.cloud.vmdk.sha256",
+                  "format": "bare",
+                  "filename": null
+                }
+              }
+            ],
+            "signatures": [],
+            "http": {
+              "last_modified": "Mon, 07 Sep 2026 19:42:02 GMT",
+              "etag": "\"6a9f138a-3fb00000\""
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

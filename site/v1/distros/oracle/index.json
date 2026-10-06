@@ -1,0 +1,43 @@
+{
+  "id": "oracle",
+  "name": "Oracle Linux",
+  "os_family": "linux",
+  "homepage": "https://www.oracle.com/linux/",
+  "dev_channel": null,
+  "releases": [
+    {
+      "id": "10",
+      "version": "10.1-b291",
+      "title": "Oracle Linux 10.1",
+      "aliases": [
+        "latest"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "9",
+      "version": "9.8-b293",
+      "title": "Oracle Linux 9.8",
+      "aliases": [],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "8",
+      "version": "8.10-b287",
+      "title": "Oracle Linux 8.10",
+      "aliases": [],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "7",
+      "version": "7.9-b257",
+      "title": "Oracle Linux 7.9",
+      "aliases": [],
+      "eol_date": null,
+      "osinfo": null
+    }
+  ]
+}

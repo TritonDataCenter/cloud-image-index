@@ -1,0 +1,36 @@
+{
+  "id": "ubuntu",
+  "name": "Ubuntu",
+  "os_family": "linux",
+  "homepage": "https://ubuntu.com/",
+  "dev_channel": null,
+  "releases": [
+    {
+      "id": "resolute",
+      "version": "26.04",
+      "title": "26.04 LTS",
+      "aliases": [
+        "latest",
+        "lts"
+      ],
+      "eol_date": "2031-05-29",
+      "osinfo": null
+    },
+    {
+      "id": "noble",
+      "version": "24.04",
+      "title": "24.04 LTS",
+      "aliases": [],
+      "eol_date": "2029-05-31",
+      "osinfo": null
+    },
+    {
+      "id": "jammy",
+      "version": "22.04",
+      "title": "22.04 LTS",
+      "aliases": [],
+      "eol_date": "2027-06-01",
+      "osinfo": null
+    }
+  ]
+}

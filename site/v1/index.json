@@ -1,0 +1,94 @@
+{
+  "distros": [
+    {
+      "id": "ubuntu",
+      "name": "Ubuntu",
+      "os_family": "linux",
+      "homepage": "https://ubuntu.com/"
+    },
+    {
+      "id": "debian",
+      "name": "Debian",
+      "os_family": "linux",
+      "homepage": "https://www.debian.org/"
+    },
+    {
+      "id": "rocky",
+      "name": "Rocky Linux",
+      "os_family": "linux",
+      "homepage": "https://rockylinux.org/"
+    },
+    {
+      "id": "alma",
+      "name": "AlmaLinux",
+      "os_family": "linux",
+      "homepage": "https://almalinux.org/"
+    },
+    {
+      "id": "centos-stream",
+      "name": "CentOS Stream",
+      "os_family": "linux",
+      "homepage": "https://www.centos.org/"
+    },
+    {
+      "id": "fedora",
+      "name": "Fedora",
+      "os_family": "linux",
+      "homepage": "https://fedoraproject.org/"
+    },
+    {
+      "id": "oracle",
+      "name": "Oracle Linux",
+      "os_family": "linux",
+      "homepage": "https://www.oracle.com/linux/"
+    },
+    {
+      "id": "opensuse",
+      "name": "openSUSE Leap",
+      "os_family": "linux",
+      "homepage": "https://www.opensuse.org/"
+    },
+    {
+      "id": "alpine",
+      "name": "Alpine Linux",
+      "os_family": "linux",
+      "homepage": "https://alpinelinux.org/"
+    },
+    {
+      "id": "arch",
+      "name": "Arch Linux",
+      "os_family": "linux",
+      "homepage": "https://archlinux.org/"
+    },
+    {
+      "id": "freebsd",
+      "name": "FreeBSD",
+      "os_family": "bsd",
+      "homepage": "https://www.freebsd.org/"
+    },
+    {
+      "id": "openbsd",
+      "name": "OpenBSD",
+      "os_family": "bsd",
+      "homepage": "https://bsd-cloud-image.org/"
+    },
+    {
+      "id": "omnios",
+      "name": "OmniOS",
+      "os_family": "illumos",
+      "homepage": "https://omnios.org/"
+    },
+    {
+      "id": "smartos",
+      "name": "SmartOS",
+      "os_family": "illumos",
+      "homepage": "https://smartos.org/"
+    },
+    {
+      "id": "talos",
+      "name": "Talos Linux",
+      "os_family": "linux",
+      "homepage": "https://www.talos.dev/"
+    }
+  ]
+}

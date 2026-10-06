@@ -1,0 +1,53 @@
+{
+  "distro": "debian",
+  "release": "trixie",
+  "builds": [
+    {
+      "build": "20261001-2618",
+      "point_release": "13.7",
+      "published_at": null,
+      "first_seen": "2026-10-06T20:41:53.232732074Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "genericcloud",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "qcow2",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 341508096,
+          "locations": [
+            {
+              "url": "https://cloud.debian.org/images/cloud/trixie/20261001-2618/debian-13-genericcloud-amd64-20261001-2618.qcow2",
+              "kind": "primary",
+              "redirects_off_host": true
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha512",
+                "value": "f46f0671a6e5bdec5291ab8972bae2f10e5408c2f64a74078f11efc2f06a436a9d0313ed50e0472542eeabf780e9f7c792ac0a314c6c20507fcd9fd81b468c3d",
+                "source": {
+                  "url": "https://cloud.debian.org/images/cloud/trixie/20261001-2618/SHA512SUMS",
+                  "format": "gnu",
+                  "filename": "debian-13-genericcloud-amd64-20261001-2618.qcow2"
+                }
+              }
+            ],
+            "signatures": [],
+            "http": {
+              "last_modified": null,
+              "etag": null
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

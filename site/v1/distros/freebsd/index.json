@@ -1,0 +1,43 @@
+{
+  "id": "freebsd",
+  "name": "FreeBSD",
+  "os_family": "bsd",
+  "homepage": "https://www.freebsd.org/",
+  "dev_channel": null,
+  "releases": [
+    {
+      "id": "15.1",
+      "version": "15.1",
+      "title": "FreeBSD 15.1-RELEASE",
+      "aliases": [
+        "latest"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "15.0",
+      "version": "15.0",
+      "title": "FreeBSD 15.0-RELEASE",
+      "aliases": [],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "14.5",
+      "version": "14.5",
+      "title": "FreeBSD 14.5-RELEASE",
+      "aliases": [],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "14.4",
+      "version": "14.4",
+      "title": "FreeBSD 14.4-RELEASE",
+      "aliases": [],
+      "eol_date": null,
+      "osinfo": null
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "distro": "centos-stream",
+  "release": "9",
+  "builds": [
+    {
+      "build": "20260930.0",
+      "point_release": null,
+      "published_at": null,
+      "first_seen": "2026-10-06T20:41:55.391433282Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "genericcloud",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "qcow2",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 1275985920,
+          "locations": [
+            {
+              "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20260930.0.x86_64.qcow2",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "a7f804379970e055d5d5ff408787f0d984b4d640e261473ff58d83561bd19433",
+                "source": {
+                  "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20260930.0.x86_64.qcow2.SHA256SUM",
+                  "format": "bsd",
+                  "filename": "CentOS-Stream-GenericCloud-9-20260930.0.x86_64.qcow2"
+                }
+              }
+            ],
+            "signatures": [],
+            "http": {
+              "last_modified": "Thu, 01 Oct 2026 01:11:41 GMT",
+              "etag": "\"4c0e0000-65cbd1933765f\""
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

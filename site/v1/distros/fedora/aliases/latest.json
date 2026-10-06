@@ -1,0 +1,60 @@
+{
+  "distro": "fedora",
+  "release": "44",
+  "builds": [
+    {
+      "build": "44-1.7",
+      "point_release": null,
+      "published_at": null,
+      "first_seen": "2026-10-06T20:41:52.654160956Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "cloud-base-generic",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "qcow2",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 583729152,
+          "locations": [
+            {
+              "url": "https://download.fedoraproject.org/pub/fedora/linux/releases/44/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-44-1.7.x86_64.qcow2",
+              "kind": "primary",
+              "redirects_off_host": true
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "28680fe5b371a5a82ebf43a31926e086a168e59949d03969c5093e7071f90b7f",
+                "source": {
+                  "url": "https://fedoraproject.org/releases.json",
+                  "format": "vendor_document",
+                  "filename": null
+                }
+              }
+            ],
+            "signatures": [
+              {
+                "url": "https://download.fedoraproject.org/pub/fedora/linux/releases/44/Cloud/x86_64/images/Fedora-Cloud-44-1.7-x86_64-CHECKSUM",
+                "kind": "pgp_clearsigned",
+                "signs": "https://download.fedoraproject.org/pub/fedora/linux/releases/44/Cloud/x86_64/images/Fedora-Cloud-44-1.7-x86_64-CHECKSUM",
+                "key_url": null
+              }
+            ],
+            "http": {
+              "last_modified": null,
+              "etag": null
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "distro": "alma",
+  "release": "8",
+  "builds": [
+    {
+      "build": "8.10-20260928",
+      "point_release": "8.10",
+      "published_at": null,
+      "first_seen": "2026-10-06T20:41:53.829545055Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "genericcloud",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "qcow2",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 1656029184,
+          "locations": [
+            {
+              "url": "https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/AlmaLinux-8-GenericCloud-8.10-20260928.x86_64.qcow2",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "4a4dfcbd0a02f9fbf62dee6420a168858ff1640a26fb8840ea4013db57436a6c",
+                "source": {
+                  "url": "https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/CHECKSUM",
+                  "format": "gnu",
+                  "filename": "AlmaLinux-8-GenericCloud-8.10-20260928.x86_64.qcow2"
+                }
+              }
+            ],
+            "signatures": [
+              {
+                "url": "https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/CHECKSUM.asc",
+                "kind": "pgp_detached",
+                "signs": "https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/CHECKSUM",
+                "key_url": null
+              }
+            ],
+            "http": {
+              "last_modified": "Mon, 28 Sep 2026 04:48:37 GMT",
+              "etag": "\"6ab9f1a5-62b50000\""
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

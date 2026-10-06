@@ -1,0 +1,53 @@
+{
+  "distro": "omnios",
+  "release": "r151058",
+  "builds": [
+    {
+      "build": "r151058",
+      "point_release": null,
+      "published_at": null,
+      "first_seen": "2026-10-06T20:41:53.370983747Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "cloud",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "vmdk",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 1136590848,
+          "locations": [
+            {
+              "url": "https://downloads.omnios.org/media/stable/omnios-r151058.cloud.vmdk",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "33950fb13741acde2d5c4c3606ac1160a279a096c7e6bdfbb6ca17e39ec0aa91",
+                "source": {
+                  "url": "https://downloads.omnios.org/media/stable/omnios-r151058.cloud.vmdk.sha256",
+                  "format": "bare",
+                  "filename": null
+                }
+              }
+            ],
+            "signatures": [],
+            "http": {
+              "last_modified": "Sat, 25 Apr 2026 08:59:02 GMT",
+              "etag": "\"69ec8256-43bf0000\""
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

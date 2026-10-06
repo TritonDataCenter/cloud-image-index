@@ -1,0 +1,19 @@
+{
+  "id": "arch",
+  "name": "Arch Linux",
+  "os_family": "linux",
+  "homepage": "https://archlinux.org/",
+  "dev_channel": null,
+  "releases": [
+    {
+      "id": "rolling",
+      "version": "rolling",
+      "title": "Arch Linux rolling",
+      "aliases": [
+        "latest"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    }
+  ]
+}

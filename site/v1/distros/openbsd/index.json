@@ -1,0 +1,19 @@
+{
+  "id": "openbsd",
+  "name": "OpenBSD",
+  "os_family": "bsd",
+  "homepage": "https://bsd-cloud-image.org/",
+  "dev_channel": null,
+  "releases": [
+    {
+      "id": "7.9",
+      "version": "7.9",
+      "title": "OpenBSD 7.9",
+      "aliases": [
+        "latest"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    }
+  ]
+}

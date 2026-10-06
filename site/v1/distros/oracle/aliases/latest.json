@@ -1,0 +1,53 @@
+{
+  "distro": "oracle",
+  "release": "10",
+  "builds": [
+    {
+      "build": "10.1-b291",
+      "point_release": "10.1",
+      "published_at": null,
+      "first_seen": "2026-10-06T20:41:55.335847387Z",
+      "osinfo": null,
+      "artifacts": [
+        {
+          "variant": "kvm",
+          "default_variant": true,
+          "arch": "x86_64",
+          "format": "qcow2",
+          "compression": "none",
+          "firmware": [],
+          "datasources": [
+            "nocloud"
+          ],
+          "ssh_key_injection": true,
+          "size": 1073872896,
+          "locations": [
+            {
+              "url": "https://yum.oracle.com/templates/OracleLinux/OL10/u1/x86_64/OL10U1_x86_64-kvm-b291.qcow2",
+              "kind": "primary",
+              "redirects_off_host": false
+            }
+          ],
+          "integrity": {
+            "digests": [
+              {
+                "algorithm": "sha256",
+                "value": "8e59326c4bf7cfa58a6cac404db8ed583fe3a5f4c460e2b73c64988785bb4f0f",
+                "source": {
+                  "url": "https://yum.oracle.com/oracle-linux-templates.html",
+                  "format": "vendor_document",
+                  "filename": null
+                }
+              }
+            ],
+            "signatures": [],
+            "http": {
+              "last_modified": "Wed, 27 May 2026 12:18:33 GMT",
+              "etag": "\"3f1e4eaf088ae3ce3b0abba2382d75cc:1780573953.010578\""
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

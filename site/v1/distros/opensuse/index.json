@@ -1,0 +1,37 @@
+{
+  "id": "opensuse",
+  "name": "openSUSE Leap",
+  "os_family": "linux",
+  "homepage": "https://www.opensuse.org/",
+  "dev_channel": "rc",
+  "releases": [
+    {
+      "id": "16.1",
+      "version": "16.1",
+      "title": "openSUSE Leap 16.1 (RC)",
+      "aliases": [
+        "dev"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "16.0",
+      "version": "16.0",
+      "title": "openSUSE Leap 16.0",
+      "aliases": [
+        "latest"
+      ],
+      "eol_date": null,
+      "osinfo": null
+    },
+    {
+      "id": "15.6",
+      "version": "15.6",
+      "title": "openSUSE Leap 15.6",
+      "aliases": [],
+      "eol_date": null,
+      "osinfo": null
+    }
+  ]
+}
