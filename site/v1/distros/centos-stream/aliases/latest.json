@@ -3,10 +3,10 @@
   "release": "10",
   "builds": [
     {
-      "build": "20260930.0",
+      "build": "20261006.0",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-10-06T20:41:55.391433282Z",
+      "first_seen": "2026-10-07T05:33:40.092269892Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 1045889024,
+          "size": 1045364736,
           "locations": [
             {
-              "url": "https://cloud.centos.org/centos/10-stream/x86_64/images/CentOS-Stream-GenericCloud-10-20260930.0.x86_64.qcow2",
+              "url": "https://cloud.centos.org/centos/10-stream/x86_64/images/CentOS-Stream-GenericCloud-10-20261006.0.x86_64.qcow2",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,18 +32,18 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "42bd0c8f58574c25a549f134887936347d3e38e3401a20388fad532db1a243c0",
+                "value": "48f9e2ed8b38dd8acd5e3a19b19f348c354358559bec474857c7d1c3425bd719",
                 "source": {
-                  "url": "https://cloud.centos.org/centos/10-stream/x86_64/images/CentOS-Stream-GenericCloud-10-20260930.0.x86_64.qcow2.SHA256SUM",
+                  "url": "https://cloud.centos.org/centos/10-stream/x86_64/images/CentOS-Stream-GenericCloud-10-20261006.0.x86_64.qcow2.SHA256SUM",
                   "format": "bsd",
-                  "filename": "CentOS-Stream-GenericCloud-10-20260930.0.x86_64.qcow2"
+                  "filename": "CentOS-Stream-GenericCloud-10-20261006.0.x86_64.qcow2"
                 }
               }
             ],
             "signatures": [],
             "http": {
-              "last_modified": "Thu, 01 Oct 2026 03:24:50 GMT",
-              "etag": "\"3e570000-65cbef55c5a26\""
+              "last_modified": "Wed, 07 Oct 2026 01:52:07 GMT",
+              "etag": "\"3e4f0000-65d365cdd69e3\""
             }
           }
         }
