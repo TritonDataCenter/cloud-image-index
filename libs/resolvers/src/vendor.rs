@@ -470,7 +470,7 @@ pub fn lookup(vendor: Vendor) -> Box<dyn VendorProfile> {
         Vendor::Rocky => Box::new(rocky::Rocky),
         Vendor::Smartos => Box::new(smartos::Smartos),
         Vendor::Talos => Box::new(talos::Talos),
-        Vendor::Ubuntu => Box::new(ubuntu::Ubuntu),
+        Vendor::Ubuntu => Box::new(ubuntu::Ubuntu::default()),
     }
 }
 

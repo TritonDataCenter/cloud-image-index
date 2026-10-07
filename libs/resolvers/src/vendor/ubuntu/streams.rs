@@ -177,10 +177,10 @@ pub fn catalog(streams: &Streams) -> Vec<VersionEntry> {
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
-    fn fixture() -> Streams {
+    pub(crate) fn fixture() -> Streams {
         let json = r#"{
           "products": {
             "com.ubuntu.cloud:server:22.04:amd64": {

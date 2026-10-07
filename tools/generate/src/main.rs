@@ -56,7 +56,16 @@ const RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(20);
 /// files and metadata, and HEADs images, so two minutes is generous.
 /// A timeout is a transient failure: the vendor is retried, then keeps
 /// its previous files.
-const CONNECT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+///
+/// The connect timeout is shared evenly among a host's addresses, and a
+/// mirror with one dead host costs that share on every connection that
+/// tries it first (connections are not reused; see `http_client_with`).
+/// `cloud.debian.org` has two hosts, one of which accepted no
+/// connections on 2026-10-07: at 30 s each such connection lost 15 s,
+/// making Debian's job about 75 s. A healthy host connects in well
+/// under a second, so 10 s (5 s per address for two) still leaves
+/// plenty of room.
+const CONNECT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
 const REQUEST_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(120);
 
 const USER_AGENT: &str =
