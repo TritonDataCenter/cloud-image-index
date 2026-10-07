@@ -35,6 +35,7 @@ use std::process::ExitCode;
 use anyhow::{Context, Result};
 use api::{Build, BuildList, Distro, OsFamily, Release};
 use clap::{Parser, Subcommand};
+use generate::lifecycle;
 use generate::policy::{self, Candidate};
 use generate::{
     HeadInfo, OnResolveFailure, artifact, build, digests, fail_if_transient, fill_from_previous,
@@ -237,6 +238,58 @@ async fn build_for(
     Ok(Some(build(image, artifact, now)))
 }
 
+/// Fetch endoflife.date's cycles for one product.
+async fn fetch_cycles(http: &reqwest::Client, product: &str) -> Result<Vec<lifecycle::Cycle>> {
+    let url = lifecycle::product_url(product);
+    let body = http
+        .get(&url)
+        .send()
+        .await
+        .with_context(|| format!("GET {url}"))?
+        .error_for_status()
+        .with_context(|| format!("status from {url}"))?
+        .text()
+        .await
+        .with_context(|| format!("read body of {url}"))?;
+    lifecycle::parse_product(&body).with_context(|| format!("parse {url}"))
+}
+
+/// Prune releases endoflife.date says have ended from `entries` (see
+/// [`lifecycle`]).
+///
+/// What happens when endoflife.date cannot be read: the vendor fails,
+/// so it keeps its previous files (after the usual retries, since an
+/// outage is a transient failure). That never re-offers a release a
+/// previous run pruned, at the cost of freezing every covered vendor
+/// while endoflife.date is down. To publish without pruning instead,
+/// replace the `Err(e) => return Err(..)` arm below with a warning and
+/// `return Ok(())`: vendors then update, and releases that have ended
+/// but that the vendor still lists may briefly come back.
+async fn apply_lifecycle(
+    http: &reqwest::Client,
+    vendor: Vendor,
+    entries: &mut [VersionEntry],
+    now: chrono::DateTime<chrono::Utc>,
+) -> Result<()> {
+    let Some(product) = lifecycle::product(vendor) else {
+        return Ok(());
+    };
+    let cycles = match fetch_cycles(http, product).await {
+        Ok(cycles) => cycles,
+        Err(e) => {
+            return Err(e.context(format!(
+                "{vendor}: cannot read endoflife.date to prune ended releases, keeping \
+                 previous files (to publish without pruning instead, see apply_lifecycle \
+                 in tools/generate/src/main.rs)"
+            )));
+        }
+    };
+    for note in lifecycle::prune(vendor, entries, &cycles, now.date_naive()) {
+        eprintln!("note: {note}");
+    }
+    Ok(())
+}
+
 async fn generate_vendor(
     http: &reqwest::Client,
     vendor: Vendor,
@@ -245,10 +298,11 @@ async fn generate_vendor(
     problems: &mut Problems,
 ) -> Result<(Distro, Vec<BuildList>)> {
     let profile = resolvers::lookup(vendor);
-    let entries: Vec<VersionEntry> = profile
+    let mut entries: Vec<VersionEntry> = profile
         .list_versions(http)
         .await
         .with_context(|| format!("{vendor}: list versions"))?;
+    apply_lifecycle(http, vendor, &mut entries, now).await?;
 
     // Resolve every included entry and check the vendor serves its
     // image before planning, so aliases only land on releases that make

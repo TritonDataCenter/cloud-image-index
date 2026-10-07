@@ -15,8 +15,8 @@
 //! - `<file>.SHA256SUM` — BSD-traditional `SHA256 (filename) = hex`
 //! - rolling `<n>-latest.x86_64.qcow2` pointer alongside
 //!
-//! We list the directory, pick the highest dated build by lex sort
-//! (the `<YYYYMMDD>.<n>` shape sorts correctly), then fetch the
+//! We list the directory, pick the highest dated build
+//! (`<YYYYMMDD>.<n>`, numbers compared as numbers), then fetch the
 //! sidecar at resolve time so the upstream sha256 is known at
 //! metadata time.
 
@@ -125,7 +125,7 @@ fn find_latest_dated(body: &str, stream: &str) -> Option<String> {
             middle != "latest"
         })
         .collect();
-    candidates.sort();
+    candidates.sort_by(|a, b| crate::vendor::natural_cmp(a, b));
     candidates.dedup();
     candidates.last().map(|s| s.to_string())
 }
@@ -184,6 +184,18 @@ mod tests {
         assert_eq!(
             find_latest_dated(body, "9").unwrap(),
             "CentOS-Stream-GenericCloud-9-20260504.0.x86_64.qcow2"
+        );
+    }
+
+    #[test]
+    fn find_latest_dated_orders_build_numbers_numerically() {
+        let body = r#"
+            <a href="CentOS-Stream-GenericCloud-9-20260504.9.x86_64.qcow2">…</a>
+            <a href="CentOS-Stream-GenericCloud-9-20260504.10.x86_64.qcow2">…</a>
+        "#;
+        assert_eq!(
+            find_latest_dated(body, "9").unwrap(),
+            "CentOS-Stream-GenericCloud-9-20260504.10.x86_64.qcow2"
         );
     }
 

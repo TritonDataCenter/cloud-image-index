@@ -11,6 +11,11 @@
 //! `subvariant=Cloud_Base`. The same JSON includes the upstream
 //! `sha256`, so we get a pinned-hash verifier without a second
 //! roundtrip — same shape as Ubuntu Simple Streams.
+//!
+//! `releases.json` keeps listing a version for a while after its end of
+//! life, so whether a release is still supported, and until when, comes
+//! from Fedora's update system, Bodhi
+//! (`https://bodhi.fedoraproject.org/releases/F<n>`).
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
@@ -18,6 +23,29 @@ use serde::Deserialize;
 use crate::vendor::VersionEntry;
 
 const RELEASES_URL: &str = "https://fedoraproject.org/releases.json";
+const BODHI_RELEASES_URL: &str = "https://bodhi.fedoraproject.org/releases/";
+
+/// A release's lifecycle as Bodhi reports it.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct Lifecycle {
+    /// `pending`, `frozen`, `current` or `archived` (end of life).
+    pub state: String,
+    pub eol: Option<chrono::NaiveDate>,
+}
+
+/// Bodhi's lifecycle for release `version` (e.g. `44`).
+pub async fn fetch_lifecycle(http: &reqwest::Client, version: &str) -> Result<Lifecycle> {
+    let url = format!("{BODHI_RELEASES_URL}F{version}");
+    http.get(&url)
+        .send()
+        .await
+        .with_context(|| format!("GET {url}"))?
+        .error_for_status()
+        .with_context(|| format!("status from {url}"))?
+        .json()
+        .await
+        .with_context(|| format!("parse {url}"))
+}
 
 #[derive(Debug, Deserialize)]
 pub struct Entry {
@@ -73,9 +101,8 @@ pub fn token_for(version: &str) -> String {
 }
 
 /// Every Cloud_Base x86_64 qcow2 version in `releases.json`, newest
-/// first (a pre-release before the release it precedes). The feed only
-/// carries actively-shipping versions; pre-releases are not supported.
-pub fn catalog(entries: &[Entry]) -> Vec<VersionEntry> {
+/// first (a pre-release before the release it precedes).
+fn feed_versions(entries: &[Entry]) -> Vec<&str> {
     let mut versions: Vec<&str> = entries
         .iter()
         .filter(|e| is_cloud_base_qcow2(e))
@@ -84,21 +111,50 @@ pub fn catalog(entries: &[Entry]) -> Vec<VersionEntry> {
     versions.sort_by_key(|v| std::cmp::Reverse((version_number(v), is_pre_release(v))));
     versions.dedup();
     versions
+}
+
+/// The feed's release (not pre-release) versions: the ones whose
+/// lifecycle [`catalog`] needs.
+pub fn release_versions(entries: &[Entry]) -> Vec<String> {
+    feed_versions(entries)
+        .into_iter()
+        .filter(|v| !is_pre_release(v))
+        .map(str::to_string)
+        .collect()
+}
+
+/// The version list: every feed version, newest first. A release is
+/// supported until Bodhi archives it, and takes Bodhi's end-of-life
+/// date; `lifecycles` must describe every release (see
+/// [`release_versions`]). Pre-releases are not supported.
+pub fn catalog(
+    entries: &[Entry],
+    lifecycles: &std::collections::BTreeMap<String, Lifecycle>,
+) -> Result<Vec<VersionEntry>> {
+    feed_versions(entries)
         .into_iter()
         .map(|v| {
             let token = token_for(v);
-            VersionEntry {
+            let (supported, eol_date) = if is_pre_release(v) {
+                (false, None)
+            } else {
+                let life = lifecycles
+                    .get(v)
+                    .with_context(|| format!("fedora: no Bodhi lifecycle for {v}"))?;
+                (life.state != "archived", life.eol)
+            };
+            Ok(VersionEntry {
                 series: format!("f{token}"),
                 version: v.to_string(),
                 title: format!("Fedora {v}"),
-                eol_date: None,
-                supported: !is_pre_release(v),
+                eol_date,
+                supported,
                 lts: false,
                 // `45 Beta` -> `beta`
                 dev: v.split_once(' ').map(|(_, label)| label.to_lowercase()),
                 channel: false,
                 token,
-            }
+            })
         })
         .collect()
 }
@@ -318,9 +374,63 @@ mod tests {
         entries
     }
 
+    fn lifecycles() -> std::collections::BTreeMap<String, Lifecycle> {
+        let at = |s: &str| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok();
+        [
+            ("42", "archived", "2026-05-27"),
+            ("43", "current", "2026-12-02"),
+            ("44", "current", "2027-06-02"),
+        ]
+        .into_iter()
+        .map(|(v, state, eol)| {
+            (
+                v.to_string(),
+                Lifecycle {
+                    state: state.to_string(),
+                    eol: at(eol),
+                },
+            )
+        })
+        .collect()
+    }
+
+    #[test]
+    fn catalog_takes_support_and_eol_from_bodhi() {
+        // releases.json still listed 42 after its end of life.
+        let got: Vec<(String, bool, Option<chrono::NaiveDate>)> =
+            catalog(&sample_with_beta(), &lifecycles())
+                .unwrap()
+                .into_iter()
+                .map(|e| (e.token, e.supported, e.eol_date))
+                .collect();
+        let at = |s: &str| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok();
+        assert_eq!(
+            got,
+            vec![
+                ("45_Beta".to_string(), false, None),
+                ("44".to_string(), true, at("2027-06-02")),
+                ("43".to_string(), true, at("2026-12-02")),
+                ("42".to_string(), false, at("2026-05-27")),
+            ]
+        );
+    }
+
+    #[test]
+    fn catalog_fails_for_a_release_bodhi_did_not_describe() {
+        let mut known = lifecycles();
+        known.remove("43");
+        assert!(catalog(&sample_with_beta(), &known).is_err());
+    }
+
+    #[test]
+    fn release_versions_are_the_ones_needing_a_lifecycle() {
+        assert_eq!(release_versions(&sample_with_beta()), ["44", "43", "42"]);
+    }
+
     #[test]
     fn catalog_lists_pre_releases_first_with_path_safe_tokens_unsupported() {
-        let got: Vec<(String, bool, String)> = catalog(&sample_with_beta())
+        let got: Vec<(String, bool, String)> = catalog(&sample_with_beta(), &lifecycles())
+            .unwrap()
             .into_iter()
             .map(|e| (e.token, e.supported, e.title))
             .collect();
@@ -330,7 +440,7 @@ mod tests {
                 ("45_Beta".to_string(), false, "Fedora 45 Beta".to_string()),
                 ("44".to_string(), true, "Fedora 44".to_string()),
                 ("43".to_string(), true, "Fedora 43".to_string()),
-                ("42".to_string(), true, "Fedora 42".to_string()),
+                ("42".to_string(), false, "Fedora 42".to_string()),
             ]
         );
     }
@@ -350,7 +460,8 @@ mod tests {
 
     #[test]
     fn pre_releases_are_the_dev_channel() {
-        let dev: Vec<(String, Option<String>)> = catalog(&sample_with_beta())
+        let dev: Vec<(String, Option<String>)> = catalog(&sample_with_beta(), &lifecycles())
+            .unwrap()
             .into_iter()
             .map(|e| (e.token, e.dev))
             .collect();

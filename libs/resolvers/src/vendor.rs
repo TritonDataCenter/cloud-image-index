@@ -33,6 +33,39 @@ pub mod smartos;
 pub mod talos;
 pub mod ubuntu;
 
+/// Compare two vendor file or directory names so that runs of digits
+/// compare as numbers: `9.10` sorts after `9.9`, and `Build19.143`
+/// after `Build19.99`. Plain string order gets both wrong once a
+/// number gains a digit. Used to pick a vendor's newest build from a
+/// listing.
+pub(crate) fn natural_cmp(a: &str, b: &str) -> std::cmp::Ordering {
+    use std::cmp::Ordering;
+    let (mut a, mut b) = (a, b);
+    loop {
+        let (Some(ca), Some(cb)) = (a.chars().next(), b.chars().next()) else {
+            return a.len().cmp(&b.len());
+        };
+        let ord = if ca.is_ascii_digit() && cb.is_ascii_digit() {
+            let run = |s: &str| s.find(|c: char| !c.is_ascii_digit()).unwrap_or(s.len());
+            let (na, nb) = (run(a), run(b));
+            let (da, db) = (&a[..na], &b[..nb]);
+            let (ta, tb) = (da.trim_start_matches('0'), db.trim_start_matches('0'));
+            let ord = ta.len().cmp(&tb.len()).then(ta.cmp(tb)).then(na.cmp(&nb));
+            a = &a[na..];
+            b = &b[nb..];
+            ord
+        } else {
+            let ord = ca.cmp(&cb);
+            a = &a[ca.len_utf8()..];
+            b = &b[cb.len_utf8()..];
+            ord
+        };
+        if ord != Ordering::Equal {
+            return ord;
+        }
+    }
+}
+
 /// Built-in vendor profiles. Driven by clap's `ValueEnum` so the CLI
 /// help auto-lists supported vendors and validates the argument
 /// before any I/O. The variant→string mapping is derived from
@@ -444,6 +477,19 @@ pub fn lookup(vendor: Vendor) -> Box<dyn VendorProfile> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn natural_cmp_orders_digit_runs_as_numbers() {
+        use std::cmp::Ordering::*;
+        assert_eq!(natural_cmp("9.10-2026", "9.9-2026"), Greater);
+        assert_eq!(natural_cmp("Build19.143", "Build19.99"), Greater);
+        assert_eq!(natural_cmp("20260504.10", "20260504.9"), Greater);
+        assert_eq!(natural_cmp("r151054r", "r151058"), Less);
+        assert_eq!(natural_cmp("a1", "a1"), Equal);
+        assert_eq!(natural_cmp("a1", "a1b"), Less);
+        assert_eq!(natural_cmp("a01", "a1"), Greater, "ties broken, not equal");
+        assert_eq!(natural_cmp("abc", "abd"), Less);
+    }
 
     /// The default image flavour each built-in profile resolves to,
     /// named from the vendor's own file naming (see the resolved URLs

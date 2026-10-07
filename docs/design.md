@@ -91,6 +91,7 @@ one at the same level (it rejects `/v1/index.json` beside
 
 ```
 index.html                                         # landing page for people (not in the OpenAPI document)
+docs/index.html                                    # API documentation (Swagger UI; not in the OpenAPI document)
 v1/index.json                                      # list of distros
 v1/openapi.json                                    # the OpenAPI document describing this tree
 v1/distros/<distro>/index.json                     # releases, aliases, osinfo ids
@@ -113,6 +114,16 @@ because it is not part of the format. Its source is
 `apis/cloud-image-index-api/src/index.html`; the generator writes it
 into every tree, and `examples/index.html` must be an exact copy. It
 links to the files by relative paths, so it works at any base URL.
+
+`docs/index.html` is a second unpublished endpoint: Swagger UI
+rendering `v1/openapi.json`, linked from the landing page. Swagger UI is
+loaded from jsDelivr, pinned to an exact version with Subresource
+Integrity hashes (a test checks both), so a changed or compromised CDN
+file is refused rather than run on our site. The page gives Swagger UI
+a server computed from its own address, since the spec's paths start
+at the index root and it names no server. Its source is
+`apis/cloud-image-index-api/src/docs.html`; `examples/docs/index.html`
+must be an exact copy.
 
 `v1/openapi.json` is itself an endpoint of the API, so the document
 lists its own path, and every tree carries the spec of the version that
@@ -293,6 +304,18 @@ Breaking changes go to a new `v2/` tree published alongside `v1/`.
   instead of removing anything. Git history is the record of removed
   builds. **Not built yet**: the second run; a single 404/410 removes
   the build (see "Generator status").
+- **End of life**: the index offers only releases worth installing. A
+  release is offered only if the vendor lists it as supported and
+  endoflife.date does not say it has ended (`isEol`, or its `eolFrom`
+  date has passed). endoflife.date covers 11 of our distros (not Arch,
+  OmniOS, SmartOS or Talos); it only removes releases, never adds one,
+  and nothing from it is published: `eol_date` is the vendor's or empty.
+  It catches what vendor data misses: Oracle, Rocky, Alma, CentOS
+  Stream, FreeBSD and OpenBSD publish no lifecycle the resolvers read,
+  and openSUSE's own feed still called Leap 15.6 stable months after its
+  end. If endoflife.date cannot be read, those vendors fail and keep
+  their previous files; `apply_lifecycle` in `tools/generate/src/main.rs`
+  says how to publish without pruning instead.
 - **Timeouts**: every request has a 30-second connect timeout and a
   2-minute total timeout. A timeout is a transient failure.
 - **Resolver errors**: a resolver that fails on one release with a
@@ -392,10 +415,10 @@ tree. It is a first approximation. Known gaps, as of a full run on 2026-10-05:
 - Every digest records the vendor document it came from. Signatures
   are published where the vendor serves them (Ubuntu, Alma, Rocky 9/10,
   Alpine, Fedora); signing-key URLs are not yet known. EOL dates come
-  only from Alpine and Ubuntu feeds; publish dates only from GitHub
+  only from Alpine and Ubuntu feeds and Fedora's Bodhi; publish dates only from GitHub
   (OpenBSD, Talos `latest`); point releases from Alma, Rocky, Oracle,
-  Alpine and Debian (Debian's describe today's apt point release, which
-  may be newer than the dated build). No osinfo ids (needs a decision on where the ids
+  Alpine and Debian (Debian's only when the dated build is newer than
+  the current apt point release; otherwise it is unknown). No osinfo ids (needs a decision on where the ids
   come from) and no firmware (no vendor states it, beyond Alpine's
   older `uefi` filenames).
 - Vendor servers close idle keep-alive connections, and reusing one
@@ -405,7 +428,7 @@ tree. It is a first approximation. Known gaps, as of a full run on 2026-10-05:
   3 times, 20 seconds apart, before it counts as failed.
 - A single 404/410 removes a release; the two-consecutive-runs rule is
   not implemented, so a release served by some mirrors and not others
-  (Fedora 42) flaps between runs.
+  flaps between runs (as Fedora 42 did after its end of life).
 - Debian lists `stable` and `oldstable` only. `testing` and `unstable`
   have no `Version` in their apt Release files, so they cannot be
   resolved, and there is no `dev` alias for Debian.
@@ -413,8 +436,9 @@ tree. It is a first approximation. Known gaps, as of a full run on 2026-10-05:
   - FreeBSD lists point releases (15.1, 15.0, ...) as separate releases,
     unlike the release-is-the-major-version rule above; grouping them
     needs more than one build per release.
-  - Fedora 42 is still in Fedora's feed but some mirrors no longer serve
-    it (it is moving to `archives.fedoraproject.org`); it needs the
+  - Fedora's `releases.json` keeps listing a release after its end of
+    life, while mirrors stop serving it. Releases Bodhi has archived are
+    left out; their images, on `archives.fedoraproject.org`, need the
     vault handling above.
 
 Resolver problems found on 2026-10-05 and fixed here: Alpine filenames
@@ -437,7 +461,9 @@ in monitor-reef or the second copy.
   potential collaborator.
 - **Canonical Simple Streams**: a static-file image feed format with
   hashes inline; a possible additional output format.
-- **endoflife.date**: the model for "a directory, not a distributor".
+- **endoflife.date**: the model for "a directory, not a distributor",
+  and the source used to prune end-of-life releases (see "Update
+  policy"); its data is MIT licensed.
 - **redhatcloudx/cloud-image-directory-frontend**: an existing Red Hat
   repository by a similar name (last updated 2023-03-30); not yet
   investigated.

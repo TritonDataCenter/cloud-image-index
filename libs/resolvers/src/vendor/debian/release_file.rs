@@ -18,6 +18,10 @@ const RELEASE_BASE_URL: &str = "https://deb.debian.org/debian/dists/";
 pub struct ReleaseInfo {
     pub codename: String,
     pub version: String,
+    /// The day the suite was last released (its `Date:` field); for
+    /// `stable` and `oldstable`, the day of the current point release.
+    /// `None` if absent or unreadable.
+    pub date: Option<chrono::NaiveDate>,
 }
 
 pub async fn fetch(http: &reqwest::Client, suite: &str) -> Result<ReleaseInfo> {
@@ -42,6 +46,7 @@ pub async fn fetch(http: &reqwest::Client, suite: &str) -> Result<ReleaseInfo> {
 pub fn parse(body: &str) -> Result<ReleaseInfo> {
     let mut codename: Option<String> = None;
     let mut version: Option<String> = None;
+    let mut date: Option<chrono::NaiveDate> = None;
     for line in body.lines() {
         if line.starts_with(' ') || line.starts_with('\t') {
             // Continuation / file-list block; we're past the header
@@ -54,15 +59,24 @@ pub fn parse(body: &str) -> Result<ReleaseInfo> {
         match key.trim() {
             "Codename" => codename = Some(value.trim().to_string()),
             "Version" => version = Some(value.trim().to_string()),
+            "Date" => date = parse_date(value),
             _ => {}
-        }
-        if codename.is_some() && version.is_some() {
-            break;
         }
     }
     let codename = codename.ok_or_else(|| anyhow::anyhow!("no Codename field in Release file"))?;
     let version = version.ok_or_else(|| anyhow::anyhow!("no Version field in Release file"))?;
-    Ok(ReleaseInfo { codename, version })
+    Ok(ReleaseInfo {
+        codename,
+        version,
+        date,
+    })
+}
+
+/// The day of a Release file `Date:` value such as
+/// `Sat, 14 Mar 2026 11:25:23 UTC`.
+fn parse_date(value: &str) -> Option<chrono::NaiveDate> {
+    let day: Vec<&str> = value.split_whitespace().skip(1).take(3).collect();
+    chrono::NaiveDate::parse_from_str(&day.join(" "), "%d %b %Y").ok()
 }
 
 /// Best-effort extraction of the major version integer from a
@@ -97,6 +111,13 @@ MD5Sum:
         let info = parse(body).unwrap();
         assert_eq!(info.codename, "trixie");
         assert_eq!(info.version, "13.4");
+        assert_eq!(info.date, chrono::NaiveDate::from_ymd_opt(2026, 3, 14));
+    }
+
+    #[test]
+    fn an_unreadable_date_is_none() {
+        let body = "Codename: bookworm\nVersion: 12.7\nDate: ...\n";
+        assert_eq!(parse(body).unwrap().date, None);
     }
 
     #[test]

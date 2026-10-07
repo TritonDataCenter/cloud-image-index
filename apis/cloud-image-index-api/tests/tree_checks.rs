@@ -196,6 +196,165 @@ fn stale_landing_page_is_caught() -> Result<(), String> {
     s.expect_problem("index.html differs from the page this version generates")
 }
 
+impl Scratch {
+    fn write_json(&self, rel: &str, value: serde_json::Value) -> Result<(), String> {
+        let path = self.0.join(rel);
+        if let Some(dir) = path.parent() {
+            std::fs::create_dir_all(dir).map_err(|e| format!("mkdir {dir:?}: {e}"))?;
+        }
+        let text = serde_json::to_string_pretty(&value).map_err(|e| e.to_string())?;
+        std::fs::write(&path, text).map_err(|e| format!("write {path:?}: {e}"))
+    }
+
+    fn read_json(&self, rel: &str) -> Result<serde_json::Value, String> {
+        let path = self.0.join(rel);
+        let text = std::fs::read_to_string(&path).map_err(|e| format!("read {path:?}: {e}"))?;
+        serde_json::from_str(&text).map_err(|e| format!("parse {path:?}: {e}"))
+    }
+}
+
+#[test]
+fn alias_file_for_a_distro_not_in_the_index_is_caught() -> Result<(), String> {
+    let s = Scratch::new("alias-ghost-distro")?;
+    let mut list = s.read_json("v1/distros/talos/aliases/latest.json")?;
+    list["distro"] = "ghost".into();
+    s.write_json("v1/distros/ghost/aliases/latest.json", list)?;
+    s.expect_problem("ghost: alias file Latest for a distro not in the index")
+}
+
+#[test]
+fn archive_for_a_distro_not_in_the_index_is_caught() -> Result<(), String> {
+    let s = Scratch::new("archive-ghost-distro")?;
+    let mut list = s.read_json("v1/distros/rocky/releases/9/archive.json")?;
+    list["distro"] = "ghost".into();
+    s.write_json("v1/distros/ghost/releases/9/archive.json", list)?;
+    s.expect_problem("ghost/9: archive for a release not listed in the distro index")
+}
+
+#[test]
+fn archive_for_an_unlisted_release_is_caught() -> Result<(), String> {
+    let s = Scratch::new("archive-unlisted-release")?;
+    let mut list = s.read_json("v1/distros/rocky/releases/9/archive.json")?;
+    list["release"] = "7".into();
+    s.write_json("v1/distros/rocky/releases/7/archive.json", list)?;
+    s.expect_problem("rocky/7: archive for a release not listed in the distro index")
+}
+
+#[test]
+fn distro_summary_disagreeing_with_the_distro_index_is_caught() -> Result<(), String> {
+    let s = Scratch::new("summary-differs")?;
+    s.edit_json("v1/index.json", |v| {
+        if let Some(list) = v["distros"].as_array_mut() {
+            for d in list.iter_mut().filter(|d| d["id"] == "talos") {
+                d["os_family"] = "bsd".into();
+                d["homepage"] = "https://elsewhere.example/".into();
+            }
+        }
+    })?;
+    s.expect_problem("talos: os_family differs from v1/index.json")?;
+    s.expect_problem("talos: homepage differs from v1/index.json")
+}
+
+#[test]
+fn release_listed_twice_is_caught() -> Result<(), String> {
+    let s = Scratch::new("release-twice")?;
+    s.edit_json("v1/distros/rocky/index.json", |v| {
+        if let Some(list) = v["releases"].as_array_mut() {
+            let last = list[list.len() - 1].clone();
+            list.push(last);
+        }
+    })?;
+    s.expect_problem("rocky: release \"8\" listed more than once")
+}
+
+#[test]
+fn build_listed_twice_is_caught() -> Result<(), String> {
+    let s = Scratch::new("build-twice")?;
+    s.edit_json("v1/distros/rocky/releases/8/index.json", |v| {
+        if let Some(list) = v["builds"].as_array_mut() {
+            let first = list[0].clone();
+            list.push(first);
+        }
+    })?;
+    s.expect_problem("rocky/8/8.10-20240528.0: build listed more than once")
+}
+
+#[test]
+fn artifact_listed_twice_is_caught() -> Result<(), String> {
+    let s = Scratch::new("artifact-twice")?;
+    s.edit_json("v1/distros/rocky/releases/8/index.json", |v| {
+        if let Some(list) = v["builds"][0]["artifacts"].as_array_mut() {
+            let first = list[0].clone();
+            list.push(first);
+        }
+    })?;
+    s.expect_problem("artifact base/x86_64/qcow2 listed more than once")
+}
+
+#[test]
+fn release_without_builds_is_caught() -> Result<(), String> {
+    let s = Scratch::new("no-builds")?;
+    s.edit_json("v1/distros/rocky/releases/8/index.json", |v| {
+        v["builds"] = serde_json::json!([]);
+    })?;
+    s.expect_problem("rocky/8: no builds")
+}
+
+#[test]
+fn archived_artifact_without_locations_is_caught() -> Result<(), String> {
+    let s = Scratch::new("archive-no-locations")?;
+    s.edit_json("v1/distros/rocky/releases/9/archive.json", |v| {
+        v["builds"][0]["artifacts"][0]["locations"] = serde_json::json!([]);
+    })?;
+    s.expect_problem("artifact base/x86_64/qcow2 has no locations")
+}
+
+#[test]
+fn dev_alias_without_dev_channel_is_caught() -> Result<(), String> {
+    let s = Scratch::new("dev-no-channel")?;
+    s.edit_json("v1/distros/talos/index.json", |v| {
+        v["releases"][0]["aliases"] = serde_json::json!(["dev", "latest"]);
+    })?;
+    std::fs::copy(
+        s.0.join("v1/distros/talos/aliases/latest.json"),
+        s.0.join("v1/distros/talos/aliases/dev.json"),
+    )
+    .map_err(|e| e.to_string())?;
+    s.expect_problem("talos: a release holds the dev alias but dev_channel is null")
+}
+
+#[test]
+fn dev_channel_without_dev_alias_is_caught() -> Result<(), String> {
+    let s = Scratch::new("channel-no-dev")?;
+    s.edit_json("v1/distros/talos/index.json", |v| {
+        v["dev_channel"] = "beta".into();
+    })?;
+    s.expect_problem("talos: dev_channel is set but no release holds the dev alias")
+}
+
+#[test]
+fn digest_that_is_not_lowercase_hex_of_the_right_length_is_caught() -> Result<(), String> {
+    let s = Scratch::new("bad-digest")?;
+    s.edit_json("v1/distros/rocky/releases/8/index.json", |v| {
+        v["builds"][0]["artifacts"][0]["integrity"]["digests"][0]["value"] = "ABC123".into();
+    })?;
+    s.expect_problem("digest is not lowercase hex of the right length")
+}
+
+#[test]
+fn missing_docs_page_is_caught() -> Result<(), String> {
+    let s = Scratch::new("docs-missing")?;
+    std::fs::remove_file(s.0.join("docs/index.html")).map_err(|e| e.to_string())?;
+    s.expect_problem("missing docs/index.html")
+}
+
+#[test]
+fn stale_docs_page_is_caught() -> Result<(), String> {
+    let s = Scratch::new("docs-stale")?;
+    std::fs::write(s.0.join("docs/index.html"), "<p>old</p>").map_err(|e| e.to_string())?;
+    s.expect_problem("docs/index.html differs from the page this version generates")
+}
+
 #[test]
 fn lenient_load_reads_files_written_by_other_versions() -> Result<(), String> {
     // An older index lacks fields added since; a newer one has fields this

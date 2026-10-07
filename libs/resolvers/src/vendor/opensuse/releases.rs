@@ -211,7 +211,7 @@ fn pick_cloud_build(entries: &[DirEntry], leap_version: &str) -> Option<String> 
             continue;
         }
         match best {
-            Some(b) if b >= name => {}
+            Some(b) if crate::vendor::natural_cmp(b, name).is_ge() => {}
             _ => best = Some(name),
         }
     }
@@ -289,6 +289,18 @@ mod tests {
         assert_eq!(
             pick_cloud_build(&dir, "15.6").unwrap(),
             "openSUSE-Leap-15.6-Minimal-VM.x86_64-15.6.0-Cloud-Build19.143.qcow2"
+        );
+    }
+
+    #[test]
+    fn pick_cloud_build_orders_build_numbers_numerically() {
+        let dir = entries(&[
+            "Leap-16.0-Minimal-VM.x86_64-Cloud-Build16.143.qcow2",
+            "Leap-16.0-Minimal-VM.x86_64-Cloud-Build16.99.qcow2",
+        ]);
+        assert_eq!(
+            pick_cloud_build(&dir, "16.0").unwrap(),
+            "Leap-16.0-Minimal-VM.x86_64-Cloud-Build16.143.qcow2"
         );
     }
 

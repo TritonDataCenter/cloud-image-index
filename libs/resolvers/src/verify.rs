@@ -422,9 +422,10 @@ pub(super) fn parse_sums_file(body: &str, filename: &str) -> Option<String> {
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
-        let mut parts = line.splitn(2, char::is_whitespace);
-        let hash = parts.next()?.trim();
-        let rest = parts.next()?.trim().trim_start_matches('*');
+        let Some((hash, rest)) = line.split_once(char::is_whitespace) else {
+            continue;
+        };
+        let rest = rest.trim().trim_start_matches('*');
         if rest == filename {
             return Some(hash.to_string());
         }
@@ -510,6 +511,15 @@ SHA256 (FreeBSD-15.0-RELEASE-amd64-BASIC-CLOUDINIT-ufs.raw.xz) = aaaaaaaaaaaaaaa
             Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string())
         );
         assert_eq!(parse_bsd_sums_file(body, "missing.raw.xz"), None);
+    }
+
+    #[test]
+    fn parse_sums_file_skips_lines_without_a_filename() {
+        // e.g. the signature block of a clear-signed sums file.
+        let body = "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA256\n\n\
+                    iQIzBAEBCAAdFiEE\n\
+                    abc123  foo.img\n";
+        assert_eq!(parse_sums_file(body, "foo.img"), Some("abc123".to_string()));
     }
 
     #[test]

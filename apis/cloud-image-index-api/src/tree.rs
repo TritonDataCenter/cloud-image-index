@@ -26,8 +26,8 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 use crate::{
-    Alias, BuildList, ChecksumFormat, Compression, Distro, DistroList, ImageFormat, LocationKind,
-    SignatureKind,
+    Alias, BuildList, ChecksumFormat, Compression, DigestAlgorithm, Distro, DistroList,
+    ImageFormat, LocationKind, SignatureKind,
 };
 
 /// An index tree as read from disk.
@@ -38,6 +38,8 @@ pub struct Tree {
     pub openapi: Option<serde_json::Value>,
     /// `index.html`
     pub index_html: Option<String>,
+    /// `docs/index.html`
+    pub docs_html: Option<String>,
     pub distros: BTreeMap<String, Distro>,
     /// (distro, release) -> current builds
     pub releases: BTreeMap<(String, String), BuildList>,
@@ -152,6 +154,9 @@ fn load_with(root: &Path, strictness: Strictness) -> Result<Tree, Vec<String>> {
             ["index.html"] => std::fs::read_to_string(&path)
                 .map(|v| tree.index_html = Some(v))
                 .map_err(|e| format!("read {path:?}: {e}")),
+            ["docs", "index.html"] => std::fs::read_to_string(&path)
+                .map(|v| tree.docs_html = Some(v))
+                .map_err(|e| format!("read {path:?}: {e}")),
             ["v1", "openapi.json"] => read_file(&path, strictness).map(|v| tree.openapi = Some(v)),
             ["v1", "distros", distro, "index.json"] => read_file(&path, strictness).map(|v| {
                 tree.distros.insert((*distro).to_string(), v);
@@ -207,6 +212,16 @@ pub fn check(tree: &Tree) -> Vec<String> {
         ),
         Some(_) => {}
     }
+    match &tree.docs_html {
+        None => problems.push("missing docs/index.html".to_string()),
+        Some(page) if page != crate::DOCS_HTML => problems.push(
+            "docs/index.html differs from the page this version generates (after \
+             changing it, copy apis/cloud-image-index-api/src/docs.html to \
+             examples/docs/index.html)"
+                .to_string(),
+        ),
+        Some(_) => {}
+    }
     match (&tree.openapi, crate::openapi()) {
         (None, _) => problems.push("missing v1/openapi.json".to_string()),
         (Some(_), Err(e)) => problems.push(e),
@@ -234,10 +249,38 @@ pub fn check(tree: &Tree) -> Vec<String> {
                 distro.id
             ));
         }
-        match distro_list.distros.iter().find(|d| &d.id == id) {
-            Some(summary) if summary.name != distro.name => {
+        if let Some(summary) = distro_list.distros.iter().find(|d| &d.id == id) {
+            if summary.name != distro.name {
                 problems.push(format!("{id}: name differs from v1/index.json"));
             }
+            if summary.os_family != distro.os_family {
+                problems.push(format!("{id}: os_family differs from v1/index.json"));
+            }
+            if summary.homepage != distro.homepage {
+                problems.push(format!("{id}: homepage differs from v1/index.json"));
+            }
+        }
+
+        let mut seen_releases = BTreeSet::new();
+        for release in &distro.releases {
+            if !seen_releases.insert(release.id.as_str()) {
+                problems.push(format!(
+                    "{id}: release {:?} listed more than once",
+                    release.id
+                ));
+            }
+        }
+        let holds_dev = distro
+            .releases
+            .iter()
+            .any(|r| r.aliases.contains(&Alias::Dev));
+        match (holds_dev, &distro.dev_channel) {
+            (true, None) => problems.push(format!(
+                "{id}: a release holds the dev alias but dev_channel is null"
+            )),
+            (false, Some(_)) => problems.push(format!(
+                "{id}: dev_channel is set but no release holds the dev alias"
+            )),
             _ => {}
         }
 
@@ -276,6 +319,18 @@ pub fn check(tree: &Tree) -> Vec<String> {
                 ));
             }
         }
+    }
+
+    for (alias_distro, alias) in tree.aliases.keys() {
+        if !tree.distros.contains_key(alias_distro) {
+            problems.push(format!(
+                "{alias_distro}: alias file {alias:?} for a distro not in the index"
+            ));
+        }
+    }
+
+    for ((distro, release), list) in tree.releases.iter().chain(&tree.archives) {
+        check_builds(&mut problems, distro, release, list);
     }
 
     for ((distro, release), list) in &tree.releases {
@@ -320,6 +375,15 @@ pub fn check(tree: &Tree) -> Vec<String> {
 
     for ((distro, release), list) in &tree.archives {
         check_build_list_names(&mut problems, distro, release, list);
+        if !tree
+            .distros
+            .get(distro)
+            .is_some_and(|d| d.releases.iter().any(|r| &r.id == release))
+        {
+            problems.push(format!(
+                "{distro}/{release}: archive for a release not listed in the distro index"
+            ));
+        }
         for build in &list.builds {
             for artifact in &build.artifacts {
                 if artifact
@@ -337,6 +401,56 @@ pub fn check(tree: &Tree) -> Vec<String> {
     }
 
     problems
+}
+
+/// Rules for one build list, current or archived: it has builds, each
+/// build and each artifact within a build is listed once, every
+/// artifact can be downloaded from somewhere, and digests are well
+/// formed.
+fn check_builds(problems: &mut Vec<String>, distro: &str, release: &str, list: &BuildList) {
+    if list.builds.is_empty() {
+        problems.push(format!("{distro}/{release}: no builds"));
+    }
+    let mut seen_builds = BTreeSet::new();
+    for build in &list.builds {
+        let at = format!("{distro}/{release}/{}", build.build);
+        if !seen_builds.insert(build.build.as_str()) {
+            problems.push(format!("{at}: build listed more than once"));
+        }
+        let mut seen_artifacts = BTreeSet::new();
+        for artifact in &build.artifacts {
+            let format = serde_json::to_value(&artifact.format)
+                .ok()
+                .and_then(|v| v.as_str().map(str::to_string))
+                .unwrap_or_default();
+            let name = format!(
+                "{}/{}/{format}",
+                artifact.variant.as_deref().unwrap_or("-"),
+                artifact.arch
+            );
+            if !seen_artifacts.insert(name.clone()) {
+                problems.push(format!("{at}: artifact {name} listed more than once"));
+            }
+            if artifact.locations.is_empty() {
+                problems.push(format!("{at}: artifact {name} has no locations"));
+            }
+            for digest in artifact.integrity.iter().flat_map(|i| &i.digests) {
+                let len = match digest.algorithm {
+                    DigestAlgorithm::Sha256 => 64,
+                    DigestAlgorithm::Sha512 => 128,
+                };
+                let hex = digest
+                    .value
+                    .chars()
+                    .all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c));
+                if !hex || digest.value.len() != len {
+                    problems.push(format!(
+                        "{at}: artifact {name} digest is not lowercase hex of the right length"
+                    ));
+                }
+            }
+        }
+    }
 }
 
 /// Clients accept enum values they do not know, but the index itself

@@ -98,3 +98,64 @@ fn landing_page_links_are_relative() {
         assert!(page.contains(link), "missing {link}");
     }
 }
+
+/// The API docs page is a file of the tree but, like the landing page,
+/// not part of the format.
+#[test]
+fn docs_page_is_not_in_the_published_document() -> Result<(), String> {
+    let spec = openapi()?;
+    assert!(spec.pointer("/paths/~1docs~1index.html").is_none());
+    Ok(())
+}
+
+/// The docs page renders the published spec, found relative to itself.
+#[test]
+fn docs_page_reads_the_published_spec() {
+    assert!(cloud_image_index_api::DOCS_HTML.contains("\"../v1/openapi.json\""));
+}
+
+/// Every script and stylesheet the docs page loads from elsewhere is
+/// pinned to an exact version and checked against a hash, so a changed
+/// or compromised CDN file is refused rather than run on our site.
+#[test]
+fn docs_page_pins_and_hash_checks_everything_it_loads() {
+    let page = cloud_image_index_api::DOCS_HTML;
+    let mut external = 0;
+    for tag in page
+        .split('<')
+        .filter(|t| t.starts_with("script") || t.starts_with("link"))
+    {
+        let tag = tag.split('>').next().unwrap_or_default();
+        let Some(at) = tag.find("https://") else {
+            continue;
+        };
+        external += 1;
+        let url = tag[at..].split('"').next().unwrap_or_default();
+        let version = url
+            .split_once('@')
+            .and_then(|(_, rest)| rest.split('/').next())
+            .unwrap_or_default();
+        let parts: Vec<&str> = version.split('.').collect();
+        assert!(
+            parts.len() == 3
+                && parts
+                    .iter()
+                    .all(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit())),
+            "{url} is not pinned to an exact version"
+        );
+        assert!(
+            tag.contains("integrity=\"sha384-"),
+            "{url} has no integrity hash"
+        );
+        assert!(
+            tag.contains("crossorigin=\"anonymous\""),
+            "{url} lacks crossorigin"
+        );
+    }
+    assert!(external > 0, "expected the page to load Swagger UI");
+}
+
+#[test]
+fn landing_page_links_to_the_docs_page() {
+    assert!(cloud_image_index_api::INDEX_HTML.contains("href=\"docs/\""));
+}

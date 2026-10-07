@@ -471,6 +471,10 @@ pub struct ReleasePath {
 /// the files by relative paths, so it works at any base URL.
 pub const INDEX_HTML: &str = include_str!("index.html");
 
+/// The API documentation page published as `docs/index.html`: Swagger UI
+/// rendering `v1/openapi.json`.
+pub const DOCS_HTML: &str = include_str!("docs.html");
+
 /// The OpenAPI document describing the file tree. The index publishes
 /// it as `v1/openapi.json`, and the tree checks require the published
 /// copy to equal this.
@@ -492,6 +496,15 @@ pub trait CloudImageIndexApi {
     /// Unpublished: it is part of the tree but not of the format.
     #[endpoint { method = GET, path = "/index.html", unpublished = true }]
     async fn index_html(
+        rqctx: RequestContext<Self::Context>,
+    ) -> Result<http::Response<Body>, HttpError>;
+
+    /// Browsable documentation of this API, rendered from the OpenAPI
+    /// document.
+    ///
+    /// Unpublished: it is part of the tree but not of the format.
+    #[endpoint { method = GET, path = "/docs/index.html", unpublished = true }]
+    async fn docs_html(
         rqctx: RequestContext<Self::Context>,
     ) -> Result<http::Response<Body>, HttpError>;
 
