@@ -45,7 +45,9 @@ defaults:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: triton
+      labels: [self-hosted, APP]
     timeout-minutes: 30
     outputs:
       vendors: ${{ steps.vendors.outputs.vendors }}
@@ -80,7 +82,9 @@ jobs:
 
   vendor:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on:
+      group: triton
+      labels: [self-hosted, APP]
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -114,7 +118,9 @@ jobs:
     # Assemble whatever succeeded, even when some vendors failed, but not
     # after the run was cancelled.
     if: ${{ !cancelled() && needs.build.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on:
+      group: triton
+      labels: [self-hosted, APP]
     timeout-minutes: 15
     permissions:
       contents: write
@@ -175,7 +181,9 @@ jobs:
     # requires every earlier job to have succeeded, and one failed
     # vendor would stop the deployment of what assemble committed.
     if: ${{ !cancelled() && needs.assemble.result == 'success' && (needs.assemble.outputs.changed == 'true' || github.event_name == 'workflow_dispatch') }}
-    runs-on: ubuntu-latest
+    runs-on:
+      group: triton
+      labels: [self-hosted, APP]
     timeout-minutes: 10
     permissions:
       contents: read

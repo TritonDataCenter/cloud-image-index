@@ -35,7 +35,11 @@ env:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    # Pushes and pull requests from branches in this repository run on
+    # the self-hosted triton runners. Pull requests from forks stay on
+    # GitHub-hosted runners: this repository is public, and a fork's code
+    # must not run on self-hosted machines.
+    runs-on: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('{"group":"triton","labels":["self-hosted","APP"]}') || 'ubuntu-latest' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
