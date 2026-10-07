@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<!--
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+Copyright 2026 Edgecast Cloud LLC.
+
+Swagger UI (Apache-2.0) is loaded from jsDelivr, pinned to an exact
+version and checked against its hash; the hashes were computed from the
+files in the swagger-ui-dist release tarball on npm. To upgrade, change
+the version in both URLs and replace both integrity values.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cloud-image-index API</title>
+<link rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.33.1/swagger-ui.css"
+  integrity="sha384-Ov4/wv3j2bmct8cDc5X4ngJZohVPzEmc6uDPH8WeljUxO5vtoykvMEfbu9Vh6RaW"
+  crossorigin="anonymous">
+</head>
+<body>
+<p style="font-family: system-ui, sans-serif; margin: 1rem;">
+  <a href="../">cloud-image-index</a> &middot;
+  <a href="../v1/openapi.json"><code>v1/openapi.json</code></a>
+</p>
+<div id="swagger-ui"></div>
+<script
+  src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.33.1/swagger-ui-bundle.js"
+  integrity="sha384-ZPehFMQommnnuaZ4rpxgkgTT2DKFVp4hZC/7pLit+9Lek9T1YGSo23eHFbvNkXkw"
+  crossorigin="anonymous"></script>
+<script>
+  // The spec's paths start at the index's root (`/v1/...`), which is
+  // this page's parent directory, wherever the index is served from.
+  // The spec names no server, so add one here rather than send "Try it
+  // out" requests to the root of the host.
+  const root = new URL("..", window.location.href).href.replace(/\/$/, "");
+  fetch("../v1/openapi.json")
+    .then((response) => response.json())
+    .then((spec) => {
+      spec.servers = [{ url: root }];
+      SwaggerUIBundle({ spec, dom_id: "#swagger-ui" });
+    });
+</script>
+</body>
+</html>

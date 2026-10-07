@@ -3,10 +3,10 @@
   "release": "9",
   "builds": [
     {
-      "build": "20260930.0",
+      "build": "20261006.0",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-10-06T20:41:55.391433282Z",
+      "first_seen": "2026-10-07T11:44:46.379903101Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 1275985920,
+          "size": 1276248064,
           "locations": [
             {
-              "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20260930.0.x86_64.qcow2",
+              "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261006.0.x86_64.qcow2",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,18 +32,18 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "a7f804379970e055d5d5ff408787f0d984b4d640e261473ff58d83561bd19433",
+                "value": "bc181b85ceaac9bc48651faab29ca0707fc7ff597854adaef1f0fa5f144ac01f",
                 "source": {
-                  "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20260930.0.x86_64.qcow2.SHA256SUM",
+                  "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261006.0.x86_64.qcow2.SHA256SUM",
                   "format": "bsd",
-                  "filename": "CentOS-Stream-GenericCloud-9-20260930.0.x86_64.qcow2"
+                  "filename": "CentOS-Stream-GenericCloud-9-20261006.0.x86_64.qcow2"
                 }
               }
             ],
             "signatures": [],
             "http": {
-              "last_modified": "Thu, 01 Oct 2026 01:11:41 GMT",
-              "etag": "\"4c0e0000-65cbd1933765f\""
+              "last_modified": "Wed, 07 Oct 2026 06:20:18 GMT",
+              "etag": "\"4c120000-65d3a1bef2813\""
             }
           }
         }

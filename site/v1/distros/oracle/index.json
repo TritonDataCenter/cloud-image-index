@@ -30,14 +30,6 @@
       "aliases": [],
       "eol_date": null,
       "osinfo": null
-    },
-    {
-      "id": "7",
-      "version": "7.9-b257",
-      "title": "Oracle Linux 7.9",
-      "aliases": [],
-      "eol_date": null,
-      "osinfo": null
     }
   ]
 }

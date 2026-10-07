@@ -22,7 +22,7 @@
       "aliases": [
         "latest"
       ],
-      "eol_date": null,
+      "eol_date": "2027-06-02",
       "osinfo": null
     },
     {
@@ -30,15 +30,7 @@
       "version": "43",
       "title": "Fedora 43",
       "aliases": [],
-      "eol_date": null,
-      "osinfo": null
-    },
-    {
-      "id": "42",
-      "version": "42",
-      "title": "Fedora 42",
-      "aliases": [],
-      "eol_date": null,
+      "eol_date": "2026-12-02",
       "osinfo": null
     }
   ]
