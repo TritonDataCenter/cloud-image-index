@@ -26,7 +26,26 @@ use super::{
 };
 use crate::verify::{Sha256Pinned, SumsStyle};
 
-pub struct Ubuntu;
+/// The Ubuntu profile. It keeps the streams feed (about 18 MB) once
+/// fetched, so listing versions and resolving each release read one
+/// copy instead of fetching it each time. A failed fetch is not kept.
+#[derive(Default)]
+pub struct Ubuntu {
+    streams: tokio::sync::OnceCell<streams::Streams>,
+}
+
+impl Ubuntu {
+    #[cfg(test)]
+    fn with_streams(streams: streams::Streams) -> Self {
+        Ubuntu {
+            streams: tokio::sync::OnceCell::new_with(Some(streams)),
+        }
+    }
+
+    async fn streams(&self, http: &reqwest::Client) -> Result<&streams::Streams> {
+        self.streams.get_or_try_init(|| streams::fetch(http)).await
+    }
+}
 
 #[async_trait]
 impl VendorProfile for Ubuntu {
@@ -35,7 +54,7 @@ impl VendorProfile for Ubuntu {
     }
 
     async fn list_versions(&self, http: &reqwest::Client) -> Result<Vec<VersionEntry>> {
-        Ok(streams::catalog(&streams::fetch(http).await?))
+        Ok(streams::catalog(self.streams(http).await?))
     }
 
     async fn resolve_release(
@@ -43,13 +62,12 @@ impl VendorProfile for Ubuntu {
         release: &str,
         http: &reqwest::Client,
     ) -> Result<ResolvedImage> {
-        resolve_via_streams(release, http).await
+        resolve_via_streams(self.streams(http).await?, release)
     }
 }
 
-async fn resolve_via_streams(release: &str, http: &reqwest::Client) -> Result<ResolvedImage> {
-    let index = streams::fetch(http).await?;
-    let img = streams::resolve(&index, release)?;
+fn resolve_via_streams(index: &streams::Streams, release: &str) -> Result<ResolvedImage> {
+    let img = streams::resolve(index, release)?;
 
     let description = format!(
         "Ubuntu {} ({}) CloudInit NoCloud compatible image. \
@@ -88,4 +106,42 @@ async fn resolve_via_streams(release: &str, http: &reqwest::Client) -> Result<Re
             ..ImageFacts::default()
         },
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A client whose every request fails at once, so a test passes only
+    /// if nothing is fetched.
+    fn offline() -> reqwest::Client {
+        reqwest::Client::builder()
+            .proxy(reqwest::Proxy::all("http://127.0.0.1:9").unwrap_or_else(|e| panic!("{e}")))
+            .build()
+            .unwrap_or_else(|e| panic!("{e}"))
+    }
+
+    #[tokio::test]
+    async fn listing_and_resolving_read_the_feed_the_profile_already_has() {
+        // The feed is 18 MB; one run lists versions and resolves every
+        // release, and must not fetch it for each.
+        let ubuntu = Ubuntu::with_streams(streams::tests::fixture());
+        let http = offline();
+        let versions = ubuntu
+            .list_versions(&http)
+            .await
+            .unwrap_or_else(|e| panic!("{e:#}"));
+        assert!(!versions.is_empty());
+        let image = ubuntu
+            .resolve_release("noble", &http)
+            .await
+            .unwrap_or_else(|e| panic!("{e:#}"));
+        assert_eq!(image.version, "20260301");
+    }
+
+    #[tokio::test]
+    async fn a_profile_without_the_feed_fetches_it() {
+        let err = Ubuntu::default().list_versions(&offline()).await.err();
+        assert!(err.is_some(), "the offline client must have been used");
+    }
 }
