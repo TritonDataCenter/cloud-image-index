@@ -342,6 +342,20 @@ fn digest_that_is_not_lowercase_hex_of_the_right_length_is_caught() -> Result<()
 }
 
 #[test]
+fn missing_docs_page_is_caught() -> Result<(), String> {
+    let s = Scratch::new("docs-missing")?;
+    std::fs::remove_file(s.0.join("docs/index.html")).map_err(|e| e.to_string())?;
+    s.expect_problem("missing docs/index.html")
+}
+
+#[test]
+fn stale_docs_page_is_caught() -> Result<(), String> {
+    let s = Scratch::new("docs-stale")?;
+    std::fs::write(s.0.join("docs/index.html"), "<p>old</p>").map_err(|e| e.to_string())?;
+    s.expect_problem("docs/index.html differs from the page this version generates")
+}
+
+#[test]
 fn lenient_load_reads_files_written_by_other_versions() -> Result<(), String> {
     // An older index lacks fields added since; a newer one has fields this
     // version does not know. Both must still be readable as the previous

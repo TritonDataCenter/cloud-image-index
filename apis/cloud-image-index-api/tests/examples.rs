@@ -27,6 +27,7 @@ fn examples_cover_every_file_kind() -> Result<(), String> {
     assert!(tree.distro_list.is_some());
     assert!(tree.openapi.is_some());
     assert!(tree.index_html.is_some());
+    assert!(tree.docs_html.is_some());
     assert!(!tree.distros.is_empty());
     assert!(!tree.releases.is_empty());
     assert!(

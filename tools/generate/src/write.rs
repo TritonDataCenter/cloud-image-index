@@ -222,6 +222,10 @@ pub fn write_tree(
     std::fs::create_dir_all(root).with_context(|| format!("mkdir {}", root.display()))?;
     let page = root.join("index.html");
     std::fs::write(&page, api::INDEX_HTML).with_context(|| format!("write {}", page.display()))?;
+    let docs = root.join("docs");
+    std::fs::create_dir_all(&docs).with_context(|| format!("mkdir {}", docs.display()))?;
+    let page = docs.join("index.html");
+    std::fs::write(&page, api::DOCS_HTML).with_context(|| format!("write {}", page.display()))?;
     write_json(&v1.join("index.json"), list)?;
     write_json(
         &v1.join("openapi.json"),

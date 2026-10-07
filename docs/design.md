@@ -91,6 +91,7 @@ one at the same level (it rejects `/v1/index.json` beside
 
 ```
 index.html                                         # landing page for people (not in the OpenAPI document)
+docs/index.html                                    # API documentation (Swagger UI; not in the OpenAPI document)
 v1/index.json                                      # list of distros
 v1/openapi.json                                    # the OpenAPI document describing this tree
 v1/distros/<distro>/index.json                     # releases, aliases, osinfo ids
@@ -113,6 +114,16 @@ because it is not part of the format. Its source is
 `apis/cloud-image-index-api/src/index.html`; the generator writes it
 into every tree, and `examples/index.html` must be an exact copy. It
 links to the files by relative paths, so it works at any base URL.
+
+`docs/index.html` is a second unpublished endpoint: Swagger UI
+rendering `v1/openapi.json`, linked from the landing page. Swagger UI is
+loaded from jsDelivr, pinned to an exact version with Subresource
+Integrity hashes (a test checks both), so a changed or compromised CDN
+file is refused rather than run on our site. The page gives Swagger UI
+a server computed from its own address, since the spec's paths start
+at the index root and it names no server. Its source is
+`apis/cloud-image-index-api/src/docs.html`; `examples/docs/index.html`
+must be an exact copy.
 
 `v1/openapi.json` is itself an endpoint of the API, so the document
 lists its own path, and every tree carries the spec of the version that

@@ -38,6 +38,8 @@ pub struct Tree {
     pub openapi: Option<serde_json::Value>,
     /// `index.html`
     pub index_html: Option<String>,
+    /// `docs/index.html`
+    pub docs_html: Option<String>,
     pub distros: BTreeMap<String, Distro>,
     /// (distro, release) -> current builds
     pub releases: BTreeMap<(String, String), BuildList>,
@@ -152,6 +154,9 @@ fn load_with(root: &Path, strictness: Strictness) -> Result<Tree, Vec<String>> {
             ["index.html"] => std::fs::read_to_string(&path)
                 .map(|v| tree.index_html = Some(v))
                 .map_err(|e| format!("read {path:?}: {e}")),
+            ["docs", "index.html"] => std::fs::read_to_string(&path)
+                .map(|v| tree.docs_html = Some(v))
+                .map_err(|e| format!("read {path:?}: {e}")),
             ["v1", "openapi.json"] => read_file(&path, strictness).map(|v| tree.openapi = Some(v)),
             ["v1", "distros", distro, "index.json"] => read_file(&path, strictness).map(|v| {
                 tree.distros.insert((*distro).to_string(), v);
@@ -203,6 +208,16 @@ pub fn check(tree: &Tree) -> Vec<String> {
             "index.html differs from the page this version generates (after \
                  changing it, copy apis/cloud-image-index-api/src/index.html to \
                  examples/index.html)"
+                .to_string(),
+        ),
+        Some(_) => {}
+    }
+    match &tree.docs_html {
+        None => problems.push("missing docs/index.html".to_string()),
+        Some(page) if page != crate::DOCS_HTML => problems.push(
+            "docs/index.html differs from the page this version generates (after \
+             changing it, copy apis/cloud-image-index-api/src/docs.html to \
+             examples/docs/index.html)"
                 .to_string(),
         ),
         Some(_) => {}
