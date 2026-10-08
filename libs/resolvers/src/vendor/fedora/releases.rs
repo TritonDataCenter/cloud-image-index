@@ -9,8 +9,8 @@
 //! artifact (variant × subvariant × arch × format), and the cloud
 //! qcow2 we want is `arch=x86_64`, `variant=Cloud`,
 //! `subvariant=Cloud_Base`. The same JSON includes the upstream
-//! `sha256`, so we get a pinned-hash verifier without a second
-//! roundtrip — same shape as Ubuntu Simple Streams.
+//! `sha256`, kept for information; the hash the index publishes comes
+//! from the build's `CHECKSUM` file (see the profile).
 //!
 //! `releases.json` keeps listing a version for a while after its end of
 //! life, so whether a release is still supported, and until when, comes
@@ -167,11 +167,10 @@ pub struct Resolved {
     /// or just the major if the filename can't be parsed.
     pub build: String,
     pub url: String,
+    /// The sha256 releases.json gives. Only informational: the index
+    /// publishes the one in the build's CHECKSUM file, which clients can
+    /// read back.
     pub sha256: String,
-    /// The vendor document the hash was read from.
-    pub checksum_url: String,
-    /// The name the image is listed under in that document.
-    pub checksum_filename: String,
 }
 
 /// Extract the `<major>-<build>` segment from a Fedora cloud image
@@ -223,8 +222,6 @@ pub fn resolve(entries: &[Entry], release: &str) -> Result<Resolved> {
         build,
         url: target.link.clone(),
         sha256: target.sha256.clone(),
-        checksum_url: RELEASES_URL.to_string(),
-        checksum_filename: String::new(),
     })
 }
 
