@@ -330,6 +330,7 @@ dependencies = [
  "cloud-image-index-resolvers",
  "nocloud-import",
  "reqwest",
+ "roff",
  "rustls",
  "serde_json",
  "tokio",
@@ -1820,6 +1821,12 @@ dependencies = [
  "untrusted",
  "windows-sys 0.52.0",
 ]
+
+[[package]]
+name = "roff"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "323c417e1d9665a65b263ec744ba09030cfb277e9daa0b018a4ab62e57bc8189"
 
 [[package]]
 name = "rustc_version"

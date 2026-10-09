@@ -22,6 +22,7 @@ nocloud-import = { workspace = true }
 resolvers = { package = "cloud-image-index-resolvers", path = "../../libs/resolvers" }
 clap = { workspace = true }
 reqwest = { workspace = true }
+roff = { workspace = true }
 rustls = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

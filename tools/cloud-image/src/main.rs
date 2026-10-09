@@ -26,6 +26,10 @@ const ARCH: &str = "x86_64";
 
 const DEFAULT_INDEX: &str = "https://tritondatacenter.github.io/cloud-image-index/";
 
+/// The date of the commit this binary was built from (`YYYY-MM-DD`), for
+/// the man pages. The illumos workflow sets it; local builds leave it out.
+const COMMIT_DATE: Option<&str> = option_env!("CLOUD_IMAGE_DATE");
+
 const USER_AGENT: &str = concat!(
     "cloud-image/",
     env!("CARGO_PKG_VERSION"),
@@ -33,7 +37,11 @@ const USER_AGENT: &str = concat!(
 );
 
 #[derive(Parser)]
-#[command(about = "Import images from the cloud-image-index into SmartOS")]
+#[command(
+    version,
+    propagate_version = true,
+    about = "Import images from the cloud-image-index into SmartOS"
+)]
 struct Args {
     #[command(subcommand)]
     command: Command,
@@ -57,6 +65,13 @@ enum Command {
     /// The download must match the index's digest and the digest in the
     /// vendor's own checksum file. Off SmartOS this is always a dry run.
     Import(ImportArgs),
+    /// Write the man page, `cloud-image.8`, into a directory.
+    #[command(hide = true)]
+    Man {
+        /// The directory to write the pages to, created if missing.
+        #[arg(long, default_value = ".")]
+        out: PathBuf,
+    },
 }
 
 #[derive(clap::Args)]
@@ -113,6 +128,162 @@ struct ImportArgs {
     /// download and build nothing.
     #[arg(long)]
     dry_run: bool,
+}
+
+/// Write the man page, `cloud-image.8`, generated from the command-line
+/// definitions so it always matches `--help`: one page with every
+/// command, as imgadm(8) is.
+fn write_man_page(dir: &std::path::Path, date: Option<&str>) -> Result<()> {
+    std::fs::create_dir_all(dir).with_context(|| format!("create {}", dir.display()))?;
+    let mut cmd = <Args as clap::CommandFactory>::command().disable_help_subcommand(true);
+    cmd.build();
+    let path = dir.join("cloud-image.8");
+    std::fs::write(&path, man_page(&cmd, date)).with_context(|| format!("write {}", path.display()))
+}
+
+/// A control line's argument, escaped as the roff crate escapes text.
+fn man_arg(s: &str) -> String {
+    s.replace('\\', r"\\").replace('-', r"\-")
+}
+
+/// Text with its `code` spans in bold, as in the --help sources.
+fn man_inlines(text: &str) -> Vec<roff::Inline> {
+    text.split('`')
+        .enumerate()
+        .filter(|(_, part)| !part.is_empty())
+        .map(|(n, part)| {
+            if n % 2 == 1 {
+                roff::bold(part)
+            } else {
+                roff::roman(part)
+            }
+        })
+        .collect()
+}
+
+/// A command's text, one roff paragraph per paragraph of the source. A
+/// heading already starts a paragraph, so the first needs no `.PP`.
+fn man_paragraphs(page: &mut roff::Roff, text: &str) {
+    for (n, paragraph) in text.split("\n\n").enumerate() {
+        if n > 0 {
+            page.control("PP", []);
+        }
+        page.text(man_inlines(&paragraph.replace('\n', " ")));
+    }
+}
+
+/// The usage line of an already built (sub)command, without "Usage: ".
+fn man_usage(cmd: &clap::Command) -> String {
+    let usage = cmd.clone().render_usage().to_string();
+    usage.trim_start_matches("Usage: ").trim().to_string()
+}
+
+/// A command's arguments: positionals first, then options, each with its
+/// help and default. `--help` and `--version` are listed once, for the
+/// command as a whole, not again for each subcommand.
+fn man_args(page: &mut roff::Roff, cmd: &clap::Command, with_help: bool) {
+    let mut args: Vec<&clap::Arg> = cmd
+        .get_arguments()
+        .filter(|a| !a.is_hide_set())
+        .filter(|a| with_help || !["help", "version"].contains(&a.get_id().as_str()))
+        .collect();
+    args.sort_by_key(|a| !a.is_positional());
+    for arg in args {
+        page.control("TP", []);
+        let value = arg
+            .get_value_names()
+            .and_then(|v| v.first())
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| arg.get_id().to_string().to_uppercase());
+        let takes_value = arg.get_num_args().is_some_and(|n| n.takes_values());
+        let mut term = Vec::new();
+        if arg.is_positional() {
+            term.push(roff::italic(value));
+        } else {
+            let mut names = Vec::new();
+            if let Some(short) = arg.get_short() {
+                names.push(format!("-{short}"));
+            }
+            if let Some(long) = arg.get_long() {
+                names.push(format!("--{long}"));
+            }
+            term.push(roff::bold(names.join(", ")));
+            if takes_value {
+                term.push(roff::roman(" "));
+                term.push(roff::italic(value));
+            }
+        }
+        page.text(term);
+        // The short help: the long one points terminal users at `-h`.
+        let help = arg
+            .get_help()
+            .or_else(|| arg.get_long_help())
+            .map(|h| h.to_string())
+            .unwrap_or_default();
+        let mut text = help.replace('\n', " ");
+        let defaults: Vec<String> = arg
+            .get_default_values()
+            .iter()
+            .map(|v| v.to_string_lossy().into_owned())
+            .collect();
+        if takes_value && !defaults.is_empty() {
+            text.push_str(&format!(" (default: `{}`)", defaults.join(", ")));
+        }
+        page.text(man_inlines(&text));
+    }
+}
+
+/// The page itself, dated `date` when known.
+fn man_page(cmd: &clap::Command, date: Option<&str>) -> String {
+    let name = cmd.get_name();
+    let version = format!("{name} {}", cmd.get_version().unwrap_or_default());
+    let about = cmd.get_about().map(|a| a.to_string()).unwrap_or_default();
+    let subcommands: Vec<&clap::Command> =
+        cmd.get_subcommands().filter(|s| !s.is_hide_set()).collect();
+
+    let mut page = roff::Roff::new();
+    page.control(
+        "TH",
+        [
+            man_arg(&name.to_uppercase()).as_str(),
+            "8",
+            // The roff crate drops an empty argument; quoted, it stays.
+            date.unwrap_or("\"\""),
+            man_arg(&version).as_str(),
+            "System Administration Commands",
+        ],
+    );
+    page.control("SH", ["NAME"]);
+    page.text([roff::roman(format!("{name} - {about}"))]);
+
+    page.control("SH", ["SYNOPSIS"]);
+    for (n, sub) in subcommands.iter().enumerate() {
+        if n > 0 {
+            page.control("br", []);
+        }
+        page.text([roff::bold(man_usage(sub))]);
+    }
+
+    page.control("SH", ["DESCRIPTION"]);
+    man_paragraphs(&mut page, &format!("{about}."));
+    page.control("SH", ["OPTIONS"]);
+    man_args(&mut page, cmd, true);
+
+    page.control("SH", ["COMMANDS"]);
+    for sub in &subcommands {
+        page.control("SS", [man_arg(&man_usage(sub)).as_str()]);
+        let text = sub
+            .get_long_about()
+            .or_else(|| sub.get_about())
+            .map(|a| a.to_string())
+            .unwrap_or_default();
+        man_paragraphs(&mut page, &text);
+        man_args(&mut page, sub, false);
+    }
+
+    page.control("SH", ["SEE ALSO"]);
+    page.text([roff::bold("imgadm"), roff::roman("(8)")]);
+    page.render()
 }
 
 /// Mozilla's root certificates, bundled into the binary.
@@ -437,6 +608,7 @@ async fn main() -> Result<()> {
     match Args::parse().command {
         Command::Avail(args) => avail_cmd(args).await?,
         Command::Import(args) => import_cmd(args).await?,
+        Command::Man { out } => write_man_page(&out, COMMIT_DATE)?,
     }
     Ok(())
 }
@@ -444,6 +616,55 @@ async fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// One page in section 8, as imgadm(8) is: every command with its
+    /// options, dated and versioned in the header.
+    #[test]
+    fn man_writes_one_page_with_every_command() -> Result<()> {
+        let dir = std::env::temp_dir().join(format!("cloud-image-man-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        write_man_page(&dir, Some("2026-10-09"))?;
+        let pages: Vec<String> = std::fs::read_dir(&dir)?
+            .map(|e| Ok(e?.file_name().to_string_lossy().into_owned()))
+            .collect::<Result<_>>()?;
+        assert_eq!(pages, ["cloud-image.8"]);
+        let page = std::fs::read_to_string(dir.join("cloud-image.8"))?;
+        let header = format!(
+            ".TH CLOUD\\-IMAGE 8 2026-10-09 \"cloud\\-image {}\" \"System Administration Commands\"",
+            env!("CARGO_PKG_VERSION")
+        );
+        assert!(page.lines().any(|l| l == header), "{page}");
+        for wanted in [
+            ".SH COMMANDS",
+            ".SS \"cloud\\-image avail [OPTIONS] [DISTRO]\"",
+            ".SS \"cloud\\-image import [OPTIONS] <DISTRO> [RELEASE]\"",
+            "\\-\\-allow\\-unverified",
+            "\\-\\-no\\-header",
+            "imgadm",
+        ] {
+            assert!(page.contains(wanted), "{wanted} missing from:\n{page}");
+        }
+        assert!(
+            !page.contains("cloud\\-image man"),
+            "the hidden man command is left out"
+        );
+        std::fs::remove_dir_all(&dir)?;
+        Ok(())
+    }
+
+    /// An undated build (no CLOUD_IMAGE_DATE) still gives `.TH` its date
+    /// argument, empty, so the version does not slide into its place.
+    #[test]
+    fn an_undated_page_keeps_the_header_in_order() {
+        let mut cmd = <Args as clap::CommandFactory>::command();
+        cmd.build();
+        let page = man_page(&cmd, None);
+        let header = format!(
+            ".TH CLOUD\\-IMAGE 8 \"\" \"cloud\\-image {}\" \"System Administration Commands\"",
+            env!("CARGO_PKG_VERSION")
+        );
+        assert!(page.lines().any(|l| l == header), "{page}");
+    }
 
     /// The pipeline builds x86-64 bhyve images only, so there is no
     /// architecture to choose.

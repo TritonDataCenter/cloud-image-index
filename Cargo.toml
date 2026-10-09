@@ -33,6 +33,9 @@ regress = "0.12.0"
 # default aws-lc provider.
 reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls-no-provider"] }
 rustls = { version = "0.23.45", default-features = false, features = ["logging", "ring", "std", "tls12"] }
+# Writes cloud-image's man page, generated on the user's machine from the
+# clap definitions.
+roff = "1.1.1"
 sha2 = "0.11.0"
 tokio = { version = "1.53.2" }
 typify = "0.8.0"

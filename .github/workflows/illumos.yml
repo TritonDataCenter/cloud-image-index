@@ -72,7 +72,14 @@ jobs:
           # cross builds with this toolchain, so it needs the target's
           # standard library.
           target: ${{ env.TARGET }}
+      # The man pages carry the date of the commit being built (for a pull
+      # request, the merge commit GitHub made). cross runs rustc in a
+      # container, so the variable has to be passed through to it.
+      - name: Date the build by its commit
+        run: echo "CLOUD_IMAGE_DATE=$(git log -1 --format=%cs)" >> "$GITHUB_ENV"
       - name: Build
+        env:
+          CROSS_BUILD_ENV_PASSTHROUGH: CLOUD_IMAGE_DATE
         run: cross build --release --locked --target "$TARGET" -p "$BINARY"
       - name: Show what was built
         run: |
@@ -81,6 +88,8 @@ jobs:
           readelf -h "$bin" | grep -E 'Class|Machine|OS/ABI'
           readelf -d "$bin" | grep NEEDED
           file "$bin" | grep 'ELF 64-bit LSB .*x86-64' > /dev/null
+          # The date reached the build inside cross's container.
+          grep -aF "$CLOUD_IMAGE_DATE" "$bin" > /dev/null
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ env.BINARY }}-${{ env.TARGET }}
