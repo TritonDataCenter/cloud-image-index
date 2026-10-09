@@ -301,6 +301,13 @@ fn bundled_roots() -> Result<Vec<reqwest::Certificate>> {
 }
 
 fn http_client() -> Result<reqwest::Client> {
+    http_client_with_stall_limit(std::time::Duration::from_secs(60))
+}
+
+/// The client gives up when a connection stalls for `stall`, not after a
+/// fixed time: a large image on a slow link takes minutes, and the
+/// pipeline downloads it with this client.
+fn http_client_with_stall_limit(stall: std::time::Duration) -> Result<reqwest::Client> {
     // reqwest is built without a default crypto provider (see the
     // workspace Cargo.toml). An error only means one is already set.
     let _ = rustls::crypto::ring::default_provider().install_default();
@@ -312,7 +319,7 @@ fn http_client() -> Result<reqwest::Client> {
         .tls_certs_only(bundled_roots()?)
         .user_agent(USER_AGENT)
         .connect_timeout(std::time::Duration::from_secs(10))
-        .timeout(std::time::Duration::from_secs(120))
+        .read_timeout(stall)
         .build()
         .context("build HTTP client")
 }
@@ -606,8 +613,8 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         println!("Manifest: {}", outputs.manifest_path.display());
         println!("UUID:     {}", outputs.manifest_uuid);
         if !args.no_install {
+            // imgadm says when it has installed the image.
             host::install_via_imgadm(&outputs.gz_path, &outputs.manifest_path).await?;
-            println!("Installed image {} with imgadm.", outputs.manifest_uuid);
         }
         anyhow::Ok(outputs)
     }
@@ -648,7 +655,9 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
             outputs.gz_path.display()
         );
     }
-    if plan.source {
+    if plan.source && plan.outputs {
+        println!("Removed the download and build files; --keep keeps them.");
+    } else if plan.source {
         println!("Removed the download; --keep keeps it.");
     }
     Ok(())
@@ -823,6 +832,70 @@ mod tests {
         assert!(shared.join("someone-elses").exists());
         assert!(!shared.join("image.zfs.gz").exists());
         std::fs::remove_dir_all(&base)?;
+        Ok(())
+    }
+
+    /// A download may take as long as it needs while data keeps coming:
+    /// the client gives up only on a stall. A 637 MiB image at 2 MiB/s
+    /// once hit a 120-second limit on the whole request.
+    #[tokio::test]
+    async fn a_slow_steady_download_is_not_cut_off() -> Result<()> {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+        let addr = listener.local_addr()?;
+        tokio::spawn(async move {
+            let Ok((mut conn, _)) = listener.accept().await else {
+                return;
+            };
+            let mut request = [0u8; 1024];
+            let _ = conn.read(&mut request).await;
+            let _ = conn
+                .write_all(b"HTTP/1.1 200 OK\r\ncontent-length: 10\r\n\r\n")
+                .await;
+            // 10 bytes over about 1.5 s, one every 150 ms.
+            for _ in 0..10 {
+                tokio::time::sleep(std::time::Duration::from_millis(150)).await;
+                let _ = conn.write_all(b"x").await;
+            }
+        });
+        let client = http_client_with_stall_limit(std::time::Duration::from_millis(500))?;
+        let body = client
+            .get(format!("http://{addr}/image"))
+            .send()
+            .await?
+            .bytes()
+            .await?;
+        assert_eq!(body.len(), 10);
+        Ok(())
+    }
+
+    /// A connection that stops sending is given up on.
+    #[tokio::test]
+    async fn a_stalled_download_is_given_up() -> Result<()> {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+        let addr = listener.local_addr()?;
+        tokio::spawn(async move {
+            let Ok((mut conn, _)) = listener.accept().await else {
+                return;
+            };
+            let mut request = [0u8; 1024];
+            let _ = conn.read(&mut request).await;
+            let _ = conn
+                .write_all(b"HTTP/1.1 200 OK\r\ncontent-length: 10\r\n\r\nx")
+                .await;
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        });
+        let client = http_client_with_stall_limit(std::time::Duration::from_millis(300))?;
+        let started = std::time::Instant::now();
+        let body = client
+            .get(format!("http://{addr}/image"))
+            .send()
+            .await?
+            .bytes()
+            .await;
+        assert!(body.is_err(), "a stalled body must fail");
+        assert!(started.elapsed() < std::time::Duration::from_secs(3));
         Ok(())
     }
 
