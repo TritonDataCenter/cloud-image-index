@@ -9,6 +9,9 @@
 # container image holds the illumos sysroot and a GCC toolchain for any
 # C code in dependencies. The image cannot run illumos binaries, so this
 # is a compile-and-link check; tests run in ci.yml on Linux.
+#
+# A version tag (v0.9.0) also publishes that binary as a GitHub release,
+# with SHA256SUMS and install.sh for the one-line install.
 
 name: illumos
 
@@ -16,6 +19,8 @@ on:
   pull_request:
   push:
     branches: [main]
+    # A tag push ignores paths-ignore, so every version tag builds.
+    tags: ["v*"]
     # The index workflow's own commits only touch site/.
     paths-ignore:
       - "site/**"
@@ -37,6 +42,10 @@ env:
   # downloaded on 2026-10-08.
   CROSS_URL: https://github.com/cross-rs/cross/releases/download/v0.2.5/cross-x86_64-unknown-linux-gnu.tar.gz
   CROSS_SHA256: 642375d1bcf3bd88272c32ba90e999f3d983050adf45e66bd2d3887e8e838bad
+  # gh, for publishing releases: the self-hosted runners do not promise
+  # one. The SHA-256 is from the release's gh_2.102.0_checksums.txt.
+  GH_VERSION: 2.102.0
+  GH_SHA256: bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386
 
 defaults:
   run:
@@ -95,3 +104,65 @@ jobs:
           name: ${{ env.BINARY }}-${{ env.TARGET }}
           path: target/${{ env.TARGET }}/release/${{ env.BINARY }}
           if-no-files-found: error
+
+  release:
+    # Publishes the binary the build job made, for a version tag only.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    # Tags are pushed from this repository, never a fork.
+    runs-on:
+      group: triton
+      labels: [self-hosted, APP]
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install gh
+        run: |
+          name="gh_${GH_VERSION}_linux_amd64"
+          curl -sSfL -o gh.tar.gz \
+            "https://github.com/cli/cli/releases/download/v$GH_VERSION/$name.tar.gz"
+          echo "$GH_SHA256  gh.tar.gz" | sha256sum -c -
+          mkdir -p "$HOME/.local/bin"
+          tar -xzf gh.tar.gz --strip-components=2 -C "$HOME/.local/bin" "$name/bin/gh"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          # GITHUB_PATH applies from the next step on.
+          "$HOME/.local/bin/gh" --version
+      - name: Check the tag names the crate's version
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' tools/cloud-image/Cargo.toml)
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "tag $GITHUB_REF_NAME, but tools/cloud-image/Cargo.toml says $version" >&2
+            exit 1
+          fi
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ env.BINARY }}-${{ env.TARGET }}
+          path: artifact
+      - name: Gather the release files
+        run: |
+          mkdir dist
+          cp "artifact/$BINARY" "dist/$BINARY-$TARGET"
+          cp tools/cloud-image/install.sh dist/install.sh
+          (cd dist && sha256sum "$BINARY-$TARGET" > SHA256SUMS && cat SHA256SUMS)
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="Install or update in a SmartOS global zone:
+
+          \`\`\`
+          curl -fsSL https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/install.sh | CLOUD_IMAGE_RELEASE=$GITHUB_REF_NAME bash
+          \`\`\`
+
+          The latest release is always:
+
+          \`\`\`
+          curl -fsSL https://github.com/$GITHUB_REPOSITORY/releases/latest/download/install.sh | bash
+          \`\`\`"
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "cloud-image $GITHUB_REF_NAME" \
+            --notes "$notes" \
+            --generate-notes \
+            --verify-tag
