@@ -7,6 +7,7 @@
 [workspace]
 members = [
     "apis/cloud-image-index-api",
+    "libs/client",
     "libs/resolvers",
     "tools/generate",
     "tests/typify-client",
@@ -39,6 +40,9 @@ chrono = { version = "0.4.45", default-features = false, features = ["clock", "s
 dropshot = { version = "0.17.1" }
 # The response type of raw (non-JSON) dropshot endpoints.
 http = "1.5.0"
+openapiv3 = "2.2.0"
+progenitor = "0.15.0"
+progenitor-client = "0.15.0"
 # dropshot 0.17 is built on schemars 0.8; schemars 1.x is not compatible.
 schemars = { version = "0.8.22", features = ["chrono", "derive"] }
 serde = { version = "1.0.229", features = ["derive"] }

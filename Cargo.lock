@@ -296,6 +296,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "cloud-image-index-client"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "openapiv3",
+ "progenitor",
+ "progenitor-client",
+ "regress",
+ "reqwest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cloud-image-index-generate"
 version = "0.1.0"
 dependencies = [
@@ -1395,6 +1409,72 @@ dependencies = [
 ]
 
 [[package]]
+name = "progenitor"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5e58f442cdad0db9db03ac94cc7b65938dccf1b282a56c440528a7da41ec947"
+dependencies = [
+ "progenitor-client",
+ "progenitor-impl",
+ "progenitor-macro",
+]
+
+[[package]]
+name = "progenitor-client"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53034c7e99439e366d243ed9847977d349243a862284d2e509a2abba7d003654"
+dependencies = [
+ "bytes",
+ "futures-core",
+ "percent-encoding",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+]
+
+[[package]]
+name = "progenitor-impl"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83aef4388cf237992f3f55aeead8417f45e9305fdbb77e97a551e8166629c692"
+dependencies = [
+ "heck",
+ "http",
+ "indexmap",
+ "openapiv3",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "schemars",
+ "serde",
+ "serde_json",
+ "syn 3.0.6",
+ "thiserror",
+ "typify",
+ "unicode-ident",
+]
+
+[[package]]
+name = "progenitor-macro"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dafac71de913f41e24fa43c9460308f3b85f687bcbb03bac42c3dd2b0ae82bdd"
+dependencies = [
+ "openapiv3",
+ "proc-macro2",
+ "progenitor-impl",
+ "quote",
+ "schemars",
+ "serde",
+ "serde_json",
+ "serde_tokenstream 0.3.0",
+ "serde_yaml",
+ "syn 3.0.6",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1465,6 +1545,7 @@ dependencies = [
  "base64 0.23.1",
  "bytes",
  "futures-core",
+ "futures-util",
  "http",
  "http-body",
  "http-body-util",
@@ -1480,15 +1561,18 @@ dependencies = [
  "rustls-platform-verifier",
  "serde",
  "serde_json",
+ "serde_urlencoded",
  "sync_wrapper",
  "tokio",
  "tokio-rustls",
+ "tokio-util",
  "tower",
  "tower-http",
  "tower-service",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm-streams",
  "web-sys",
 ]
 
@@ -1799,6 +1883,19 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "serde_yaml"
+version = "0.9.34+deprecated"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a8b1a1a2ebf674015cc02edccce75287f1a0130d394307b36743c2f5d504b47"
+dependencies = [
+ "indexmap",
+ "itoa",
+ "ryu",
+ "serde",
+ "unsafe-libyaml",
 ]
 
 [[package]]
@@ -2339,6 +2436,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954"
 
 [[package]]
+name = "unsafe-libyaml"
+version = "0.2.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861"
+
+[[package]]
 name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2474,6 +2577,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23f0c9c52aa7cd7d77769a4cfe2a9adb1b331f489a41d912ce14513d5ab995c6"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "wasm-streams"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d1ec4f6517c9e11ae630e200b2b65d193279042e28edd4a2cda233e46670bbb"
+dependencies = [
+ "futures-util",
+ "js-sys",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
