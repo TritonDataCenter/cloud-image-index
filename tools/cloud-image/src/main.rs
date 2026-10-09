@@ -848,15 +848,19 @@ async fn self_update_cmd(args: SelfUpdateArgs) -> Result<()> {
     let tag = update::release_tag(&http, &update::releases_api()?, args.release.as_deref()).await?;
     let release = update::tag_version(&tag)?;
     let decision = update::decide(&current, &release, args.release.is_some());
-    if args.check {
-        match decision {
-            update::Decision::Update => println!("cloud-image {current}; {tag} is available"),
-            update::Decision::UpToDate => println!("cloud-image {current} is up to date ({tag})"),
-        }
+    let staying = match decision {
+        update::Decision::Update => None,
+        update::Decision::UpToDate => Some(format!("cloud-image {current} is up to date ({tag})")),
+        update::Decision::Newer => Some(format!(
+            "cloud-image {current} is newer than the latest release, {tag}"
+        )),
+    };
+    if let Some(message) = staying {
+        println!("{message}");
         return Ok(());
     }
-    if decision == update::Decision::UpToDate {
-        println!("cloud-image {current} is up to date ({tag})");
+    if args.check {
+        println!("cloud-image {current}; {tag} is available");
         return Ok(());
     }
     anyhow::ensure!(
