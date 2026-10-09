@@ -42,6 +42,12 @@ This installs `/opt/tools/sbin/cloud-image` and its man page,
 `cloud-image self-update` updates both to the newest release.
 
 To release a new version, bump `version` in `tools/cloud-image/Cargo.toml`,
-merge that, and push a matching tag (`git tag v0.9.0 && git push origin
-v0.9.0`). The illumos workflow builds the binary and publishes it, with
+merge that, and push a matching tag from the merge commit:
+
+```
+git tag -m "cloud-image v0.9.1" v0.9.1
+git push origin v0.9.1
+```
+
+The illumos workflow builds the binary and publishes it, with
 `SHA256SUMS` and `install.sh`, as a GitHub release.
