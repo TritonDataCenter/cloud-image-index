@@ -412,7 +412,12 @@ tree. It is a first approximation. Known gaps, as of a full run on 2026-10-05:
 
 - One build per release (the vendor's current one) and one artifact
   (the profile's default variant, x86_64). No vault archives.
-- Every digest records the vendor document it came from. Signatures
+- Every digest records the vendor document it came from, preferring a
+  generic checksum file (gnu, bsd or bare) a client can read back: Ubuntu
+  and Fedora find their images through their feeds (Simple Streams,
+  `releases.json`) but publish the hash from `SHA256SUMS` and the
+  build's `CHECKSUM` file. Only Oracle's comes from a vendor-specific
+  document (an HTML table). Signatures
   are published where the vendor serves them (Ubuntu, Alma, Rocky 9/10,
   Alpine, Fedora); signing-key URLs are not yet known. EOL dates come
   only from Alpine and Ubuntu feeds and Fedora's Bodhi; publish dates only from GitHub
@@ -477,8 +482,6 @@ in monitor-reef or the second copy.
 - Vendors without generic checksum files: Oracle (hashes only in an
   HTML table) and Talos (no hash; its image factory sends no hash or
   ETag headers as of 2026-10-05).
-- Fedora: switch from `releases.json` to its CHECKSUM files (existence
-  to be confirmed).
 - This repository is MPL-2.0. Open: implications if osinfo-db data
   (GPL-2.0-or-later) is ever bundled rather than referenced.
 - The custom domain long-lived clients will use, and whether clients

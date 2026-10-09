@@ -9,7 +9,9 @@
 //! Resolves a release token (`latest`, `noble`, `24.04`, ...) to a
 //! concrete cloud image. The primary path consults Canonical's Simple
 //! Streams metadata feed, which gives us the canonical upstream build
-//! serial, the exact item URL, and the sha256 in one TLS roundtrip.
+//! serial, the exact item URL, and the sha256 in one TLS roundtrip. The
+//! hash the index publishes comes from the release directory's
+//! `SHA256SUMS`, a generic listing clients can read back.
 //! A streams failure is an error: the feed is served from the same host
 //! as the images, so there is no useful fallback, and a format change
 //! should fail loudly rather than degrade to a rolling `current/` URL.
@@ -21,10 +23,9 @@ use async_trait::async_trait;
 use url::Url;
 
 use super::{
-    ImageFacts, ResolvedImage, SourceFormat, VendorProfile, VersionEntry, checksum_document,
-    detached_signature,
+    ImageFacts, ResolvedImage, SourceFormat, VendorProfile, VersionEntry, detached_signature,
 };
-use crate::verify::{Sha256Pinned, SumsStyle};
+use crate::verify::Sha256SumsTls;
 
 /// The Ubuntu profile. It keeps the streams feed (about 18 MB) once
 /// fetched, so listing versions and resolving each release read one
@@ -76,13 +77,21 @@ fn resolve_via_streams(index: &streams::Streams, release: &str) -> Result<Resolv
     );
 
     // Canonical signs the release directory's SHA256SUMS, which lists
-    // the same hash the streams feed gives.
+    // the same hash the streams feed gives. The index publishes the one
+    // in SHA256SUMS, a generic listing clients can read back; the feed
+    // only says which image is current.
     let sums_url = img
         .url
         .as_str()
         .rsplit_once('/')
         .map(|(dir, _)| format!("{dir}/SHA256SUMS"))
         .ok_or_else(|| anyhow::anyhow!("ubuntu image url without a path: {}", img.url))?;
+    let filename = img
+        .url
+        .path_segments()
+        .and_then(|mut s| s.next_back())
+        .unwrap_or_default()
+        .to_string();
 
     Ok(ResolvedImage {
         url: img.url,
@@ -96,9 +105,9 @@ fn resolve_via_streams(index: &streams::Streams, release: &str) -> Result<Resolv
         description,
         homepage: Url::parse("https://ubuntu.com/").context("ubuntu homepage url")?,
         ssh_key: true,
-        verifier: Box::new(Sha256Pinned::from_document(
-            img.sha256.clone(),
-            checksum_document(streams::STREAMS_URL, "", SumsStyle::VendorDocument)?,
+        verifier: Box::new(Sha256SumsTls::new(
+            Url::parse(&sums_url).context("ubuntu SHA256SUMS url")?,
+            filename,
         )),
         expected_sha256: Some(img.sha256),
         facts: ImageFacts {
@@ -111,6 +120,34 @@ fn resolve_via_streams(index: &streams::Streams, release: &str) -> Result<Resolv
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The published digest must come from the generic SHA256SUMS file
+    /// beside the image, which a client can read back, not from the
+    /// streams feed, which only vendor-specific code can.
+    #[test]
+    fn the_checksum_source_is_the_release_directorys_sha256sums() {
+        let image = resolve_via_streams(&streams::tests::fixture(), "noble")
+            .unwrap_or_else(|e| panic!("{e:#}"));
+        let filename = image
+            .url
+            .path_segments()
+            .and_then(|mut s| s.next_back())
+            .unwrap_or_default()
+            .to_string();
+        let sums = image
+            .url
+            .join("SHA256SUMS")
+            .unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(
+            image.verifier.checksum_source(),
+            crate::verify::ChecksumSource::Document {
+                url: sums,
+                filename,
+                style: crate::verify::SumsStyle::Gnu,
+                algorithm: crate::verify::HashAlgorithm::Sha256,
+            }
+        );
+    }
 
     /// A client whose every request fails at once, so a test passes only
     /// if nothing is fetched.
