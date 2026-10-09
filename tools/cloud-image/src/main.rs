@@ -356,66 +356,24 @@ async fn fetch_distro(
 }
 
 /// The current image of every release of `only` (or of every distro),
-/// in the index's order. Releases are fetched in parallel. A release with
+/// in the index's order, read from its `v1/images.json`. A release with
 /// no image this client can build is left out, with a note.
 async fn available(
     index: &client::Client,
     base: &str,
     only: Option<&str>,
 ) -> Result<Vec<import::Available>> {
-    let ids: Vec<String> = match only {
-        Some(id) => vec![fetch_distro(index, base, id).await?.id],
-        None => index
-            .distro_list()
-            .await
-            .map_err(|e| anyhow::anyhow!("{e}"))
-            .with_context(|| format!("read the index at {base}"))?
-            .into_inner()
-            .distros
-            .into_iter()
-            .map(|d| d.id)
-            .collect(),
-    };
-    let mut distros = tokio::task::JoinSet::new();
-    for (n, id) in ids.into_iter().enumerate() {
-        let index = index.clone();
-        distros.spawn(async move {
-            let distro = index.distro(&id).await;
-            (n, id, distro)
-        });
+    let list = index
+        .images()
+        .await
+        .map_err(|e| anyhow::anyhow!("{e}"))
+        .with_context(|| format!("read the image list of the index at {base}"))?
+        .into_inner();
+    let (rows, notes) = import::avail_rows(&list, only)?;
+    for note in notes {
+        eprintln!("note: {note}");
     }
-    let mut releases = tokio::task::JoinSet::new();
-    while let Some(joined) = distros.join_next().await {
-        let (n, id, distro) = joined.context("fetch a distro")?;
-        let distro = distro
-            .map_err(|e| anyhow::anyhow!("{e}"))
-            .with_context(|| format!("read {id} from the index at {base}"))?
-            .into_inner();
-        let distro = std::sync::Arc::new(distro);
-        for (m, release) in distro.releases.iter().enumerate() {
-            let index = index.clone();
-            let distro = distro.clone();
-            let release = release.id.clone();
-            releases.spawn(async move {
-                let builds = index.release_builds(&distro.id, &release).await;
-                ((n, m), distro, release, builds)
-            });
-        }
-    }
-    let mut rows = Vec::new();
-    while let Some(joined) = releases.join_next().await {
-        let (order, distro, release, builds) = joined.context("fetch a release")?;
-        let builds = builds
-            .map_err(|e| anyhow::anyhow!("{e}"))
-            .with_context(|| format!("read {} {release} from the index at {base}", distro.id))?
-            .into_inner();
-        match import::available(&distro, &builds) {
-            Ok(row) => rows.push((order, row)),
-            Err(e) => eprintln!("note: leaving out {} {release}: {e:#}", distro.id),
-        }
-    }
-    rows.sort_by_key(|(order, _)| *order);
-    Ok(rows.into_iter().map(|(_, row)| row).collect())
+    Ok(rows)
 }
 
 async fn avail_cmd(args: AvailArgs) -> Result<()> {

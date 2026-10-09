@@ -27,8 +27,8 @@
 use anyhow::{Context, Result};
 use client::types::{
     Artifact, Build, BuildList, ChecksumFormat, ChecksumFormatVariant0, Compression,
-    CompressionVariant0, DigestAlgorithm, Distro, ImageFormat, ImageFormatVariant0, LocationKind,
-    OsFamily, Release,
+    CompressionVariant0, DigestAlgorithm, Distro, Image, ImageFormat, ImageFormatVariant0,
+    ImageList, LocationKind, OsFamily, Release,
 };
 use nocloud_import::{ExpectedDigest, ImageInfo, SourceFormat};
 use resolvers::verify::SumsStyle;
@@ -420,6 +420,66 @@ pub fn available(distro: &Distro, builds: &BuildList) -> Result<Available> {
     })
 }
 
+/// The images `avail` lists, from the index's `v1/images.json`: each
+/// release's newest build (the one an import of the release takes), of
+/// every distro or only `only`, in the list's order. Also returns notes on
+/// releases this client cannot build, which are left out.
+pub fn avail_rows(list: &ImageList, only: Option<&str>) -> Result<(Vec<Available>, Vec<String>)> {
+    if let Some(id) = only
+        && !list.images.iter().any(|i| i.distro.id == id)
+    {
+        let mut ids: Vec<&str> = Vec::new();
+        for image in &list.images {
+            if !ids.contains(&image.distro.id.as_str()) {
+                ids.push(&image.distro.id);
+            }
+        }
+        anyhow::bail!("the index has no distro {id:?}; it has: {}", ids.join(", "));
+    }
+    let mut rows = Vec::new();
+    let mut notes = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for image in &list.images {
+        if only.is_some_and(|id| image.distro.id != id) {
+            continue;
+        }
+        // Builds are newest first; later ones of a release are older.
+        if !seen.insert((&image.distro.id, &image.release.id)) {
+            continue;
+        }
+        let (distro, builds) = one_image(image);
+        match available(&distro, &builds) {
+            Ok(row) => rows.push(row),
+            Err(e) => notes.push(format!(
+                "leaving out {} {}: {e:#}",
+                image.distro.id, image.release.id
+            )),
+        }
+    }
+    Ok((rows, notes))
+}
+
+/// An entry of `v1/images.json` as the distro and build list the rest of
+/// this module reads: the distro with only this release, and the release
+/// with only this build. The entry has no `dev_channel`, which nothing
+/// here uses.
+fn one_image(image: &Image) -> (Distro, BuildList) {
+    let distro = Distro {
+        id: image.distro.id.clone(),
+        name: image.distro.name.clone(),
+        os_family: image.distro.os_family,
+        homepage: image.distro.homepage.clone(),
+        dev_channel: None,
+        releases: vec![image.release.clone()],
+    };
+    let builds = BuildList {
+        distro: image.distro.id.clone(),
+        release: image.release.id.clone(),
+        builds: vec![image.build.clone()],
+    };
+    (distro, builds)
+}
+
 /// The image with this UUID, for `import <uuid>`.
 pub fn find_by_uuid(rows: &[Available], uuid: uuid::Uuid) -> Option<&Available> {
     rows.iter().find(|r| r.uuid == Some(uuid))
@@ -652,6 +712,62 @@ mod tests {
             Some(nocloud_import::stable_manifest_uuid(&sha256.to_lowercase()))
         );
         Ok(())
+    }
+
+    fn images() -> client::types::ImageList {
+        serde_json::from_str(include_str!("../../../examples/v1/images.json"))
+            .unwrap_or_else(|e| panic!("{e}"))
+    }
+
+    /// `avail` reads v1/images.json and shows the same rows it showed
+    /// from the distro and release files.
+    #[test]
+    fn avail_rows_come_from_the_image_list() -> anyhow::Result<()> {
+        let (rows, notes) = avail_rows(&images(), None)?;
+        assert!(notes.is_empty(), "{notes:?}");
+        let names: Vec<&str> = rows.iter().map(|r| r.name.as_str()).collect();
+        assert_eq!(
+            names,
+            [
+                "ubuntu-resolute-nocloud",
+                "ubuntu-noble-nocloud",
+                "ubuntu-jammy-nocloud",
+                "rocky-10-nocloud",
+                "rocky-9-nocloud",
+                "rocky-8-nocloud",
+                "talos-1.14-nocloud",
+            ]
+        );
+        assert_eq!(rows[0], ubuntu_row());
+        let (rocky, _) = avail_rows(&images(), Some("rocky"))?;
+        assert_eq!(rocky.len(), 3);
+        Ok(())
+    }
+
+    /// Only a release's newest build is listed: it is the one an import
+    /// of the release takes.
+    #[test]
+    fn avail_lists_each_releases_newest_build() -> anyhow::Result<()> {
+        let mut list = images();
+        let mut older = list.images[0].clone();
+        older.build.build = "20200101".to_string();
+        list.images.insert(1, older);
+        let (rows, _) = avail_rows(&list, Some("ubuntu"))?;
+        let versions: Vec<&str> = rows.iter().map(|r| r.version.as_str()).collect();
+        assert_eq!(versions, ["20260927", "20260926", "20261004"]);
+        Ok(())
+    }
+
+    #[test]
+    fn avail_names_the_distros_when_one_is_unknown() {
+        let err = avail_rows(&images(), Some("nosuch"))
+            .err()
+            .map(|e| format!("{e:#}"))
+            .unwrap_or_default();
+        assert!(
+            err.contains("no distro \"nosuch\"") && err.contains("ubuntu, rocky, talos"),
+            "{err}"
+        );
     }
 
     /// How each image would be checked, and so whether it needs
