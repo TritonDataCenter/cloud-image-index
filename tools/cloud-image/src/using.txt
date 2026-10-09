@@ -44,7 +44,10 @@ importing. Write the user-data, for example `cloud-init.yml`:
           - ssh-ed25519 AAAA... you@example
 
 Then create the VM, passing the user-data as a JSON string (`jq -Rs`
-quotes a file as one):
+quotes a file as one). `jq` is not in the global zone by default, but
+pkgsrc's tools have it: `pkgin install jq`, once pkgsrc is set up with
+`pkgsrc-setup` or as https://pkgsrc.smartos.org/install-on-illumos/
+describes.
 
     userdata=$(jq -Rs . cloud-init.yml)
     vmadm create <<EOF
@@ -53,7 +56,6 @@ quotes a file as one):
       "brand": "bhyve",
       "ram": 2048,
       "vcpus": 2,
-      "bootrom": "uefi",
       "resolvers": ["1.1.1.1"],
       "nics": [
         {
@@ -67,10 +69,11 @@ quotes a file as one):
         {
           "image_uuid": "1d0ae932-00b2-5f87-b842-e92a9dbde723",
           "boot": true,
-          "model": "virtio"
+          "model": "virtio",
+          "size": 10240
         }
       ],
-      "flexible_disk_size": 10240,
+      "flexible_disk_size": 20480,
       "customer_metadata": {
         "cloud-init:user-data": $userdata
       }
@@ -78,11 +81,24 @@ quotes a file as one):
     EOF
 
 Once it has booted, log in as the user the user-data created
-(`ssh admin@192.168.3.31`), or watch it boot with `vmadm console`.
-`flexible_disk_size` leaves room for snapshots of the VM's disks.
+(`ssh admin@192.168.3.31`), or watch it boot with `vmadm console`. The
+image supplies the UEFI boot ROM it needs, so the payload need not.
 
 To change the user-data later, `vmadm update` the `customer_metadata`
 and restart the VM, bearing in mind the note on first boots above.
+
+## Disks
+
+- The boot disk's `size`, in MiB, may be larger than the image: the
+  guest's cloud-init grows its root filesystem to fill the disk.
+- More disks can be added as further `disks` entries with a `size` and
+  no `image_uuid`.
+- `flexible_disk_size` bounds the space the VM's disks and their
+  snapshots may use together, must be at least the disks' total size,
+  and without it the VM cannot be snapshotted. Twice the disks' size
+  leaves room for snapshots.
+- The guest also sees the configuration disk, `CIDATA`, as a small extra
+  disk.
 
 ## Triton
 
@@ -109,6 +125,10 @@ On Triton, pass the user-data as metadata when creating the instance
 - Managing instances with vmadm:
   https://docs.smartos.org/managing-instances-with-vmamd/
 - Managing images: https://docs.smartos.org/managing-images/
+- Working with packages (pkgsrc, including in the global zone):
+  https://docs.smartos.org/working-with-packages/
+- Installing pkgsrc, including its tools for the global zone:
+  https://pkgsrc.smartos.org/install-on-illumos/
 - Instance metadata: https://docs.smartos.org/customer_metadata/
 - cloud-init's NoCloud datasource:
   https://docs.cloud-init.io/en/latest/reference/datasources/nocloud.html
