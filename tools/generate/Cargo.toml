@@ -27,6 +27,7 @@ api = { package = "cloud-image-index-api", path = "../../apis/cloud-image-index-
 chrono = { workspace = true }
 clap = { workspace = true }
 reqwest = { workspace = true }
+rustls = { workspace = true }
 resolvers = { package = "cloud-image-index-resolvers", path = "../../libs/resolvers" }
 serde = { workspace = true }
 serde_json = { workspace = true }

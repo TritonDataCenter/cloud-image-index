@@ -381,9 +381,11 @@ into `site/`, commits it if it changed, and a deploy job publishes
 `site/` tree; there is no deploy-only data. Actions are pinned to
 release commit SHAs.
 
-`.github/workflows/ci.yml` runs `cargo fmt --check`, clippy (warnings
-as errors) and the tests on every pull request and on pushes to `main`
-that touch more than `site/`. It does not check `site/`, which keeps
+`.github/workflows/ci.yml` runs `cargo fmt --check`, clippy, the tests
+and `cargo doc`, with every warning an error, on every pull request and
+on pushes to `main` that touch more than `site/`. The index and illumos
+builds keep warnings as warnings, so a new toolchain lint cannot stop
+them. It does not check `site/`, which keeps
 the previous version's `v1/openapi.json` after an API change until the
 next index run rewrites it.
 

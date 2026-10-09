@@ -618,7 +618,9 @@ mod tests {
     /// when a caller invokes `resolve` directly.
     #[tokio::test]
     async fn resolve_rejects_bad_token_before_fetch() {
-        let http = reqwest::Client::new();
+        let http = crate::test_client_builder()
+            .build()
+            .unwrap_or_else(|e| panic!("{e}"));
         let err = match lookup(Vendor::Freebsd)
             .resolve("../../etc/passwd", &http)
             .await

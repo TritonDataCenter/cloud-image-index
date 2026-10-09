@@ -96,7 +96,8 @@ mod tests {
 
     #[tokio::test]
     async fn channels_report_their_labels() -> Result<()> {
-        let entries = Omnios.list_versions(&reqwest::Client::new()).await?;
+        let http = crate::test_client_builder().build()?;
+        let entries = Omnios.list_versions(&http).await?;
         let labels: Vec<(&str, bool, bool, Option<&str>)> = entries
             .iter()
             .map(|e| (e.token.as_str(), e.channel, e.lts, e.dev.as_deref()))

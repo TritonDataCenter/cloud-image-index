@@ -4,7 +4,7 @@
 #
 # Copyright 2026 Edgecast Cloud LLC.
 #
-# Check formatting, lints and tests on every pull request and on pushes
+# Check formatting, lints, tests and docs on every pull request and on pushes
 # to main. The tests include the tree checks on examples/, so an API
 # change fails here until examples/v1/openapi.json is refreshed.
 #
@@ -43,11 +43,25 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # rust-toolchain.toml selects the toolchain and its rustfmt and
-      # clippy components; rustup installs them on first use.
+      # Install the toolchain rust-toolchain.toml names, and rustup first if
+      # the runner lacks it: the self-hosted runners are shared and their
+      # Rust setup is not ours to rely on. No cache (we chose not to cache).
+      # Here every warning is an error, so code quality cannot slip; the
+      # index and illumos builds keep warnings as warnings, so a new
+      # toolchain lint cannot stop the daily index or a release build.
+      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        with:
+          cache: false
+          build-warnings: deny
       - name: Format
         run: cargo fmt --all --check
       - name: Lint
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Test
         run: cargo test --workspace --locked
+      # Broken doc links and doc syntax are not compiler warnings, so clippy
+      # does not catch them.
+      - name: Docs
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --workspace --no-deps --locked

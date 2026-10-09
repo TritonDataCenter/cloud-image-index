@@ -20,6 +20,10 @@
 //! `cloud.centos.org` (behind CloudFront) refuse requests without one.
 //! Profiles do not set their own, so vendors see who is really asking.
 //!
+//! The workspace builds reqwest with rustls but without a default crypto
+//! provider, so a caller must install one before building its client,
+//! e.g. `rustls::crypto::ring::default_provider().install_default()`.
+//!
 //! ## Surface
 //!
 //! - [`vendor::Vendor`] — built-in vendor enum (alma, ubuntu, …).
@@ -50,4 +54,13 @@ pub fn enum_to_display<T: serde::Serialize + std::fmt::Debug>(val: &T) -> String
         .ok()
         .and_then(|v| v.as_str().map(String::from))
         .unwrap_or_else(|| format!("{val:?}"))
+}
+
+/// A client builder for tests, with the crypto provider the workspace
+/// leaves to callers installed.
+#[cfg(test)]
+pub(crate) fn test_client_builder() -> reqwest::ClientBuilder {
+    // An error only means a provider is already installed.
+    let _ = rustls::crypto::ring::default_provider().install_default();
+    reqwest::Client::builder()
 }

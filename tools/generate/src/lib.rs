@@ -762,9 +762,17 @@ mod tests {
         assert_eq!(r.err().map(|e| e.to_string()), Some("flaky 0".to_string()));
     }
 
+    /// A client, with the crypto provider the workspace leaves to
+    /// callers installed.
+    fn client() -> reqwest::Client {
+        // An error only means a provider is already installed.
+        let _ = rustls::crypto::ring::default_provider().install_default();
+        reqwest::Client::new()
+    }
+
     /// A real transient error: nothing listens on the discard port.
     async fn refused_connection() -> anyhow::Error {
-        match reqwest::get("http://127.0.0.1:9/").await {
+        match client().get("http://127.0.0.1:9/").send().await {
             Ok(r) => anyhow::anyhow!("unexpectedly got a response: {}", r.status()),
             Err(e) => anyhow::Error::new(e),
         }
@@ -808,7 +816,9 @@ mod tests {
             }
         });
         let result = async {
-            reqwest::get(format!("http://{addr}/"))
+            client()
+                .get(format!("http://{addr}/"))
+                .send()
                 .await?
                 .json::<serde_json::Value>()
                 .await
