@@ -22,6 +22,7 @@ fn stub_api_description_builds_with_file_tree_paths() -> Result<(), String> {
     for expected in [
         "/v1/index.json",
         "/v1/openapi.json",
+        "/v1/images.json",
         "/v1/distros/{distro}/index.json",
         "/v1/distros/{distro}/aliases/latest.json",
         "/v1/distros/{distro}/aliases/lts.json",
@@ -31,7 +32,7 @@ fn stub_api_description_builds_with_file_tree_paths() -> Result<(), String> {
     ] {
         assert!(paths.contains_key(expected), "missing path {expected}");
     }
-    assert_eq!(paths.len(), 8, "unexpected extra paths: {:?}", paths.keys());
+    assert_eq!(paths.len(), 9, "unexpected extra paths: {:?}", paths.keys());
     Ok(())
 }
 

@@ -27,13 +27,15 @@ use serde::de::DeserializeOwned;
 
 use crate::{
     Alias, BuildList, ChecksumFormat, Compression, DigestAlgorithm, Distro, DistroList,
-    ImageFormat, LocationKind, SignatureKind,
+    ImageFormat, ImageList, LocationKind, SignatureKind,
 };
 
 /// An index tree as read from disk.
 #[derive(Debug, Default)]
 pub struct Tree {
     pub distro_list: Option<DistroList>,
+    /// `v1/images.json`
+    pub images: Option<ImageList>,
     /// `v1/openapi.json`
     pub openapi: Option<serde_json::Value>,
     /// `index.html`
@@ -158,6 +160,7 @@ fn load_with(root: &Path, strictness: Strictness) -> Result<Tree, Vec<String>> {
                 .map(|v| tree.docs_html = Some(v))
                 .map_err(|e| format!("read {path:?}: {e}")),
             ["v1", "openapi.json"] => read_file(&path, strictness).map(|v| tree.openapi = Some(v)),
+            ["v1", "images.json"] => read_file(&path, strictness).map(|v| tree.images = Some(v)),
             ["v1", "distros", distro, "index.json"] => read_file(&path, strictness).map(|v| {
                 tree.distros.insert((*distro).to_string(), v);
             }),
@@ -232,6 +235,14 @@ pub fn check(tree: &Tree) -> Vec<String> {
                 .to_string(),
         ),
         (Some(_), Ok(_)) => {}
+    }
+
+    match &tree.images {
+        None => problems.push("missing v1/images.json".to_string()),
+        Some(published) if *published != image_list(tree, distro_list) => problems.push(
+            "v1/images.json differs from the distro and release files it repeats".to_string(),
+        ),
+        Some(_) => {}
     }
 
     let listed: BTreeSet<&str> = distro_list.distros.iter().map(|d| d.id.as_str()).collect();
@@ -407,6 +418,33 @@ pub fn check(tree: &Tree) -> Vec<String> {
 /// build and each artifact within a build is listed once, every
 /// artifact can be downloaded from somewhere, and digests are well
 /// formed.
+/// The image list the tree's distro and release files call for. A
+/// missing release file counts as no builds; other checks report it.
+fn image_list(tree: &Tree, distro_list: &DistroList) -> ImageList {
+    let distros: Vec<(Distro, Vec<BuildList>)> = tree
+        .distros
+        .values()
+        .map(|distro| {
+            let builds = distro
+                .releases
+                .iter()
+                .map(|release| {
+                    tree.releases
+                        .get(&(distro.id.clone(), release.id.clone()))
+                        .cloned()
+                        .unwrap_or_else(|| BuildList {
+                            distro: distro.id.clone(),
+                            release: release.id.clone(),
+                            builds: Vec::new(),
+                        })
+                })
+                .collect();
+            (distro.clone(), builds)
+        })
+        .collect();
+    crate::image_list(distro_list, &distros)
+}
+
 fn check_builds(problems: &mut Vec<String>, distro: &str, release: &str, list: &BuildList) {
     if list.builds.is_empty() {
         problems.push(format!("{distro}/{release}: no builds"));

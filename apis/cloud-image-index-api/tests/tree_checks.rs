@@ -342,6 +342,23 @@ fn digest_that_is_not_lowercase_hex_of_the_right_length_is_caught() -> Result<()
 }
 
 #[test]
+fn missing_image_list_is_caught() -> Result<(), String> {
+    let s = Scratch::new("missing-images")?;
+    std::fs::remove_file(s.0.join("v1/images.json")).map_err(|e| e.to_string())?;
+    s.expect_problem("missing v1/images.json")
+}
+
+/// The image list repeats the release files, so it must agree with them.
+#[test]
+fn stale_image_list_is_caught() -> Result<(), String> {
+    let s = Scratch::new("stale-images")?;
+    s.edit_json("v1/images.json", |v| {
+        v["images"][0]["build"]["build"] = serde_json::json!("not-the-current-build");
+    })?;
+    s.expect_problem("v1/images.json differs")
+}
+
+#[test]
 fn missing_docs_page_is_caught() -> Result<(), String> {
     let s = Scratch::new("docs-missing")?;
     std::fs::remove_file(s.0.join("docs/index.html")).map_err(|e| e.to_string())?;

@@ -227,6 +227,7 @@ pub fn write_tree(
     let page = docs.join("index.html");
     std::fs::write(&page, api::DOCS_HTML).with_context(|| format!("write {}", page.display()))?;
     write_json(&v1.join("index.json"), list)?;
+    write_json(&v1.join("images.json"), &api::image_list(list, distros))?;
     write_json(
         &v1.join("openapi.json"),
         &api::openapi().map_err(anyhow::Error::msg)?,

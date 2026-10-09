@@ -1,0 +1,614 @@
+{
+  "images": [
+    {
+      "distro": {
+        "id": "ubuntu",
+        "name": "Ubuntu",
+        "os_family": "linux",
+        "homepage": "https://ubuntu.com/"
+      },
+      "release": {
+        "id": "resolute",
+        "version": "26.04",
+        "title": "26.04 LTS Resolute Raccoon",
+        "aliases": [
+          "latest",
+          "lts"
+        ],
+        "eol_date": "2031-05-29",
+        "osinfo": {
+          "id": "http://ubuntu.com/ubuntu/26.04",
+          "short_id": "ubuntu26.04"
+        }
+      },
+      "build": {
+        "build": "20260927",
+        "point_release": null,
+        "published_at": null,
+        "first_seen": "2026-10-05T17:00:00Z",
+        "osinfo": null,
+        "artifacts": [
+          {
+            "variant": "server",
+            "default_variant": true,
+            "arch": "x86_64",
+            "format": "qcow2",
+            "compression": "none",
+            "firmware": [],
+            "datasources": [
+              "nocloud"
+            ],
+            "ssh_key_injection": true,
+            "size": 865115136,
+            "locations": [
+              {
+                "url": "https://cloud-images.ubuntu.com/releases/resolute/release-20260927/ubuntu-26.04-server-cloudimg-amd64.img",
+                "kind": "primary",
+                "redirects_off_host": false
+              }
+            ],
+            "integrity": {
+              "digests": [
+                {
+                  "algorithm": "sha256",
+                  "value": "8800651811af9a85465ad1d552add729947bb16488dddb4a9b5305a3d97332b2",
+                  "source": {
+                    "url": "https://cloud-images.ubuntu.com/releases/resolute/release-20260927/SHA256SUMS",
+                    "format": "gnu",
+                    "filename": "ubuntu-26.04-server-cloudimg-amd64.img"
+                  }
+                }
+              ],
+              "signatures": [
+                {
+                  "url": "https://cloud-images.ubuntu.com/releases/resolute/release-20260927/SHA256SUMS.gpg",
+                  "kind": "pgp_detached",
+                  "signs": "https://cloud-images.ubuntu.com/releases/resolute/release-20260927/SHA256SUMS",
+                  "key_url": null
+                }
+              ],
+              "http": {
+                "last_modified": "Tue, 29 Sep 2026 00:41:16 GMT",
+                "etag": "\"33909c00-65c9470b9e7b6\""
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "distro": {
+        "id": "ubuntu",
+        "name": "Ubuntu",
+        "os_family": "linux",
+        "homepage": "https://ubuntu.com/"
+      },
+      "release": {
+        "id": "noble",
+        "version": "24.04",
+        "title": "24.04 LTS Noble Numbat",
+        "aliases": [],
+        "eol_date": "2029-05-31",
+        "osinfo": {
+          "id": "http://ubuntu.com/ubuntu/24.04",
+          "short_id": "ubuntu24.04"
+        }
+      },
+      "build": {
+        "build": "20260926",
+        "point_release": null,
+        "published_at": null,
+        "first_seen": "2026-10-05T17:00:00Z",
+        "osinfo": null,
+        "artifacts": [
+          {
+            "variant": "server",
+            "default_variant": true,
+            "arch": "x86_64",
+            "format": "qcow2",
+            "compression": "none",
+            "firmware": [],
+            "datasources": [
+              "nocloud"
+            ],
+            "ssh_key_injection": true,
+            "size": 625612288,
+            "locations": [
+              {
+                "url": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/ubuntu-24.04-server-cloudimg-amd64.img",
+                "kind": "primary",
+                "redirects_off_host": false
+              }
+            ],
+            "integrity": {
+              "digests": [
+                {
+                  "algorithm": "sha256",
+                  "value": "6a81c37564db9b1ee84e141922625e1d7c5b389b99bb3c572e0243607d5bb4d2",
+                  "source": {
+                    "url": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/SHA256SUMS",
+                    "format": "gnu",
+                    "filename": "ubuntu-24.04-server-cloudimg-amd64.img"
+                  }
+                }
+              ],
+              "signatures": [
+                {
+                  "url": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/SHA256SUMS.gpg",
+                  "kind": "pgp_detached",
+                  "signs": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/SHA256SUMS",
+                  "key_url": null
+                }
+              ],
+              "http": {
+                "last_modified": "Sat, 26 Sep 2026 18:31:16 GMT",
+                "etag": "\"254a1600-65c6709d0ff5c\""
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "distro": {
+        "id": "ubuntu",
+        "name": "Ubuntu",
+        "os_family": "linux",
+        "homepage": "https://ubuntu.com/"
+      },
+      "release": {
+        "id": "jammy",
+        "version": "22.04",
+        "title": "22.04 LTS Jammy Jellyfish",
+        "aliases": [],
+        "eol_date": "2027-06-01",
+        "osinfo": {
+          "id": "http://ubuntu.com/ubuntu/22.04",
+          "short_id": "ubuntu22.04"
+        }
+      },
+      "build": {
+        "build": "20261004",
+        "point_release": null,
+        "published_at": null,
+        "first_seen": "2026-10-05T17:00:00Z",
+        "osinfo": null,
+        "artifacts": [
+          {
+            "variant": "server",
+            "default_variant": true,
+            "arch": "x86_64",
+            "format": "qcow2",
+            "compression": "none",
+            "firmware": [],
+            "datasources": [
+              "nocloud"
+            ],
+            "ssh_key_injection": true,
+            "size": 730497536,
+            "locations": [
+              {
+                "url": "https://cloud-images.ubuntu.com/releases/jammy/release-20261004/ubuntu-22.04-server-cloudimg-amd64.img",
+                "kind": "primary",
+                "redirects_off_host": false
+              }
+            ],
+            "integrity": {
+              "digests": [
+                {
+                  "algorithm": "sha256",
+                  "value": "012d81fade7e8ff4428fc35dfeee711d66d1f47d5ea9c5c8ced96a85b959835c",
+                  "source": {
+                    "url": "https://cloud-images.ubuntu.com/releases/jammy/release-20261004/SHA256SUMS",
+                    "format": "gnu",
+                    "filename": "ubuntu-22.04-server-cloudimg-amd64.img"
+                  }
+                }
+              ],
+              "signatures": [
+                {
+                  "url": "https://cloud-images.ubuntu.com/releases/jammy/release-20261004/SHA256SUMS.gpg",
+                  "kind": "pgp_detached",
+                  "signs": "https://cloud-images.ubuntu.com/releases/jammy/release-20261004/SHA256SUMS",
+                  "key_url": null
+                }
+              ],
+              "http": {
+                "last_modified": "Sun, 04 Oct 2026 21:11:35 GMT",
+                "etag": "\"2b8a8200-65d0a35e5ca58\""
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "distro": {
+        "id": "rocky",
+        "name": "Rocky Linux",
+        "os_family": "linux",
+        "homepage": "https://rockylinux.org/"
+      },
+      "release": {
+        "id": "10",
+        "version": "10",
+        "title": "Rocky Linux 10",
+        "aliases": [
+          "latest"
+        ],
+        "eol_date": "2035-05-31",
+        "osinfo": null
+      },
+      "build": {
+        "build": "10.2-20260525.0",
+        "point_release": "10.2",
+        "published_at": null,
+        "first_seen": "2026-10-05T17:00:00Z",
+        "osinfo": null,
+        "artifacts": [
+          {
+            "variant": "base",
+            "default_variant": true,
+            "arch": "x86_64",
+            "format": "qcow2",
+            "compression": "none",
+            "firmware": [],
+            "datasources": [
+              "nocloud"
+            ],
+            "ssh_key_injection": true,
+            "size": 544997376,
+            "locations": [
+              {
+                "url": "https://download.rockylinux.org/pub/rocky/10/images/x86_64/Rocky-10-GenericCloud-Base-10.2-20260525.0.x86_64.qcow2",
+                "kind": "primary",
+                "redirects_off_host": false
+              }
+            ],
+            "integrity": {
+              "digests": [
+                {
+                  "algorithm": "sha256",
+                  "value": "9fc9e9ff16888bb68ac39b0392e25c9c92684d50c85f1cce6ab549363bbc4b48",
+                  "source": {
+                    "url": "https://download.rockylinux.org/pub/rocky/10/images/x86_64/Rocky-10-GenericCloud-Base-10.2-20260525.0.x86_64.qcow2.CHECKSUM",
+                    "format": "bsd",
+                    "filename": "Rocky-10-GenericCloud-Base-10.2-20260525.0.x86_64.qcow2"
+                  }
+                }
+              ],
+              "signatures": [
+                {
+                  "url": "https://download.rockylinux.org/pub/rocky/10/images/x86_64/Rocky-10-GenericCloud-Base-10.2-20260525.0.x86_64.qcow2.CHECKSUM.asc",
+                  "kind": "pgp_detached",
+                  "signs": "https://download.rockylinux.org/pub/rocky/10/images/x86_64/Rocky-10-GenericCloud-Base-10.2-20260525.0.x86_64.qcow2.CHECKSUM",
+                  "key_url": null
+                }
+              ],
+              "http": {
+                "last_modified": "Tue, 26 May 2026 00:21:12 GMT",
+                "etag": "\"6a14e778-207c0000\""
+              }
+            }
+          },
+          {
+            "variant": "lvm",
+            "default_variant": false,
+            "arch": "x86_64",
+            "format": "qcow2",
+            "compression": "none",
+            "firmware": [],
+            "datasources": [
+              "nocloud"
+            ],
+            "ssh_key_injection": true,
+            "size": 545062912,
+            "locations": [
+              {
+                "url": "https://download.rockylinux.org/pub/rocky/10/images/x86_64/Rocky-10-GenericCloud-LVM-10.2-20260525.0.x86_64.qcow2",
+                "kind": "primary",
+                "redirects_off_host": false
+              }
+            ],
+            "integrity": {
+              "digests": [
+                {
+                  "algorithm": "sha256",
+                  "value": "3c35f0e2960e6062bda80ffd8a62ad35e185807b4747126acc7868a8ecafce3e",
+                  "source": {
+                    "url": "https://download.rockylinux.org/pub/rocky/10/images/x86_64/Rocky-10-GenericCloud-LVM-10.2-20260525.0.x86_64.qcow2.CHECKSUM",
+                    "format": "bsd",
+                    "filename": "Rocky-10-GenericCloud-LVM-10.2-20260525.0.x86_64.qcow2"
+                  }
+                }
+              ],
+              "signatures": [
+                {
+                  "url": "https://download.rockylinux.org/pub/rocky/10/images/x86_64/Rocky-10-GenericCloud-LVM-10.2-20260525.0.x86_64.qcow2.CHECKSUM.asc",
+                  "kind": "pgp_detached",
+                  "signs": "https://download.rockylinux.org/pub/rocky/10/images/x86_64/Rocky-10-GenericCloud-LVM-10.2-20260525.0.x86_64.qcow2.CHECKSUM",
+                  "key_url": null
+                }
+              ],
+              "http": {
+                "last_modified": "Tue, 26 May 2026 00:14:49 GMT",
+                "etag": "\"6a14e5f9-207d0000\""
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "distro": {
+        "id": "rocky",
+        "name": "Rocky Linux",
+        "os_family": "linux",
+        "homepage": "https://rockylinux.org/"
+      },
+      "release": {
+        "id": "9",
+        "version": "9",
+        "title": "Rocky Linux 9",
+        "aliases": [],
+        "eol_date": "2032-05-31",
+        "osinfo": null
+      },
+      "build": {
+        "build": "9.8-20260525.0",
+        "point_release": "9.8",
+        "published_at": null,
+        "first_seen": "2026-10-05T17:00:00Z",
+        "osinfo": null,
+        "artifacts": [
+          {
+            "variant": "base",
+            "default_variant": true,
+            "arch": "x86_64",
+            "format": "qcow2",
+            "compression": "none",
+            "firmware": [],
+            "datasources": [
+              "nocloud"
+            ],
+            "ssh_key_injection": true,
+            "size": 645988352,
+            "locations": [
+              {
+                "url": "https://download.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base-9.8-20260525.0.x86_64.qcow2",
+                "kind": "primary",
+                "redirects_off_host": false
+              }
+            ],
+            "integrity": {
+              "digests": [
+                {
+                  "algorithm": "sha256",
+                  "value": "92c206cc6f790c61583247eefe87890f8828420662c17cacf247cec78ab4eec8",
+                  "source": {
+                    "url": "https://download.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base-9.8-20260525.0.x86_64.qcow2.CHECKSUM",
+                    "format": "bsd",
+                    "filename": "Rocky-9-GenericCloud-Base-9.8-20260525.0.x86_64.qcow2"
+                  }
+                }
+              ],
+              "signatures": [
+                {
+                  "url": "https://download.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base-9.8-20260525.0.x86_64.qcow2.CHECKSUM.asc",
+                  "kind": "pgp_detached",
+                  "signs": "https://download.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base-9.8-20260525.0.x86_64.qcow2.CHECKSUM",
+                  "key_url": null
+                }
+              ],
+              "http": {
+                "last_modified": "Mon, 25 May 2026 19:59:33 GMT",
+                "etag": "\"6a14aa25-26810000\""
+              }
+            }
+          },
+          {
+            "variant": "lvm",
+            "default_variant": false,
+            "arch": "x86_64",
+            "format": "qcow2",
+            "compression": "none",
+            "firmware": [],
+            "datasources": [
+              "nocloud"
+            ],
+            "ssh_key_injection": true,
+            "size": 658636800,
+            "locations": [
+              {
+                "url": "https://download.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-LVM-9.8-20260525.0.x86_64.qcow2",
+                "kind": "primary",
+                "redirects_off_host": false
+              }
+            ],
+            "integrity": {
+              "digests": [
+                {
+                  "algorithm": "sha256",
+                  "value": "c2216d0ed5778b6dbcceff9d6c8ea3339aa3a7f1ccb8131a6d60bb3d39b7b267",
+                  "source": {
+                    "url": "https://download.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-LVM-9.8-20260525.0.x86_64.qcow2.CHECKSUM",
+                    "format": "bsd",
+                    "filename": "Rocky-9-GenericCloud-LVM-9.8-20260525.0.x86_64.qcow2"
+                  }
+                }
+              ],
+              "signatures": [
+                {
+                  "url": "https://download.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-LVM-9.8-20260525.0.x86_64.qcow2.CHECKSUM.asc",
+                  "kind": "pgp_detached",
+                  "signs": "https://download.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-LVM-9.8-20260525.0.x86_64.qcow2.CHECKSUM",
+                  "key_url": null
+                }
+              ],
+              "http": {
+                "last_modified": "Tue, 26 May 2026 02:47:33 GMT",
+                "etag": "\"6a1509c5-27420000\""
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "distro": {
+        "id": "rocky",
+        "name": "Rocky Linux",
+        "os_family": "linux",
+        "homepage": "https://rockylinux.org/"
+      },
+      "release": {
+        "id": "8",
+        "version": "8",
+        "title": "Rocky Linux 8",
+        "aliases": [],
+        "eol_date": "2029-05-31",
+        "osinfo": null
+      },
+      "build": {
+        "build": "8.10-20240528.0",
+        "point_release": "8.10",
+        "published_at": null,
+        "first_seen": "2026-10-05T17:00:00Z",
+        "osinfo": null,
+        "artifacts": [
+          {
+            "variant": "base",
+            "default_variant": true,
+            "arch": "x86_64",
+            "format": "qcow2",
+            "compression": "none",
+            "firmware": [],
+            "datasources": [
+              "nocloud"
+            ],
+            "ssh_key_injection": true,
+            "size": 2065760256,
+            "locations": [
+              {
+                "url": "https://download.rockylinux.org/pub/rocky/8/images/x86_64/Rocky-8-GenericCloud-Base-8.10-20240528.0.x86_64.qcow2",
+                "kind": "primary",
+                "redirects_off_host": false
+              }
+            ],
+            "integrity": {
+              "digests": [
+                {
+                  "algorithm": "sha256",
+                  "value": "e56066c58606191e96184de9a9183a3af33c59bcbd8740d8b10ca054a7a89c14",
+                  "source": {
+                    "url": "https://download.rockylinux.org/pub/rocky/8/images/x86_64/Rocky-8-GenericCloud-Base-8.10-20240528.0.x86_64.qcow2.CHECKSUM",
+                    "format": "bsd",
+                    "filename": "Rocky-8-GenericCloud-Base-8.10-20240528.0.x86_64.qcow2"
+                  }
+                }
+              ],
+              "signatures": [],
+              "http": {
+                "last_modified": "Wed, 29 May 2024 14:14:04 GMT",
+                "etag": "\"6657382c-7b210000\""
+              }
+            }
+          },
+          {
+            "variant": "lvm",
+            "default_variant": false,
+            "arch": "x86_64",
+            "format": "qcow2",
+            "compression": "none",
+            "firmware": [],
+            "datasources": [
+              "nocloud"
+            ],
+            "ssh_key_injection": true,
+            "size": 2225078272,
+            "locations": [
+              {
+                "url": "https://download.rockylinux.org/pub/rocky/8/images/x86_64/Rocky-8-GenericCloud-LVM-8.10-20240528.0.x86_64.qcow2",
+                "kind": "primary",
+                "redirects_off_host": false
+              }
+            ],
+            "integrity": {
+              "digests": [
+                {
+                  "algorithm": "sha256",
+                  "value": "13916bb426c7abf71f2d7f8523f2588a05e8cc9248d08b24d95241fce913e095",
+                  "source": {
+                    "url": "https://download.rockylinux.org/pub/rocky/8/images/x86_64/Rocky-8-GenericCloud-LVM-8.10-20240528.0.x86_64.qcow2.CHECKSUM",
+                    "format": "bsd",
+                    "filename": "Rocky-8-GenericCloud-LVM-8.10-20240528.0.x86_64.qcow2"
+                  }
+                }
+              ],
+              "signatures": [],
+              "http": {
+                "last_modified": "Wed, 29 May 2024 14:15:23 GMT",
+                "etag": "\"6657387b-84a00000\""
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "distro": {
+        "id": "talos",
+        "name": "Talos Linux",
+        "os_family": "linux",
+        "homepage": "https://www.talos.dev/"
+      },
+      "release": {
+        "id": "1.14",
+        "version": "1.14",
+        "title": "Talos Linux 1.14",
+        "aliases": [
+          "latest"
+        ],
+        "eol_date": null,
+        "osinfo": null
+      },
+      "build": {
+        "build": "v1.14.2",
+        "point_release": null,
+        "published_at": "2026-09-29T20:44:07Z",
+        "first_seen": "2026-10-05T17:00:00Z",
+        "osinfo": null,
+        "artifacts": [
+          {
+            "variant": "nocloud",
+            "default_variant": true,
+            "arch": "x86_64",
+            "format": "raw",
+            "compression": "xz",
+            "firmware": [],
+            "datasources": [
+              "nocloud"
+            ],
+            "ssh_key_injection": false,
+            "size": 232010648,
+            "locations": [
+              {
+                "url": "https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.14.2/nocloud-amd64.raw.xz",
+                "kind": "primary",
+                "redirects_off_host": false
+              }
+            ],
+            "integrity": {
+              "digests": [],
+              "signatures": [],
+              "http": {
+                "last_modified": null,
+                "etag": null
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

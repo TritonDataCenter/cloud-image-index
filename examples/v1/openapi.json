@@ -385,6 +385,41 @@
         },
         "type": "object"
       },
+      "Image": {
+        "description": "One current build, with the distro and release it belongs to.",
+        "properties": {
+          "build": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Build"
+              }
+            ],
+            "description": "The build, as the release's `index.json` lists it."
+          },
+          "distro": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DistroSummary"
+              }
+            ],
+            "description": "The distro, as `v1/index.json` lists it."
+          },
+          "release": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Release"
+              }
+            ],
+            "description": "The release, as the distro's `index.json` lists it."
+          }
+        },
+        "required": [
+          "build",
+          "distro",
+          "release"
+        ],
+        "type": "object"
+      },
       "ImageFormat": {
         "description": "Disk image format of the file, once decompressed.\n\nKnown values:\n\n- `qcow2`\n- `raw`\n- `vmdk`",
         "oneOf": [
@@ -401,6 +436,21 @@
             "type": "string"
           }
         ]
+      },
+      "ImageList": {
+        "description": "`v1/images.json`: every current build in the index, one entry each, so a client can list or search them with a single request. It repeats what the distro and release files say: the distros in `v1/index.json` order, each distro's releases in its order, and each release's current builds newest first. Archived builds are left out.",
+        "properties": {
+          "images": {
+            "items": {
+              "$ref": "#/components/schemas/Image"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "images"
+        ],
+        "type": "object"
       },
       "Integrity": {
         "description": "Everything the vendor offers for checking a download. Clients choose which of it to use, and whether to re-fetch it from the vendor rather than trust the copy here.",
@@ -828,6 +878,31 @@
           }
         },
         "summary": "Current builds of a release, from the vendor's main tree."
+      }
+    },
+    "/v1/images.json": {
+      "get": {
+        "description": "The same builds as the release files, in one request.",
+        "operationId": "images",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageList"
+                }
+              }
+            },
+            "description": "successful operation"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/Error"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "summary": "Every current build in the index, with its distro and release."
       }
     },
     "/v1/index.json": {

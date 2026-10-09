@@ -163,6 +163,54 @@ pub enum OsFamily {
 }
 
 // ---------------------------------------------------------------------
+// v1/images.json
+// ---------------------------------------------------------------------
+
+/// `v1/images.json`: every current build in the index, one entry each,
+/// so a client can list or search them with a single request. It repeats
+/// what the distro and release files say: the distros in `v1/index.json`
+/// order, each distro's releases in its order, and each release's
+/// current builds newest first. Archived builds are left out.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct ImageList {
+    pub images: Vec<Image>,
+}
+
+/// One current build, with the distro and release it belongs to.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct Image {
+    /// The distro, as `v1/index.json` lists it.
+    pub distro: DistroSummary,
+    /// The release, as the distro's `index.json` lists it.
+    pub release: Release,
+    /// The build, as the release's `index.json` lists it.
+    pub build: Build,
+}
+
+/// The image list for an index: `list` is its `v1/index.json`, and each
+/// distro comes with the build lists of its releases, in the same order
+/// as `distro.releases`. A distro or release missing from `distros` is
+/// left out; the tree checks report it.
+pub fn image_list(list: &DistroList, distros: &[(Distro, Vec<BuildList>)]) -> ImageList {
+    let mut images = Vec::new();
+    for summary in &list.distros {
+        let Some((distro, build_lists)) = distros.iter().find(|(d, _)| d.id == summary.id) else {
+            continue;
+        };
+        for (release, build_list) in distro.releases.iter().zip(build_lists) {
+            for build in &build_list.builds {
+                images.push(Image {
+                    distro: summary.clone(),
+                    release: release.clone(),
+                    build: build.clone(),
+                });
+            }
+        }
+    }
+    ImageList { images }
+}
+
+// ---------------------------------------------------------------------
 // v1/distros/<distro>/index.json
 // ---------------------------------------------------------------------
 
@@ -521,6 +569,14 @@ pub trait CloudImageIndexApi {
     async fn distro_list(
         rqctx: RequestContext<Self::Context>,
     ) -> Result<HttpResponseOk<DistroList>, HttpError>;
+
+    /// Every current build in the index, with its distro and release.
+    ///
+    /// The same builds as the release files, in one request.
+    #[endpoint { method = GET, path = "/v1/images.json" }]
+    async fn images(
+        rqctx: RequestContext<Self::Context>,
+    ) -> Result<HttpResponseOk<ImageList>, HttpError>;
 
     /// One distro and its releases.
     #[endpoint { method = GET, path = "/v1/distros/{distro}/index.json" }]
