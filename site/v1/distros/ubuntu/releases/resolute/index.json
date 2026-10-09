@@ -34,9 +34,9 @@
                 "algorithm": "sha256",
                 "value": "8800651811af9a85465ad1d552add729947bb16488dddb4a9b5305a3d97332b2",
                 "source": {
-                  "url": "https://cloud-images.ubuntu.com/releases/streams/v1/com.ubuntu.cloud:released:download.json",
-                  "format": "vendor_document",
-                  "filename": null
+                  "url": "https://cloud-images.ubuntu.com/server/releases/resolute/release-20260927/SHA256SUMS",
+                  "format": "gnu",
+                  "filename": "ubuntu-26.04-server-cloudimg-amd64.img"
                 }
               }
             ],

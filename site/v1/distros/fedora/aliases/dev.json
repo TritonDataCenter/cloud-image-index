@@ -34,13 +34,20 @@
                 "algorithm": "sha256",
                 "value": "06bd4382a3bc5e5f94cd520f9ee15bdfb38d7bb72552b27fe06d581ba9a84292",
                 "source": {
-                  "url": "https://fedoraproject.org/releases.json",
-                  "format": "vendor_document",
-                  "filename": null
+                  "url": "https://download.fedoraproject.org/pub/fedora/linux/releases/test/45_Beta/Cloud/x86_64/images/Fedora-Cloud-images-45_Beta-1.3-x86_64-CHECKSUM",
+                  "format": "bsd",
+                  "filename": "Fedora-Cloud-Base-Generic-45_Beta-1.3.x86_64.qcow2"
                 }
               }
             ],
-            "signatures": [],
+            "signatures": [
+              {
+                "url": "https://download.fedoraproject.org/pub/fedora/linux/releases/test/45_Beta/Cloud/x86_64/images/Fedora-Cloud-images-45_Beta-1.3-x86_64-CHECKSUM",
+                "kind": "pgp_clearsigned",
+                "signs": "https://download.fedoraproject.org/pub/fedora/linux/releases/test/45_Beta/Cloud/x86_64/images/Fedora-Cloud-images-45_Beta-1.3-x86_64-CHECKSUM",
+                "key_url": null
+              }
+            ],
             "http": {
               "last_modified": null,
               "etag": null

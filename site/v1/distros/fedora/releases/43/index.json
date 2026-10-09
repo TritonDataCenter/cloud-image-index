@@ -34,9 +34,9 @@
                 "algorithm": "sha256",
                 "value": "846574c8a97cd2d8dc1f231062d73107cc85cbbbda56335e264a46e3a6c8ab2f",
                 "source": {
-                  "url": "https://fedoraproject.org/releases.json",
-                  "format": "vendor_document",
-                  "filename": null
+                  "url": "https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-43-1.6-x86_64-CHECKSUM",
+                  "format": "bsd",
+                  "filename": "Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2"
                 }
               }
             ],

@@ -34,9 +34,9 @@
                 "algorithm": "sha256",
                 "value": "28680fe5b371a5a82ebf43a31926e086a168e59949d03969c5093e7071f90b7f",
                 "source": {
-                  "url": "https://fedoraproject.org/releases.json",
-                  "format": "vendor_document",
-                  "filename": null
+                  "url": "https://download.fedoraproject.org/pub/fedora/linux/releases/44/Cloud/x86_64/images/Fedora-Cloud-44-1.7-x86_64-CHECKSUM",
+                  "format": "bsd",
+                  "filename": "Fedora-Cloud-Base-Generic-44-1.7.x86_64.qcow2"
                 }
               }
             ],
