@@ -258,6 +258,128 @@ fn man_args(page: &mut roff::Roff, cmd: &clap::Command, with_help: bool) {
     }
 }
 
+/// How to boot and configure the imported images, for the man page.
+const USING_THE_IMAGES: &str = include_str!("using.txt");
+
+/// Hand-written sections, in a light markup: `# ` starts a section and
+/// `## ` a subsection, `- ` a list item (continued by lines indented two
+/// spaces), a line indented four spaces is part of a literal example, and
+/// a blank line ends a paragraph. `code` spans become bold.
+fn man_sections(page: &mut roff::Roff, text: &str) {
+    let mut paragraph: Vec<&str> = Vec::new();
+    let mut item = false;
+    let mut literal: Vec<&str> = Vec::new();
+    // A heading already starts a paragraph, so the first needs no `.PP`.
+    let mut after_heading = true;
+
+    fn flush(
+        page: &mut roff::Roff,
+        paragraph: &mut Vec<&str>,
+        item: &mut bool,
+        literal: &mut Vec<&str>,
+        after_heading: &mut bool,
+    ) {
+        if !paragraph.is_empty() {
+            if *item {
+                page.control("IP", ["\\(bu", "2"]);
+            } else if !*after_heading {
+                page.control("PP", []);
+            }
+            page.text(man_inlines(&paragraph.join(" ")));
+            paragraph.clear();
+            *after_heading = false;
+        }
+        *item = false;
+        if !literal.is_empty() {
+            if !*after_heading {
+                page.control("PP", []);
+            }
+            page.control("RS", ["4"]);
+            page.control("nf", []);
+            for line in literal.iter() {
+                page.text([roff::roman(*line)]);
+            }
+            page.control("fi", []);
+            page.control("RE", []);
+            literal.clear();
+            *after_heading = false;
+        }
+    }
+
+    for line in text.lines() {
+        if let Some(code) = line.strip_prefix("    ") {
+            if !paragraph.is_empty() {
+                flush(
+                    page,
+                    &mut paragraph,
+                    &mut item,
+                    &mut literal,
+                    &mut after_heading,
+                );
+            }
+            literal.push(code);
+            continue;
+        }
+        if !literal.is_empty() {
+            flush(
+                page,
+                &mut paragraph,
+                &mut item,
+                &mut literal,
+                &mut after_heading,
+            );
+        }
+        if let Some(title) = line.strip_prefix("## ") {
+            flush(
+                page,
+                &mut paragraph,
+                &mut item,
+                &mut literal,
+                &mut after_heading,
+            );
+            page.control("SS", [man_arg(title).as_str()]);
+            after_heading = true;
+        } else if let Some(title) = line.strip_prefix("# ") {
+            flush(
+                page,
+                &mut paragraph,
+                &mut item,
+                &mut literal,
+                &mut after_heading,
+            );
+            page.control("SH", [man_arg(title).as_str()]);
+            after_heading = true;
+        } else if let Some(first) = line.strip_prefix("- ") {
+            flush(
+                page,
+                &mut paragraph,
+                &mut item,
+                &mut literal,
+                &mut after_heading,
+            );
+            item = true;
+            paragraph.push(first);
+        } else if line.trim().is_empty() {
+            flush(
+                page,
+                &mut paragraph,
+                &mut item,
+                &mut literal,
+                &mut after_heading,
+            );
+        } else {
+            paragraph.push(line.trim());
+        }
+    }
+    flush(
+        page,
+        &mut paragraph,
+        &mut item,
+        &mut literal,
+        &mut after_heading,
+    );
+}
+
 /// The page itself, dated `date` when known.
 fn man_page(cmd: &clap::Command, date: Option<&str>) -> String {
     let name = cmd.get_name();
@@ -306,8 +428,15 @@ fn man_page(cmd: &clap::Command, date: Option<&str>) -> String {
         man_args(&mut page, sub, false);
     }
 
+    man_sections(&mut page, USING_THE_IMAGES);
+
     page.control("SH", ["SEE ALSO"]);
-    page.text([roff::bold("imgadm"), roff::roman("(8)")]);
+    page.text([
+        roff::bold("imgadm"),
+        roff::roman("(8), "),
+        roff::bold("vmadm"),
+        roff::roman("(8)"),
+    ]);
     page.render()
 }
 
@@ -769,6 +898,28 @@ mod tests {
         );
         std::fs::remove_dir_all(&dir)?;
         Ok(())
+    }
+
+    /// The page explains how to boot what was imported: the hand-written
+    /// sections follow the commands, with their examples kept literal.
+    #[test]
+    fn the_page_explains_how_to_use_the_images() {
+        let mut cmd = <Args as clap::CommandFactory>::command();
+        cmd.build();
+        let page = man_page(&cmd, Some("2026-10-09"));
+        let commands = page.find(".SH COMMANDS").unwrap_or(usize::MAX);
+        let using = page.find(".SH \"USING THE IMAGES\"").unwrap_or(0);
+        assert!(commands < using, "{page}");
+        for wanted in [
+            ".SS \"How a guest gets its configuration\"",
+            ".SH \"FURTHER READING\"",
+            "\\fBcloud\\-init:user\\-data\\fR",
+            ".nf\n",
+            "    \"cloud\\-init:user\\-data\": $userdata",
+            "\\fBvmadm\\fR(8)",
+        ] {
+            assert!(page.contains(wanted), "{wanted:?} missing from:\n{page}");
+        }
     }
 
     /// An undated build (no CLOUD_IMAGE_DATE) still gives `.TH` its date
