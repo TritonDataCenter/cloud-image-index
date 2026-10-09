@@ -13,6 +13,7 @@
 //! `imgadm avail` does.
 
 mod import;
+mod update;
 
 use std::path::PathBuf;
 
@@ -65,6 +66,13 @@ enum Command {
     /// The download must match the index's digest and the digest in the
     /// vendor's own checksum file. Off SmartOS this is always a dry run.
     Import(ImportArgs),
+    /// Update cloud-image to the newest release, with its man page.
+    ///
+    /// Downloads the release's binary next to this one, checks it against
+    /// the release's SHA256SUMS and its own --version, then replaces this
+    /// binary with it. A man page installed beside it (as install.sh does)
+    /// is rewritten to match. SmartOS only.
+    SelfUpdate(SelfUpdateArgs),
     /// Write the man page, `cloud-image.8`, into a directory.
     #[command(hide = true)]
     Man {
@@ -72,6 +80,17 @@ enum Command {
         #[arg(long, default_value = ".")]
         out: PathBuf,
     },
+}
+
+#[derive(clap::Args)]
+struct SelfUpdateArgs {
+    /// Only say whether there is a newer release.
+    #[arg(long)]
+    check: bool,
+    /// Install this release (e.g. `v0.9.0`) instead of the newest, even
+    /// an older one.
+    #[arg(long)]
+    release: Option<String>,
 }
 
 #[derive(clap::Args)]
@@ -671,11 +690,43 @@ fn remove_leftovers(files: &[PathBuf], dirs: &[PathBuf]) {
     }
 }
 
+async fn self_update_cmd(args: SelfUpdateArgs) -> Result<()> {
+    let http = http_client()?;
+    let current = semver::Version::parse(env!("CARGO_PKG_VERSION"))?;
+    let tag = update::release_tag(&http, &update::releases_api()?, args.release.as_deref()).await?;
+    let release = update::tag_version(&tag)?;
+    let decision = update::decide(&current, &release, args.release.is_some());
+    if args.check {
+        match decision {
+            update::Decision::Update => println!("cloud-image {current}; {tag} is available"),
+            update::Decision::UpToDate => println!("cloud-image {current} is up to date ({tag})"),
+        }
+        return Ok(());
+    }
+    if decision == update::Decision::UpToDate {
+        println!("cloud-image {current} is up to date ({tag})");
+        return Ok(());
+    }
+    anyhow::ensure!(
+        nocloud_import::host::is_smartos()?,
+        "self-update installs the SmartOS (illumos) binary, so it runs only on SmartOS"
+    );
+    let exe = std::env::current_exe().context("find this binary")?;
+    update::replace_binary(&http, &update::release_url(&tag)?, &exe, &release).await?;
+    println!("Updated {} from {current} to {release}.", exe.display());
+    match update::refresh_man_page(&exe).await? {
+        Some(page) => println!("Updated {}.", page.display()),
+        None => println!("No installed man page beside it to update."),
+    }
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     match Args::parse().command {
         Command::Avail(args) => avail_cmd(args).await?,
         Command::Import(args) => import_cmd(args).await?,
+        Command::SelfUpdate(args) => self_update_cmd(args).await?,
         Command::Man { out } => write_man_page(&out, COMMIT_DATE)?,
     }
     Ok(())

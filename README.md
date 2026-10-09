@@ -35,7 +35,8 @@ curl -fsSL https://github.com/TritonDataCenter/cloud-image-index/releases/latest
 
 This installs `/opt/tools/sbin/cloud-image` and its man page,
 `cloud-image(8)`. Then `cloud-image avail` lists the images and
-`cloud-image import <distro> <release>` imports one.
+`cloud-image import <distro> <release>` imports one. Later,
+`cloud-image self-update` updates both to the newest release.
 
 To release a new version, bump `version` in `tools/cloud-image/Cargo.toml`,
 merge that, and push a matching tag (`git tag v0.9.0 && git push origin

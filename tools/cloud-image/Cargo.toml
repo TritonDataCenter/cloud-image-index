@@ -23,9 +23,13 @@ resolvers = { package = "cloud-image-index-resolvers", path = "../../libs/resolv
 clap = { workspace = true }
 reqwest = { workspace = true }
 roff = { workspace = true }
+semver = { workspace = true }
 rustls = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 url = { workspace = true }
 uuid = { workspace = true }
 webpki-root-certs = { workspace = true }
+
+[dev-dependencies]
+sha2 = { workspace = true }
