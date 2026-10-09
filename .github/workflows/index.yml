@@ -53,7 +53,15 @@ jobs:
       vendors: ${{ steps.vendors.outputs.vendors }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # rust-toolchain.toml selects the toolchain; rustup installs it.
+      # Install the toolchain rust-toolchain.toml names, and rustup first if
+      # the runner lacks it: the self-hosted runners are shared and their
+      # Rust setup is not ours to rely on. No cache (we chose not to cache),
+      # and warnings stay warnings (the action's default would deny them in
+      # every later build).
+      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        with:
+          cache: false
+          build-warnings: warn
       - name: Build the generator
         run: cargo build --release --locked -p cloud-image-index-generate
       - name: Choose vendors
