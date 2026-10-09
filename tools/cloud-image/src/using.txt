@@ -1,0 +1,136 @@
+# USING THE IMAGES
+
+An imported image is a bhyve image for SmartOS 20260306T044811Z or
+later, the first platform that gives guests their configuration with
+cloud-init's NoCloud datasource. The image says so with the tag
+`org.smartos:cloudinit_datasource` set to `nocloud`, and asks for UEFI
+boot and virtio disks and network.
+
+## How a guest gets its configuration
+
+Each time a VM made from one of these images starts, `vmadm` writes a
+small FAT disk labelled `CIDATA` and attaches it to the guest, which
+cloud-init reads on boot. It is rewritten at start whenever its sources
+have changed, so a change made with `vmadm update` takes effect at the
+next start. It holds:
+
+- `meta-data`: the instance id, which is the VM's UUID, and its host
+  name: the VM's `hostname`, else its `alias`, else its UUID.
+- `user-data`: the `customer_metadata` key `cloud-init:user-data`,
+  verbatim. Without it, an empty `#cloud-config`.
+- `network-config`: the `customer_metadata` key
+  `cloud-init:network-config`, verbatim. Without it, one generated from
+  the VM's `nics` (static addresses, or DHCP for `dhcp` and `addrconf`)
+  and, on the primary NIC, its gateways and `resolvers`.
+
+These images do not include the SmartOS metadata tools, so
+`root_authorized_keys` and `user-script` do nothing in them: put SSH keys
+and first-boot commands in the user-data.
+
+The instance id stays the VM's UUID for its life. cloud-init runs most
+of its per-instance steps, such as creating users, only on the first
+boot, so changing the user-data of a VM that has booted may not change
+the guest.
+
+## Creating a VM
+
+Find the image's UUID with `imgadm list`, or `cloud-image avail` before
+importing. Write the user-data, for example `cloud-init.yml`:
+
+    #cloud-config
+    users:
+      - name: admin
+        ssh_authorized_keys:
+          - ssh-ed25519 AAAA... you@example
+
+Then create the VM, passing the user-data as a JSON string (`jq -Rs`
+quotes a file as one). `jq` is not in the global zone by default, but
+pkgsrc's tools have it: `pkgin install jq`, once pkgsrc is set up with
+`pkgsrc-setup` or as https://pkgsrc.smartos.org/install-on-illumos/
+describes.
+
+    userdata=$(jq -Rs . cloud-init.yml)
+    vmadm create <<EOF
+    {
+      "alias": "noble",
+      "brand": "bhyve",
+      "ram": 2048,
+      "vcpus": 2,
+      "resolvers": ["1.1.1.1"],
+      "nics": [
+        {
+          "nic_tag": "admin",
+          "ips": ["192.168.3.31/21"],
+          "gateways": ["192.168.1.1"],
+          "model": "virtio"
+        }
+      ],
+      "disks": [
+        {
+          "image_uuid": "1d0ae932-00b2-5f87-b842-e92a9dbde723",
+          "boot": true,
+          "model": "virtio",
+          "size": 10240
+        }
+      ],
+      "flexible_disk_size": 20480,
+      "customer_metadata": {
+        "cloud-init:user-data": $userdata
+      }
+    }
+    EOF
+
+Once it has booted, log in as the user the user-data created
+(`ssh admin@192.168.3.31`), or watch it boot with `vmadm console`. The
+image supplies the UEFI boot ROM it needs, so the payload need not.
+
+To change the user-data later, `vmadm update` the `customer_metadata`
+and restart the VM, bearing in mind the note on first boots above.
+
+## Disks
+
+- The boot disk's `size`, in MiB, may be larger than the image: the
+  guest's cloud-init grows its root filesystem to fill the disk.
+- More disks can be added as further `disks` entries with a `size` and
+  no `image_uuid`.
+- `flexible_disk_size` bounds the space the VM's disks and their
+  snapshots may use together, must be at least the disks' total size,
+  and without it the VM cannot be snapshotted. Twice the disks' size
+  leaves room for snapshots.
+- The guest also sees the configuration disk, `CIDATA`, as a small extra
+  disk.
+
+## Triton
+
+On Triton, pass the user-data as metadata when creating the instance
+(`jq -r` this time, since the `triton` command takes the text itself):
+
+    userdata=$(jq -rRs . cloud-init.yml)
+    triton instance create -m "cloud-init:user-data=$userdata" IMAGE PACKAGE
+
+## Guest notes
+
+- FreeBSD's nuageinit reads the network configuration only when there is
+  user-data, which is why SmartOS always provides one.
+- Talos does not use cloud-init. Create it without user-data and
+  configure it with `talosctl` once it has booted.
+
+# FURTHER READING
+
+- Using cloud-init with NoCloud compatible images:
+  https://docs.smartos.org/using-nocloud-compatible-images/
+- How to create a hardware virtual machine:
+  https://docs.smartos.org/how-to-create-an-hvm-zone/
+- Bhyve: https://docs.smartos.org/bhyve/
+- Managing instances with vmadm:
+  https://docs.smartos.org/managing-instances-with-vmamd/
+- Managing images: https://docs.smartos.org/managing-images/
+- Working with packages (pkgsrc, including in the global zone):
+  https://docs.smartos.org/working-with-packages/
+- Installing pkgsrc, including its tools for the global zone:
+  https://pkgsrc.smartos.org/install-on-illumos/
+- Instance metadata: https://docs.smartos.org/customer_metadata/
+- cloud-init's NoCloud datasource:
+  https://docs.cloud-init.io/en/latest/reference/datasources/nocloud.html
+- Worked examples for Debian, Alpine, FreeBSD and Talos:
+  https://github.com/TritonDataCenter/triton-nocloud-images/tree/main/examples
