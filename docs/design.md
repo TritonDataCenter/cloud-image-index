@@ -94,6 +94,7 @@ index.html                                         # landing page for people (no
 docs/index.html                                    # API documentation (Swagger UI; not in the OpenAPI document)
 v1/index.json                                      # list of distros
 v1/openapi.json                                    # the OpenAPI document describing this tree
+v1/images.json                                     # every current build with its distro and release, in one file
 v1/distros/<distro>/index.json                     # releases, aliases, osinfo ids
 v1/distros/<distro>/aliases/latest.json            # copy of the aliased release's index.json
 v1/distros/<distro>/aliases/lts.json
@@ -101,6 +102,12 @@ v1/distros/<distro>/aliases/dev.json
 v1/distros/<distro>/releases/<release>/index.json  # current builds in the vendor's main tree
 v1/distros/<distro>/releases/<release>/archive.json # builds available only from a vendor vault
 ```
+
+`v1/images.json` repeats the distro and release files as one flat list,
+one entry per current build, so a client can list or search every image
+with a single request, as `imgadm avail` does. The generator writes it
+from the same data as those files, and the tree checks rebuild it from
+them and require the published copy to match.
 
 The types and paths are defined in `apis/cloud-image-index-api`.
 `examples/` holds a hand-built tree (Ubuntu, Rocky, Talos; x86_64 only,

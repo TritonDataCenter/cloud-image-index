@@ -26,6 +26,7 @@ fn examples_cover_every_file_kind() -> Result<(), String> {
     let tree = tree::validate(&examples_root()).map_err(|problems| problems.join("\n"))?;
     assert!(tree.distro_list.is_some());
     assert!(tree.openapi.is_some());
+    assert!(tree.images.is_some());
     assert!(tree.index_html.is_some());
     assert!(tree.docs_html.is_some());
     assert!(!tree.distros.is_empty());
