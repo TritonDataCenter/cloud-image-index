@@ -33,13 +33,18 @@ pub fn tag_version(tag: &str) -> Result<semver::Version> {
 pub enum Decision {
     Update,
     UpToDate,
+    /// This version is newer than the newest release, say a build from
+    /// a branch; it is kept.
+    Newer,
 }
 
 /// A release replaces this version when it is newer, or, when the user
 /// named it, whenever it is a different version (to go back to it).
 pub fn decide(current: &semver::Version, release: &semver::Version, named: bool) -> Decision {
-    if release == current || (!named && release < current) {
+    if release == current {
         Decision::UpToDate
+    } else if !named && release < current {
+        Decision::Newer
     } else {
         Decision::Update
     }
@@ -219,7 +224,7 @@ mod tests {
         let v = |s: &str| semver::Version::parse(s).unwrap_or_else(|e| panic!("{e}"));
         assert_eq!(decide(&v("0.9.0"), &v("0.9.1"), false), Decision::Update);
         assert_eq!(decide(&v("0.9.1"), &v("0.9.1"), false), Decision::UpToDate);
-        assert_eq!(decide(&v("0.10.0"), &v("0.9.1"), false), Decision::UpToDate);
+        assert_eq!(decide(&v("0.10.0"), &v("0.9.1"), false), Decision::Newer);
         assert_eq!(decide(&v("0.10.0"), &v("0.9.1"), true), Decision::Update);
         assert_eq!(decide(&v("0.9.1"), &v("0.9.1"), true), Decision::UpToDate);
     }
