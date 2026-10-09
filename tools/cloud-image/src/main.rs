@@ -118,6 +118,12 @@ struct ImportArgs {
     /// Build the image files but do not install them.
     #[arg(long)]
     no_install: bool,
+    /// Keep the download and the built image and manifest, say to install
+    /// the image on another machine or publish it to an image server.
+    /// Without it, an install removes them, and --no-install keeps only
+    /// the image and manifest.
+    #[arg(long)]
+    keep: bool,
     /// Import an image the vendor cannot confirm: one with no published
     /// digest (trusting the TLS connection alone), or one whose digest
     /// the vendor gives only in a document with no generic layout
@@ -571,36 +577,131 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
     create_dir(&workdir)?;
     // The pipeline creates it too, but would not say which path failed.
     create_dir(&output_dir)?;
-    let _lock = host::acquire_workdir_lock(&workdir)?;
+    let lock = host::acquire_workdir_lock(&workdir)?;
+    // Where the pipeline keeps the download and its lock: the last segment
+    // of the URL, and `.lock` (nocloud-import's names).
+    let source_file = workdir.join(
+        url.path_segments()
+            .and_then(|mut s| s.next_back())
+            .unwrap_or_default(),
+    );
+    let lock_file = workdir.join(".lock");
 
     let source = nocloud_import::Source { url, format };
-    let outputs = nocloud_import::run(
-        &source,
-        &info,
-        check.as_ref(),
-        nocloud_import::PipelineOptions {
-            workdir,
-            output_dir,
-            zfs_dataset: dataset,
-            http: &http,
-        },
-    )
-    .await?;
-    println!();
-    println!("Image:    {}", outputs.gz_path.display());
-    println!("Manifest: {}", outputs.manifest_path.display());
-    println!("UUID:     {}", outputs.manifest_uuid);
+    let result = async {
+        let outputs = nocloud_import::run(
+            &source,
+            &info,
+            check.as_ref(),
+            nocloud_import::PipelineOptions {
+                workdir: workdir.clone(),
+                output_dir: output_dir.clone(),
+                zfs_dataset: dataset,
+                http: &http,
+            },
+        )
+        .await?;
+        println!();
+        println!("Image:    {}", outputs.gz_path.display());
+        println!("Manifest: {}", outputs.manifest_path.display());
+        println!("UUID:     {}", outputs.manifest_uuid);
+        if !args.no_install {
+            host::install_via_imgadm(&outputs.gz_path, &outputs.manifest_path).await?;
+            println!("Installed image {} with imgadm.", outputs.manifest_uuid);
+        }
+        anyhow::Ok(outputs)
+    }
+    .await;
+    drop(lock);
+
+    let plan = cleanup_plan(
+        args.keep,
+        args.no_install,
+        result.is_ok(),
+        !digests.is_empty(),
+    );
+    let mut files = Vec::new();
+    if plan.source {
+        files.extend([source_file.clone(), lock_file]);
+    }
+    if let (true, Ok(outputs)) = (plan.outputs, &result) {
+        files.extend([outputs.gz_path.clone(), outputs.manifest_path.clone()]);
+    }
+    remove_leftovers(&files, &[workdir.clone(), output_dir]);
+
+    let outputs = match result {
+        Ok(outputs) => outputs,
+        Err(e) => {
+            if !plan.source && source_file.exists() {
+                eprintln!(
+                    "note: kept the download for the next try: {}",
+                    source_file.display()
+                );
+            }
+            return Err(e);
+        }
+    };
     if args.no_install {
         println!(
             "To install: imgadm install -m {} -f {}",
             outputs.manifest_path.display(),
             outputs.gz_path.display()
         );
-    } else {
-        host::install_via_imgadm(&outputs.gz_path, &outputs.manifest_path).await?;
-        println!("Installed image {} with imgadm.", outputs.manifest_uuid);
+    }
+    if plan.source {
+        println!("Removed the download; --keep keeps it.");
     }
     Ok(())
+}
+
+/// What an import removes when it ends.
+#[derive(Debug, PartialEq, Eq)]
+struct Cleanup {
+    /// The download, and the lock beside it.
+    source: bool,
+    /// The built image and manifest.
+    outputs: bool,
+}
+
+/// After an install, nothing is left; with `--no-install`, the image and
+/// manifest; with `--keep`, everything. A failed import keeps a download
+/// that a digest check will vet before it is reused (the pipeline reuses
+/// a download it finds, and an interrupted one is truncated), and its
+/// outputs, for installing by hand.
+fn cleanup_plan(keep: bool, no_install: bool, succeeded: bool, verified: bool) -> Cleanup {
+    if keep {
+        Cleanup {
+            source: false,
+            outputs: false,
+        }
+    } else if !succeeded {
+        Cleanup {
+            source: !verified,
+            outputs: false,
+        }
+    } else {
+        Cleanup {
+            source: true,
+            outputs: !no_install,
+        }
+    }
+}
+
+/// Remove `files`, then each of `dirs` that this leaves empty. Nothing
+/// else is touched: `--workdir` and `--output-dir` may name directories
+/// that hold other files.
+fn remove_leftovers(files: &[PathBuf], dirs: &[PathBuf]) {
+    for file in files {
+        match std::fs::remove_file(file) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => eprintln!("warning: could not remove {}: {e}", file.display()),
+        }
+    }
+    for dir in dirs {
+        // Fails, as intended, when the directory still holds anything.
+        let _ = std::fs::remove_dir(dir);
+    }
 }
 
 #[tokio::main]
@@ -664,6 +765,65 @@ mod tests {
             env!("CARGO_PKG_VERSION")
         );
         assert!(page.lines().any(|l| l == header), "{page}");
+    }
+
+    /// What an import leaves behind: nothing after an install, the image
+    /// files with --no-install, everything with --keep; after a failure,
+    /// only a download a digest check will vet before it is reused.
+    #[test]
+    fn cleanup_keeps_only_what_is_wanted() {
+        let plan = |keep, no_install, succeeded, verified| {
+            cleanup_plan(keep, no_install, succeeded, verified)
+        };
+        let all = Cleanup {
+            source: true,
+            outputs: true,
+        };
+        let source_only = Cleanup {
+            source: true,
+            outputs: false,
+        };
+        let nothing = Cleanup {
+            source: false,
+            outputs: false,
+        };
+        assert_eq!(plan(false, false, true, true), all);
+        assert_eq!(plan(false, false, true, false), all);
+        assert_eq!(plan(false, true, true, true), source_only);
+        assert_eq!(plan(true, false, true, true), nothing);
+        assert_eq!(plan(true, true, false, false), nothing);
+        // A failed import keeps a download the digest check will vet on
+        // the next run, but not one nothing would check.
+        assert_eq!(plan(false, false, false, true), nothing);
+        assert_eq!(plan(false, false, false, false), source_only);
+    }
+
+    /// Only the files the import made are removed, and a directory only
+    /// when that leaves it empty: --workdir may name one with other files.
+    #[test]
+    fn cleanup_removes_only_its_own_files() -> Result<()> {
+        let base = std::env::temp_dir().join(format!("cloud-image-clean-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let ours = base.join("ours");
+        let shared = base.join("shared");
+        std::fs::create_dir_all(&ours)?;
+        std::fs::create_dir_all(&shared)?;
+        std::fs::write(ours.join("image.qcow2"), b"x")?;
+        std::fs::write(shared.join("image.zfs.gz"), b"x")?;
+        std::fs::write(shared.join("someone-elses"), b"x")?;
+        remove_leftovers(
+            &[
+                ours.join("image.qcow2"),
+                shared.join("image.zfs.gz"),
+                ours.join("never-made"),
+            ],
+            &[ours.clone(), shared.clone()],
+        );
+        assert!(!ours.exists(), "an emptied directory is removed");
+        assert!(shared.join("someone-elses").exists());
+        assert!(!shared.join("image.zfs.gz").exists());
+        std::fs::remove_dir_all(&base)?;
+        Ok(())
     }
 
     /// The pipeline builds x86-64 bhyve images only, so there is no
