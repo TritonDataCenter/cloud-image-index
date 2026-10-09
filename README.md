@@ -21,3 +21,23 @@ and its OpenAPI description at
 <https://tritondatacenter.github.io/cloud-image-index/v1/openapi.json>.
 That address will change to a custom domain before any long-lived
 client depends on it. See [docs/design.md](docs/design.md).
+
+## cloud-image for SmartOS
+
+`cloud-image` lists the images in the index and imports them into a
+SmartOS host with `imgadm`, checking each download against both the
+index and the vendor's own checksum file. Install or update it in the
+global zone with:
+
+```
+curl -fsSL https://github.com/TritonDataCenter/cloud-image-index/releases/latest/download/install.sh | bash
+```
+
+This installs `/opt/tools/sbin/cloud-image` and its man page,
+`cloud-image(8)`. Then `cloud-image avail` lists the images and
+`cloud-image import <distro> <release>` imports one.
+
+To release a new version, bump `version` in `tools/cloud-image/Cargo.toml`,
+merge that, and push a matching tag (`git tag v0.9.0 && git push origin
+v0.9.0`). The illumos workflow builds the binary and publishes it, with
+`SHA256SUMS` and `install.sh`, as a GitHub release.
