@@ -1,0 +1,88 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# Copyright 2026 Edgecast Cloud LLC.
+#
+# Cross-compile the SmartOS client for illumos and keep the binary as a
+# workflow artifact. Builds use `cross`, whose x86_64-unknown-illumos
+# container image holds the illumos sysroot and a GCC toolchain for any
+# C code in dependencies. The image cannot run illumos binaries, so this
+# is a compile-and-link check; tests run in ci.yml on Linux.
+
+name: illumos
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    # The index workflow's own commits only touch site/.
+    paths-ignore:
+      - "site/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: illumos-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  TARGET: x86_64-unknown-illumos
+  BINARY: cloud-image
+  # cross v0.2.5 (2023-02-04) is the latest release. GitHub publishes no
+  # checksum for its assets, so this SHA-256 is of the asset as first
+  # downloaded on 2026-10-08.
+  CROSS_URL: https://github.com/cross-rs/cross/releases/download/v0.2.5/cross-x86_64-unknown-linux-gnu.tar.gz
+  CROSS_SHA256: 642375d1bcf3bd88272c32ba90e999f3d983050adf45e66bd2d3887e8e838bad
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    # As in ci.yml: pushes, manual runs and pull requests from branches in
+    # this repository use the self-hosted triton runners; pull requests
+    # from forks stay on GitHub-hosted runners, since this repository is
+    # public and a fork's code must not run on self-hosted machines. cross
+    # needs Docker on whichever runner picks the job up.
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('{"group":"triton","labels":["self-hosted","APP"]}') || 'ubuntu-latest' }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install cross
+        run: |
+          curl -sSfL -o cross.tar.gz "$CROSS_URL"
+          echo "$CROSS_SHA256  cross.tar.gz" | sha256sum -c -
+          mkdir -p "$HOME/.local/bin"
+          tar -xzf cross.tar.gz -C "$HOME/.local/bin" cross
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      # Install the toolchain rust-toolchain.toml names, and rustup first if
+      # the runner lacks it: the self-hosted runners are shared and their
+      # Rust setup is not ours to rely on. No cache (we chose not to cache),
+      # and warnings stay warnings (the action's default would deny them in
+      # every later build).
+      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        with:
+          cache: false
+          build-warnings: warn
+          # cross builds with this toolchain, so it needs the target's
+          # standard library.
+          target: ${{ env.TARGET }}
+      - name: Build
+        run: cross build --release --locked --target "$TARGET" -p "$BINARY"
+      - name: Show what was built
+        run: |
+          bin="target/$TARGET/release/$BINARY"
+          file "$bin"
+          readelf -h "$bin" | grep -E 'Class|Machine|OS/ABI'
+          readelf -d "$bin" | grep NEEDED
+          file "$bin" | grep 'ELF 64-bit LSB .*x86-64' > /dev/null
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ env.BINARY }}-${{ env.TARGET }}
+          path: target/${{ env.TARGET }}/release/${{ env.BINARY }}
+          if-no-files-found: error
