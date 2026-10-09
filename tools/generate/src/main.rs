@@ -427,6 +427,9 @@ fn http_client_with(
     connect: std::time::Duration,
     request: std::time::Duration,
 ) -> Result<reqwest::Client> {
+    // reqwest is built without a default crypto provider (see the
+    // workspace Cargo.toml). An error only means one is already set.
+    let _ = rustls::crypto::ring::default_provider().install_default();
     reqwest::Client::builder()
         .user_agent(USER_AGENT)
         .connect_timeout(connect)

@@ -29,3 +29,6 @@ serde_json = { workspace = true }
 sha2 = { workspace = true }
 tokio = { workspace = true, features = ["fs", "io-util", "macros", "rt", "sync"] }
 url = { workspace = true }
+
+[dev-dependencies]
+rustls = { workspace = true }

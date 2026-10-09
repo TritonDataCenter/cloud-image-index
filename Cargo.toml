@@ -26,7 +26,11 @@ async-trait = "0.1.92"
 clap = { version = "4.6.7", features = ["derive"] }
 regex = "1.13.1"
 regress = "0.12.0"
-reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls"] }
+# rustls with the ring provider, installed by each binary before it builds a
+# client: ring cross-compiles to illumos with a plain C compiler, unlike the
+# default aws-lc provider.
+reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls-no-provider"] }
+rustls = { version = "0.23.45", default-features = false, features = ["logging", "ring", "std", "tls12"] }
 sha2 = "0.11.0"
 tokio = { version = "1.53.2" }
 typify = "0.8.0"

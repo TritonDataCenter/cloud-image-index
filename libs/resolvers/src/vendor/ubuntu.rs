@@ -152,7 +152,7 @@ mod tests {
     /// A client whose every request fails at once, so a test passes only
     /// if nothing is fetched.
     fn offline() -> reqwest::Client {
-        reqwest::Client::builder()
+        crate::test_client_builder()
             .proxy(reqwest::Proxy::all("http://127.0.0.1:9").unwrap_or_else(|e| panic!("{e}")))
             .build()
             .unwrap_or_else(|e| panic!("{e}"))
