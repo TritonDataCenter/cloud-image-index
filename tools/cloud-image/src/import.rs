@@ -394,6 +394,9 @@ pub struct Available {
     pub aliases: Vec<String>,
     pub check: Check,
     pub uuid: Option<uuid::Uuid>,
+    /// Whether the local image store has it; `None` when the store was
+    /// not read (off SmartOS).
+    pub installed: Option<bool>,
 }
 
 /// The image an import of the release in `builds` would produce, with the
@@ -417,6 +420,7 @@ pub fn available(distro: &Distro, builds: &BuildList) -> Result<Available> {
         aliases,
         check: Check::of(&digests),
         uuid: index_uuid(&digests),
+        installed: None,
     })
 }
 
@@ -485,23 +489,78 @@ pub fn find_by_uuid(rows: &[Available], uuid: uuid::Uuid) -> Option<&Available> 
     rows.iter().find(|r| r.uuid == Some(uuid))
 }
 
+/// An image in the local image store, as `imgadm list -j` lists it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Installed {
+    pub uuid: Option<uuid::Uuid>,
+    pub name: String,
+    pub version: String,
+}
+
+/// The images in `imgadm list -j` output: each entry is an image's stored
+/// record, `{manifest, zpool, ...}`.
+pub fn parse_imgadm_list(json: &str) -> Result<Vec<Installed>> {
+    let records: Vec<serde_json::Value> =
+        serde_json::from_str(json).context("parse `imgadm list -j` output")?;
+    Ok(records
+        .iter()
+        .filter_map(|r| r.get("manifest"))
+        .map(|m| {
+            let text = |key: &str| m.get(key).and_then(|v| v.as_str()).unwrap_or_default();
+            Installed {
+                uuid: uuid::Uuid::parse_str(text("uuid")).ok(),
+                name: text("name").to_string(),
+                version: text("version").to_string(),
+            }
+        })
+        .collect())
+}
+
+/// Record which rows the local image store has: an image with the same
+/// UUID, or, since an image whose vendor publishes no sha256 has no UUID
+/// before its download, the same name and version.
+pub fn mark_installed(rows: &mut [Available], installed: &[Installed]) {
+    for row in rows {
+        row.installed = Some(installed.iter().any(|i| {
+            (row.uuid.is_some() && i.uuid == row.uuid)
+                || (i.name == row.name && i.version == row.version)
+        }));
+    }
+}
+
 /// `rows` as a table in the style of `imgadm avail`.
+/// An INSTALLED column is added when the rows say whether they are
+/// installed.
 pub fn avail_table(rows: &[Available], header: bool) -> String {
-    let mut lines: Vec<[String; 6]> = Vec::new();
+    let known = rows.iter().any(|r| r.installed.is_some());
+    let mut lines: Vec<Vec<String>> = Vec::new();
     if header {
-        lines.push(["UUID", "NAME", "VERSION", "OS", "ALIASES", "CHECK"].map(str::to_string));
+        let mut names = vec!["UUID", "NAME", "VERSION", "OS", "ALIASES", "CHECK"];
+        if known {
+            names.push("INSTALLED");
+        }
+        lines.push(names.into_iter().map(str::to_string).collect());
     }
     for row in rows {
-        lines.push([
+        let mut cells = vec![
             row.uuid.map_or("-".to_string(), |u| u.to_string()),
             row.name.clone(),
             row.version.clone(),
             row.os.clone(),
             row.aliases.join(","),
             row.check.as_str().to_string(),
-        ]);
+        ];
+        if known {
+            let mark = if row.installed == Some(true) {
+                "yes"
+            } else {
+                ""
+            };
+            cells.push(mark.to_string());
+        }
+        lines.push(cells);
     }
-    let mut widths = [0; 6];
+    let mut widths = vec![0; if known { 7 } else { 6 }];
     for line in &lines {
         for (width, cell) in widths.iter_mut().zip(line) {
             *width = (*width).max(cell.len());
@@ -511,7 +570,7 @@ pub fn avail_table(rows: &[Available], header: bool) -> String {
     for line in &lines {
         let cells: Vec<String> = line
             .iter()
-            .zip(widths)
+            .zip(&widths)
             .map(|(cell, width)| format!("{cell:width$}"))
             .collect();
         out.push_str(cells.join("  ").trim_end());
@@ -533,6 +592,7 @@ pub fn avail_json(rows: &[Available]) -> serde_json::Value {
                 "release": r.release,
                 "aliases": r.aliases,
                 "check": r.check.as_str(),
+                "installed": r.installed,
             })
         })
         .collect()
@@ -768,6 +828,70 @@ mod tests {
             err.contains("no distro \"nosuch\"") && err.contains("ubuntu, rocky, talos"),
             "{err}"
         );
+    }
+
+    /// What `imgadm list -j` prints: each image's stored record, with
+    /// its manifest.
+    const IMGADM_LIST: &str = r#"[
+      {"manifest": {"v": 2, "uuid": "006d99ef-603a-551d-b179-c56d3f6e1c32",
+        "name": "ubuntu-resolute-nocloud", "version": "20260927"},
+       "zpool": "zones", "source": "https://images.smartos.org"},
+      {"manifest": {"v": 2, "uuid": "11111111-2222-3333-4444-555555555555",
+        "name": "ubuntu-jammy-nocloud", "version": "20261004"},
+       "zpool": "zones"},
+      {"manifest": {"v": 2, "uuid": "22222222-2222-3333-4444-555555555555",
+        "name": "ubuntu-noble-nocloud", "version": "20200101"},
+       "zpool": "zones"}
+    ]"#;
+
+    #[test]
+    fn the_image_store_listing_is_read() -> anyhow::Result<()> {
+        let installed = parse_imgadm_list(IMGADM_LIST)?;
+        assert_eq!(installed.len(), 3);
+        assert_eq!(installed[1].name, "ubuntu-jammy-nocloud");
+        assert_eq!(installed[1].version, "20261004");
+        assert!(parse_imgadm_list("not json").is_err());
+        Ok(())
+    }
+
+    /// An image is installed if the store has its UUID, or (when its UUID
+    /// is not known before the download) its name and version; another
+    /// version of the same name is not this image.
+    #[test]
+    fn installed_images_are_marked() -> anyhow::Result<()> {
+        let (mut rows, _) = avail_rows(&images(), Some("ubuntu"))?;
+        mark_installed(&mut rows, &parse_imgadm_list(IMGADM_LIST)?);
+        let marks: Vec<(&str, Option<bool>)> = rows
+            .iter()
+            .map(|r| (r.name.as_str(), r.installed))
+            .collect();
+        assert_eq!(
+            marks,
+            [
+                ("ubuntu-resolute-nocloud", Some(true)),
+                ("ubuntu-noble-nocloud", Some(false)),
+                ("ubuntu-jammy-nocloud", Some(true)),
+            ]
+        );
+        Ok(())
+    }
+
+    /// The column appears only when the store was read, so off SmartOS
+    /// the table is as before.
+    #[test]
+    fn the_installed_column_appears_when_known() -> anyhow::Result<()> {
+        let (mut rows, _) = avail_rows(&images(), Some("ubuntu"))?;
+        assert!(!avail_table(&rows, true).contains("INSTALLED"));
+        assert_eq!(avail_json(&rows)[0]["installed"], serde_json::Value::Null);
+        mark_installed(&mut rows, &parse_imgadm_list(IMGADM_LIST)?);
+        let table = avail_table(&rows, true);
+        let lines: Vec<&str> = table.lines().collect();
+        assert!(lines[0].ends_with("CHECK   INSTALLED"), "{table}");
+        assert!(lines[1].ends_with("vendor  yes"), "{table}");
+        assert!(lines[2].ends_with("vendor"), "{table}");
+        assert_eq!(avail_json(&rows)[0]["installed"], serde_json::json!(true));
+        assert_eq!(avail_json(&rows)[1]["installed"], serde_json::json!(false));
+        Ok(())
     }
 
     /// How each image would be checked, and so whether it needs

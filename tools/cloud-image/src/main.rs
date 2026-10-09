@@ -59,7 +59,8 @@ enum Command {
     /// the download when the vendor publishes no sha256). CHECK says how
     /// the import would be checked: `vendor` (the vendor's checksum file
     /// confirms the index), `index` (the index's digest alone) or `none`;
-    /// the last two need `import --allow-unverified`.
+    /// the last two need `import --allow-unverified`. On SmartOS, INSTALLED
+    /// marks the images already in the local image store.
     Avail(AvailArgs),
     /// Build a distro's image from the index and install it with imgadm.
     ///
@@ -524,10 +525,32 @@ async fn available(
     Ok(rows)
 }
 
+/// The images in the local image store, from `imgadm list -j`.
+async fn installed_images() -> Result<Vec<import::Installed>> {
+    let out = tokio::process::Command::new("imgadm")
+        .args(["list", "-j"])
+        .output()
+        .await
+        .context("run imgadm list -j")?;
+    anyhow::ensure!(
+        out.status.success(),
+        "imgadm list -j exited {}: {}",
+        out.status,
+        String::from_utf8_lossy(&out.stderr).trim()
+    );
+    import::parse_imgadm_list(&String::from_utf8_lossy(&out.stdout))
+}
+
 async fn avail_cmd(args: AvailArgs) -> Result<()> {
     let base = args.index.trim_end_matches('/');
     let index = index_client(base)?;
-    let rows = available(&index, base, args.distro.as_deref()).await?;
+    let mut rows = available(&index, base, args.distro.as_deref()).await?;
+    if nocloud_import::host::is_smartos()? {
+        match installed_images().await {
+            Ok(installed) => import::mark_installed(&mut rows, &installed),
+            Err(e) => eprintln!("note: not showing which images are installed: {e:#}"),
+        }
+    }
     if args.json {
         println!(
             "{}",
