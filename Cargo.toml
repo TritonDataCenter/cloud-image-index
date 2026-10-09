@@ -10,6 +10,7 @@ members = [
     "libs/client",
     "libs/resolvers",
     "tools/generate",
+    "tools/cloud-image",
     "tests/typify-client",
 ]
 resolver = "3"
@@ -36,10 +37,18 @@ sha2 = "0.11.0"
 tokio = { version = "1.53.2" }
 typify = "0.8.0"
 url = "2.5.8"
+# Mozilla's root certificates, for binaries that cannot rely on a system
+# CA store (SmartOS has none rustls can find).
+webpki-root-certs = "1.0.9"
+uuid = { version = "1.27.0", features = ["v5"] }
 chrono = { version = "0.4.45", default-features = false, features = ["clock", "serde"] }
 dropshot = { version = "0.17.1" }
 # The response type of raw (non-JSON) dropshot endpoints.
 http = "1.5.0"
+# Builds SmartOS images from NoCloud cloud images, from monitor-reef (added
+# there in TritonDataCenter/monitor-reef#35). Pinned to a commit on its main
+# branch.
+nocloud-import = { git = "https://github.com/TritonDataCenter/monitor-reef", rev = "329f17db29c0f45b74b10d1542b775defbd16c7d" }
 openapiv3 = "2.2.0"
 progenitor = "0.15.0"
 progenitor-client = "0.15.0"
