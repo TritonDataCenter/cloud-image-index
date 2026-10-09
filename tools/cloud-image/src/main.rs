@@ -13,6 +13,7 @@
 //! `imgadm avail` does.
 
 mod import;
+mod update;
 
 use std::path::PathBuf;
 
@@ -65,6 +66,13 @@ enum Command {
     /// The download must match the index's digest and the digest in the
     /// vendor's own checksum file. Off SmartOS this is always a dry run.
     Import(ImportArgs),
+    /// Update cloud-image to the newest release, with its man page.
+    ///
+    /// Downloads the release's binary next to this one, checks it against
+    /// the release's SHA256SUMS and its own --version, then replaces this
+    /// binary with it. A man page installed beside it (as install.sh does)
+    /// is rewritten to match. SmartOS only.
+    SelfUpdate(SelfUpdateArgs),
     /// Write the man page, `cloud-image.8`, into a directory.
     #[command(hide = true)]
     Man {
@@ -72,6 +80,17 @@ enum Command {
         #[arg(long, default_value = ".")]
         out: PathBuf,
     },
+}
+
+#[derive(clap::Args)]
+struct SelfUpdateArgs {
+    /// Only say whether there is a newer release.
+    #[arg(long)]
+    check: bool,
+    /// Install this release (e.g. `v0.9.0`) instead of the newest, even
+    /// an older one.
+    #[arg(long)]
+    release: Option<String>,
 }
 
 #[derive(clap::Args)]
@@ -356,66 +375,24 @@ async fn fetch_distro(
 }
 
 /// The current image of every release of `only` (or of every distro),
-/// in the index's order. Releases are fetched in parallel. A release with
+/// in the index's order, read from its `v1/images.json`. A release with
 /// no image this client can build is left out, with a note.
 async fn available(
     index: &client::Client,
     base: &str,
     only: Option<&str>,
 ) -> Result<Vec<import::Available>> {
-    let ids: Vec<String> = match only {
-        Some(id) => vec![fetch_distro(index, base, id).await?.id],
-        None => index
-            .distro_list()
-            .await
-            .map_err(|e| anyhow::anyhow!("{e}"))
-            .with_context(|| format!("read the index at {base}"))?
-            .into_inner()
-            .distros
-            .into_iter()
-            .map(|d| d.id)
-            .collect(),
-    };
-    let mut distros = tokio::task::JoinSet::new();
-    for (n, id) in ids.into_iter().enumerate() {
-        let index = index.clone();
-        distros.spawn(async move {
-            let distro = index.distro(&id).await;
-            (n, id, distro)
-        });
+    let list = index
+        .images()
+        .await
+        .map_err(|e| anyhow::anyhow!("{e}"))
+        .with_context(|| format!("read the image list of the index at {base}"))?
+        .into_inner();
+    let (rows, notes) = import::avail_rows(&list, only)?;
+    for note in notes {
+        eprintln!("note: {note}");
     }
-    let mut releases = tokio::task::JoinSet::new();
-    while let Some(joined) = distros.join_next().await {
-        let (n, id, distro) = joined.context("fetch a distro")?;
-        let distro = distro
-            .map_err(|e| anyhow::anyhow!("{e}"))
-            .with_context(|| format!("read {id} from the index at {base}"))?
-            .into_inner();
-        let distro = std::sync::Arc::new(distro);
-        for (m, release) in distro.releases.iter().enumerate() {
-            let index = index.clone();
-            let distro = distro.clone();
-            let release = release.id.clone();
-            releases.spawn(async move {
-                let builds = index.release_builds(&distro.id, &release).await;
-                ((n, m), distro, release, builds)
-            });
-        }
-    }
-    let mut rows = Vec::new();
-    while let Some(joined) = releases.join_next().await {
-        let (order, distro, release, builds) = joined.context("fetch a release")?;
-        let builds = builds
-            .map_err(|e| anyhow::anyhow!("{e}"))
-            .with_context(|| format!("read {} {release} from the index at {base}", distro.id))?
-            .into_inner();
-        match import::available(&distro, &builds) {
-            Ok(row) => rows.push((order, row)),
-            Err(e) => eprintln!("note: leaving out {} {release}: {e:#}", distro.id),
-        }
-    }
-    rows.sort_by_key(|(order, _)| *order);
-    Ok(rows.into_iter().map(|(_, row)| row).collect())
+    Ok(rows)
 }
 
 async fn avail_cmd(args: AvailArgs) -> Result<()> {
@@ -713,11 +690,43 @@ fn remove_leftovers(files: &[PathBuf], dirs: &[PathBuf]) {
     }
 }
 
+async fn self_update_cmd(args: SelfUpdateArgs) -> Result<()> {
+    let http = http_client()?;
+    let current = semver::Version::parse(env!("CARGO_PKG_VERSION"))?;
+    let tag = update::release_tag(&http, &update::releases_api()?, args.release.as_deref()).await?;
+    let release = update::tag_version(&tag)?;
+    let decision = update::decide(&current, &release, args.release.is_some());
+    if args.check {
+        match decision {
+            update::Decision::Update => println!("cloud-image {current}; {tag} is available"),
+            update::Decision::UpToDate => println!("cloud-image {current} is up to date ({tag})"),
+        }
+        return Ok(());
+    }
+    if decision == update::Decision::UpToDate {
+        println!("cloud-image {current} is up to date ({tag})");
+        return Ok(());
+    }
+    anyhow::ensure!(
+        nocloud_import::host::is_smartos()?,
+        "self-update installs the SmartOS (illumos) binary, so it runs only on SmartOS"
+    );
+    let exe = std::env::current_exe().context("find this binary")?;
+    update::replace_binary(&http, &update::release_url(&tag)?, &exe, &release).await?;
+    println!("Updated {} from {current} to {release}.", exe.display());
+    match update::refresh_man_page(&exe).await? {
+        Some(page) => println!("Updated {}.", page.display()),
+        None => println!("No installed man page beside it to update."),
+    }
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     match Args::parse().command {
         Command::Avail(args) => avail_cmd(args).await?,
         Command::Import(args) => import_cmd(args).await?,
+        Command::SelfUpdate(args) => self_update_cmd(args).await?,
         Command::Man { out } => write_man_page(&out, COMMIT_DATE)?,
     }
     Ok(())
