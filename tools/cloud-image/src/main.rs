@@ -85,7 +85,8 @@ enum Command {
 
 #[derive(clap::Args)]
 struct SelfUpdateArgs {
-    /// Only say whether there is a newer release.
+    /// Only say whether there is a newer release, and exit 2 if there is
+    /// (0 if not).
     #[arg(long)]
     check: bool,
     /// Install this release (e.g. `v0.9.0`) instead of the newest, even
@@ -846,7 +847,7 @@ fn remove_leftovers(files: &[PathBuf], dirs: &[PathBuf]) {
     }
 }
 
-async fn self_update_cmd(args: SelfUpdateArgs) -> Result<()> {
+async fn self_update_cmd(args: SelfUpdateArgs) -> Result<std::process::ExitCode> {
     let http = http_client()?;
     let current = semver::Version::parse(env!("CARGO_PKG_VERSION"))?;
     let tag = update::release_tag(&http, &update::releases_api()?, args.release.as_deref()).await?;
@@ -861,11 +862,11 @@ async fn self_update_cmd(args: SelfUpdateArgs) -> Result<()> {
     };
     if let Some(message) = staying {
         println!("{message}");
-        return Ok(());
+        return Ok(update::check_exit_status(&decision).into());
     }
     if args.check {
         println!("cloud-image {current}; {tag} is available");
-        return Ok(());
+        return Ok(update::check_exit_status(&decision).into());
     }
     anyhow::ensure!(
         nocloud_import::host::is_smartos()?,
@@ -878,18 +879,18 @@ async fn self_update_cmd(args: SelfUpdateArgs) -> Result<()> {
         Some(page) => println!("Updated {}.", page.display()),
         None => println!("No installed man page beside it to update."),
     }
-    Ok(())
+    Ok(std::process::ExitCode::SUCCESS)
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<std::process::ExitCode> {
     match Args::parse().command {
         Command::Avail(args) => avail_cmd(args).await?,
         Command::Import(args) => import_cmd(args).await?,
-        Command::SelfUpdate(args) => self_update_cmd(args).await?,
+        Command::SelfUpdate(args) => return self_update_cmd(args).await,
         Command::Man { out } => write_man_page(&out, COMMIT_DATE)?,
     }
-    Ok(())
+    Ok(std::process::ExitCode::SUCCESS)
 }
 
 #[cfg(test)]
