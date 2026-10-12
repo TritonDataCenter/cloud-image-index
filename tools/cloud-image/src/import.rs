@@ -429,16 +429,8 @@ pub fn available(distro: &Distro, builds: &BuildList) -> Result<Available> {
 /// every distro or only `only`, in the list's order. Also returns notes on
 /// releases this client cannot build, which are left out.
 pub fn avail_rows(list: &ImageList, only: Option<&str>) -> Result<(Vec<Available>, Vec<String>)> {
-    if let Some(id) = only
-        && !list.images.iter().any(|i| i.distro.id == id)
-    {
-        let mut ids: Vec<&str> = Vec::new();
-        for image in &list.images {
-            if !ids.contains(&image.distro.id.as_str()) {
-                ids.push(&image.distro.id);
-            }
-        }
-        anyhow::bail!("the index has no distro {id:?}; it has: {}", ids.join(", "));
+    if let Some(id) = only {
+        known_distro(list, id)?;
     }
     let mut rows = Vec::new();
     let mut notes = Vec::new();
@@ -463,6 +455,70 @@ pub fn avail_rows(list: &ImageList, only: Option<&str>) -> Result<(Vec<Available
     Ok((rows, notes))
 }
 
+/// Fail unless the image list has a distro `id`, naming the ones it has.
+fn known_distro(list: &ImageList, id: &str) -> Result<()> {
+    if list.images.iter().any(|i| i.distro.id == id) {
+        return Ok(());
+    }
+    let mut ids: Vec<&str> = Vec::new();
+    for image in &list.images {
+        if !ids.contains(&image.distro.id.as_str()) {
+            ids.push(&image.distro.id);
+        }
+    }
+    anyhow::bail!("the index has no distro {id:?}; it has: {}", ids.join(", "))
+}
+
+/// The distro `id` as `v1/images.json` gives it: the distro, with each
+/// release that has a current build, in the list's order, and alongside,
+/// each release's builds, newest first. The list carries no `dev_channel`,
+/// which nothing here uses.
+pub fn distro_from_images(list: &ImageList, id: &str) -> Result<(Distro, Vec<BuildList>)> {
+    known_distro(list, id)?;
+    let mut distro: Option<Distro> = None;
+    let mut builds: Vec<BuildList> = Vec::new();
+    for image in list.images.iter().filter(|i| i.distro.id == id) {
+        let distro = distro.get_or_insert_with(|| Distro {
+            id: image.distro.id.clone(),
+            name: image.distro.name.clone(),
+            os_family: image.distro.os_family,
+            homepage: image.distro.homepage.clone(),
+            dev_channel: None,
+            releases: Vec::new(),
+        });
+        match builds.iter_mut().find(|b| b.release == image.release.id) {
+            Some(list) => list.builds.push(image.build.clone()),
+            None => {
+                distro.releases.push(image.release.clone());
+                builds.push(BuildList {
+                    distro: image.distro.id.clone(),
+                    release: image.release.id.clone(),
+                    builds: vec![image.build.clone()],
+                });
+            }
+        }
+    }
+    let distro = distro.with_context(|| format!("the index has no distro {id:?}"))?;
+    Ok((distro, builds))
+}
+
+/// The builds of the release `request` names: the one holding the alias,
+/// or the one of that name. `builds` is in the order of `distro.releases`,
+/// as [`distro_from_images`] gives them.
+pub fn requested_builds<'a>(
+    distro: &Distro,
+    builds: &'a [BuildList],
+    request: Requested<'_>,
+) -> Result<&'a BuildList> {
+    let index = distro.releases.iter().position(|r| match request {
+        Requested::Alias(alias) => alias_names(r).iter().any(|a| a == alias),
+        Requested::Release(id) => r.id == id,
+    });
+    index
+        .and_then(|i| builds.get(i))
+        .with_context(|| format!("{}: no release for {request:?}", distro.id))
+}
+
 /// An entry of `v1/images.json` as the distro and build list the rest of
 /// this module reads: the distro with only this release, and the release
 /// with only this build. The entry has no `dev_channel`, which nothing
@@ -485,9 +541,9 @@ fn one_image(image: &Image) -> (Distro, BuildList) {
 }
 
 /// For `import <uuid>`: the image about to be imported must be the one
-/// asked for. The UUID is looked up in `v1/images.json` and the image then
-/// resolved from the release's own file, so if the index changed between
-/// the two reads they can differ, and nothing is imported.
+/// asked for. The UUID names a row of `avail`, and the import then
+/// resolves that row's release again; this holds the two to the same
+/// build, and nothing is imported if they differ.
 pub fn confirm_requested_uuid(
     requested: Option<uuid::Uuid>,
     resolved: Option<uuid::Uuid>,
@@ -825,6 +881,43 @@ mod tests {
         assert_eq!(rows[0], ubuntu_row());
         let (rocky, _) = avail_rows(&images(), Some("rocky"))?;
         assert_eq!(rocky.len(), 3);
+        Ok(())
+    }
+
+    /// `import` reads a distro from v1/images.json alone: its releases with
+    /// their titles and aliases, in order, each with its builds.
+    #[test]
+    fn a_distro_is_read_from_the_image_list() -> anyhow::Result<()> {
+        let (distro, builds) = distro_from_images(&images(), "ubuntu")?;
+        assert_eq!(distro.id, "ubuntu");
+        let releases: Vec<&str> = distro.releases.iter().map(|r| r.id.as_str()).collect();
+        assert_eq!(releases, ["resolute", "noble", "jammy"]);
+        assert_eq!(alias_names(&distro.releases[0]), ["latest", "lts"]);
+        assert_eq!(builds.len(), 3);
+        assert_eq!(builds[1].release, "noble");
+        assert_eq!(builds[1].builds[0].build, "20260926");
+        // The same choices and resolution as from the distro's own file.
+        assert_eq!(release_choices(&distro), release_choices(&ubuntu_distro()));
+        assert_eq!(release_request(&distro, "lts")?, Requested::Alias("lts"));
+        let err = distro_from_images(&images(), "nosuch")
+            .err()
+            .map(|e| format!("{e:#}"))
+            .unwrap_or_default();
+        assert!(err.contains("ubuntu, rocky, talos"), "{err}");
+        Ok(())
+    }
+
+    /// An alias or release name picks that release's builds.
+    #[test]
+    fn a_requested_release_picks_its_builds() -> anyhow::Result<()> {
+        let (distro, builds) = distro_from_images(&images(), "ubuntu")?;
+        let pick = |name| -> anyhow::Result<String> {
+            let request = release_request(&distro, name)?;
+            Ok(requested_builds(&distro, &builds, request)?.release.clone())
+        };
+        assert_eq!(pick("latest")?, "resolute");
+        assert_eq!(pick("lts")?, "resolute");
+        assert_eq!(pick("jammy")?, "jammy");
         Ok(())
     }
 
