@@ -26,13 +26,34 @@
 
 use anyhow::{Context, Result};
 use client::types::{
-    Artifact, Build, BuildList, ChecksumFormat, ChecksumFormatVariant0, Compression,
-    CompressionVariant0, DigestAlgorithm, Distro, Image, ImageFormat, ImageFormatVariant0,
-    ImageList, LocationKind, OsFamily, Release,
+    Artifact, Build, ChecksumFormat, ChecksumFormatVariant0, Compression, CompressionVariant0,
+    DigestAlgorithm, Image, ImageFormat, ImageFormatVariant0, ImageList, LocationKind, OsFamily,
+    Release,
 };
 use nocloud_import::{ExpectedDigest, ImageInfo, SourceFormat};
 use resolvers::verify::SumsStyle;
 use url::Url;
+
+/// A distro, as much as an import needs: what `v1/images.json` gives for
+/// it, its releases in order (see [`distro_from_images`]).
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+pub struct Distro {
+    pub id: String,
+    pub name: Option<String>,
+    pub os_family: OsFamily,
+    pub homepage: Option<String>,
+    pub releases: Vec<Release>,
+}
+
+/// One release's builds, newest first.
+#[derive(Debug, Clone)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+pub struct BuildList {
+    pub distro: String,
+    pub release: String,
+    pub builds: Vec<Build>,
+}
 
 /// What a release argument names: an alias some release of the distro
 /// holds, or a release the distro lists.
@@ -471,8 +492,7 @@ fn known_distro(list: &ImageList, id: &str) -> Result<()> {
 
 /// The distro `id` as `v1/images.json` gives it: the distro, with each
 /// release that has a current build, in the list's order, and alongside,
-/// each release's builds, newest first. The list carries no `dev_channel`,
-/// which nothing here uses.
+/// each release's builds, newest first.
 pub fn distro_from_images(list: &ImageList, id: &str) -> Result<(Distro, Vec<BuildList>)> {
     known_distro(list, id)?;
     let mut distro: Option<Distro> = None;
@@ -483,7 +503,6 @@ pub fn distro_from_images(list: &ImageList, id: &str) -> Result<(Distro, Vec<Bui
             name: image.distro.name.clone(),
             os_family: image.distro.os_family,
             homepage: image.distro.homepage.clone(),
-            dev_channel: None,
             releases: Vec::new(),
         });
         match builds.iter_mut().find(|b| b.release == image.release.id) {
@@ -521,15 +540,13 @@ pub fn requested_builds<'a>(
 
 /// An entry of `v1/images.json` as the distro and build list the rest of
 /// this module reads: the distro with only this release, and the release
-/// with only this build. The entry has no `dev_channel`, which nothing
-/// here uses.
+/// with only this build.
 fn one_image(image: &Image) -> (Distro, BuildList) {
     let distro = Distro {
         id: image.distro.id.clone(),
         name: image.distro.name.clone(),
         os_family: image.distro.os_family,
         homepage: image.distro.homepage.clone(),
-        dev_channel: None,
         releases: vec![image.release.clone()],
     };
     let builds = BuildList {
@@ -681,7 +698,6 @@ pub fn avail_json(rows: &[Available]) -> serde_json::Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use client::types::{BuildList, Distro};
 
     fn list(json: &str) -> BuildList {
         serde_json::from_str(json).unwrap_or_else(|e| panic!("{e}"))
