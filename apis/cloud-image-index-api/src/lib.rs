@@ -579,14 +579,20 @@ pub trait CloudImageIndexApi {
     ) -> Result<HttpResponseOk<ImageList>, HttpError>;
 
     /// One distro and its releases.
-    #[endpoint { method = GET, path = "/v1/distros/{distro}/index.json" }]
+    ///
+    /// Unpublished: part of the tree, which the generator reads back, but
+    /// not of the format; `v1/images.json` has the same builds.
+    #[endpoint { method = GET, path = "/v1/distros/{distro}/index.json", unpublished = true }]
     async fn distro(
         rqctx: RequestContext<Self::Context>,
         path: Path<DistroPath>,
     ) -> Result<HttpResponseOk<Distro>, HttpError>;
 
     /// The builds of the release holding the `latest` alias.
-    #[endpoint { method = GET, path = "/v1/distros/{distro}/aliases/latest.json" }]
+    ///
+    /// Unpublished: part of the tree, which the generator reads back, but
+    /// not of the format; `v1/images.json` has the same builds.
+    #[endpoint { method = GET, path = "/v1/distros/{distro}/aliases/latest.json", unpublished = true }]
     async fn alias_latest(
         rqctx: RequestContext<Self::Context>,
         path: Path<DistroPath>,
@@ -595,7 +601,10 @@ pub trait CloudImageIndexApi {
     /// The builds of the release holding the `lts` alias.
     ///
     /// Not found for distros whose vendor has no LTS label.
-    #[endpoint { method = GET, path = "/v1/distros/{distro}/aliases/lts.json" }]
+    ///
+    /// Unpublished: part of the tree, which the generator reads back, but
+    /// not of the format; `v1/images.json` has the same builds.
+    #[endpoint { method = GET, path = "/v1/distros/{distro}/aliases/lts.json", unpublished = true }]
     async fn alias_lts(
         rqctx: RequestContext<Self::Context>,
         path: Path<DistroPath>,
@@ -604,14 +613,20 @@ pub trait CloudImageIndexApi {
     /// The builds of the release holding the `dev` alias.
     ///
     /// Not found for distros with no development channel in the index.
-    #[endpoint { method = GET, path = "/v1/distros/{distro}/aliases/dev.json" }]
+    ///
+    /// Unpublished: part of the tree, which the generator reads back, but
+    /// not of the format; `v1/images.json` has the same builds.
+    #[endpoint { method = GET, path = "/v1/distros/{distro}/aliases/dev.json", unpublished = true }]
     async fn alias_dev(
         rqctx: RequestContext<Self::Context>,
         path: Path<DistroPath>,
     ) -> Result<HttpResponseOk<BuildList>, HttpError>;
 
     /// Current builds of a release, from the vendor's main tree.
-    #[endpoint { method = GET, path = "/v1/distros/{distro}/releases/{release}/index.json" }]
+    ///
+    /// Unpublished: part of the tree, which the generator reads back, but
+    /// not of the format; `v1/images.json` has the same builds.
+    #[endpoint { method = GET, path = "/v1/distros/{distro}/releases/{release}/index.json", unpublished = true }]
     async fn release_builds(
         rqctx: RequestContext<Self::Context>,
         path: Path<ReleasePath>,
