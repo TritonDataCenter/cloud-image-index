@@ -26,44 +26,23 @@ pub mod tree;
 use chrono::{DateTime, NaiveDate, Utc};
 use dropshot::{Body, HttpError, HttpResponseOk, Path, RequestContext};
 use schemars::JsonSchema;
-use schemars::schema::{
-    InstanceType, Metadata, Schema, SchemaObject, StringValidation, SubschemaValidation,
-};
+use schemars::schema::{InstanceType, Metadata, Schema, SchemaObject};
 use serde::{Deserialize, Serialize};
 
-/// The schema for an open enum: one of the values this version of the
-/// index defines, or any other string. Clients generated from the
-/// OpenAPI document then accept, and keep, values added after they were
-/// generated. The second branch excludes the known values with a
-/// pattern, so the branches are disjoint as `oneOf` requires (typify
-/// turns a `not: {enum}` branch into an empty enum, so `not` is not
-/// used). Known values are lowercase identifiers, so they need no regex
-/// escaping.
-fn open_enum_schema(description: &str, known: Vec<serde_json::Value>) -> Schema {
-    let names: Vec<&str> = known.iter().filter_map(|v| v.as_str()).collect();
-    let string = || Some(InstanceType::String.into());
-    let known_values = SchemaObject {
-        instance_type: string(),
-        enum_values: Some(known.clone()),
-        ..SchemaObject::default()
-    };
-    let other_strings = SchemaObject {
-        instance_type: string(),
-        string: Some(Box::new(StringValidation {
-            pattern: Some(format!("^(?!(?:{})$)", names.join("|"))),
-            ..StringValidation::default()
-        })),
-        ..SchemaObject::default()
-    };
+/// The schema for an open enum: a string, with the values this version
+/// of the index defines listed in the description. It does not use
+/// `enum` or a `pattern`, so generated clients take the value as a
+/// string and accept, and keep, values added after they were generated;
+/// and every OpenAPI tool can read it (a lookahead pattern excluding the
+/// known values, as an earlier shape used, is beyond Go's RE2, which
+/// rejected the whole document).
+fn open_enum_schema(description: &str) -> Schema {
     Schema::Object(SchemaObject {
         metadata: Some(Box::new(Metadata {
             description: Some(description.to_string()),
             ..Metadata::default()
         })),
-        subschemas: Some(Box::new(SubschemaValidation {
-            one_of: Some(vec![known_values.into(), other_strings.into()]),
-            ..SubschemaValidation::default()
-        })),
+        instance_type: Some(InstanceType::String.into()),
         ..SchemaObject::default()
     })
 }
@@ -120,13 +99,7 @@ macro_rules! open_enum {
                         description.push_str(&format!("\n- `{value}`: {doc}"));
                     }
                 )+
-                open_enum_schema(
-                    &description,
-                    Self::KNOWN
-                        .iter()
-                        .filter_map(|v| serde_json::to_value(v).ok())
-                        .collect(),
-                )
+                open_enum_schema(&description)
             }
         }
     };

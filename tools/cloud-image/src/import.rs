@@ -26,9 +26,8 @@
 
 use anyhow::{Context, Result};
 use client::types::{
-    Artifact, Build, ChecksumFormat, ChecksumFormatVariant0, Compression, CompressionVariant0,
-    DigestAlgorithm, Image, ImageFormat, ImageFormatVariant0, ImageList, LocationKind, OsFamily,
-    Release,
+    Artifact, Build, Compression, DigestAlgorithm, Image, ImageFormat, ImageList, LocationKind,
+    OsFamily, Release,
 };
 use nocloud_import::{ExpectedDigest, ImageInfo, SourceFormat};
 use resolvers::verify::SumsStyle;
@@ -85,12 +84,7 @@ pub fn release_request<'a>(distro: &Distro, name: &'a str) -> Result<Requested<'
 
 /// The aliases `release` holds, spelled as the index spells them.
 fn alias_names(release: &Release) -> Vec<String> {
-    release
-        .aliases
-        .iter()
-        .filter_map(|a| serde_json::to_value(a).ok())
-        .filter_map(|v| v.as_str().map(str::to_string))
-        .collect()
+    release.aliases.iter().map(|a| a.to_string()).collect()
 }
 
 /// The releases a user can import, one per line, each with its title and
@@ -160,16 +154,14 @@ pub fn choose_artifact<'a>(
 
 /// How the pipeline decodes an artifact of this format and compression.
 pub fn source_format(format: &ImageFormat, compression: &Compression) -> Result<SourceFormat> {
-    use CompressionVariant0 as C;
-    use ImageFormatVariant0 as F;
-    match (format, compression) {
-        (ImageFormat::Variant0(F::Qcow2), Compression::Variant0(C::None)) => {
-            Ok(SourceFormat::Qcow2)
-        }
-        (ImageFormat::Variant0(F::Raw), Compression::Variant0(C::None)) => Ok(SourceFormat::Raw),
-        (ImageFormat::Variant0(F::Raw), Compression::Variant0(C::Xz)) => Ok(SourceFormat::Xz),
-        (ImageFormat::Variant0(F::Raw), Compression::Variant0(C::Gzip)) => Ok(SourceFormat::RawGz),
-        (ImageFormat::Variant0(F::Vmdk), Compression::Variant0(C::None)) => Ok(SourceFormat::Vmdk),
+    // Open enums arrive as strings: a value this client does not know
+    // falls through to the error.
+    match (format.as_str(), compression.as_str()) {
+        ("qcow2", "none") => Ok(SourceFormat::Qcow2),
+        ("raw", "none") => Ok(SourceFormat::Raw),
+        ("raw", "xz") => Ok(SourceFormat::Xz),
+        ("raw", "gzip") => Ok(SourceFormat::RawGz),
+        ("vmdk", "none") => Ok(SourceFormat::Vmdk),
         _ => anyhow::bail!(
             "cannot import a {} image compressed with {}",
             serde_json::to_string(format)?,
@@ -232,16 +224,10 @@ pub fn index_digests(artifact: &Artifact) -> Result<Vec<IndexDigest>> {
             let vendor = match &digest.source {
                 None => None,
                 Some(source) => {
-                    let style = match &source.format {
-                        ChecksumFormat::Variant0(ChecksumFormatVariant0::Gnu) => {
-                            Some(SumsStyle::Gnu)
-                        }
-                        ChecksumFormat::Variant0(ChecksumFormatVariant0::Bsd) => {
-                            Some(SumsStyle::Bsd)
-                        }
-                        ChecksumFormat::Variant0(ChecksumFormatVariant0::Bare) => {
-                            Some(SumsStyle::Bare)
-                        }
+                    let style = match source.format.as_str() {
+                        "gnu" => Some(SumsStyle::Gnu),
+                        "bsd" => Some(SumsStyle::Bsd),
+                        "bare" => Some(SumsStyle::Bare),
                         _ => None,
                     };
                     match style {

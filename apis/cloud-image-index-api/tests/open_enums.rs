@@ -45,22 +45,19 @@ fn unknown_values_are_kept() -> Result<(), serde_json::Error> {
     Ok(())
 }
 
+/// The schema is a plain string that names the known values in its
+/// description: no `enum`, which would reject later values, and no
+/// `pattern` or `oneOf`, whose lookahead regex Go's RE2 cannot compile.
 #[test]
-fn schema_is_a_known_value_or_any_other_string() {
+fn schema_is_a_string_that_lists_the_known_values() {
     let schema = serde_json::to_value(schemars::schema_for!(Compression)).unwrap_or_default();
-    let one_of = schema["oneOf"].as_array().cloned().unwrap_or_default();
-    assert_eq!(one_of.len(), 2, "{schema:#}");
-    assert_eq!(
-        one_of[0]["enum"],
-        json!(["none", "gzip", "xz", "zstd", "bzip2"])
-    );
-    // Any other string: a pattern that excludes the known values, so the
-    // two branches are disjoint as `oneOf` requires. (typify turns a
-    // `not: {enum}` branch into an empty enum, so `not` cannot be used.)
-    assert_eq!(one_of[1]["type"], json!("string"));
-    assert_eq!(
-        one_of[1]["pattern"],
-        json!("^(?!(?:none|gzip|xz|zstd|bzip2)$)")
-    );
+    assert_eq!(schema["type"], json!("string"), "{schema:#}");
+    for absent in ["enum", "pattern", "oneOf", "anyOf"] {
+        assert!(schema.get(absent).is_none(), "{absent} in {schema:#}");
+    }
+    let description = schema["description"].as_str().unwrap_or_default();
+    for value in ["none", "gzip", "xz", "zstd", "bzip2"] {
+        assert!(description.contains(&format!("`{value}`")), "{description}");
+    }
     assert_eq!(Compression::schema_name(), "Compression");
 }
