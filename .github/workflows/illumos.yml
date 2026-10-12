@@ -90,6 +90,12 @@ jobs:
         env:
           CROSS_BUILD_ENV_PASSTHROUGH: CLOUD_IMAGE_DATE
         run: cross build --release --locked --target "$TARGET" -p "$BINARY"
+      # The binary carries the standard library's debug info, about a
+      # quarter of its size, and rustc's `strip = "debuginfo"` does nothing
+      # for illumos targets. The cross toolchain links with GNU ld, so GNU
+      # strip removes it, keeping the symbols that make backtraces readable.
+      - name: Strip debug info
+        run: strip -g "target/$TARGET/release/$BINARY"
       - name: Show what was built
         run: |
           bin="target/$TARGET/release/$BINARY"
@@ -97,6 +103,11 @@ jobs:
           readelf -h "$bin" | grep -E 'Class|Machine|OS/ABI'
           readelf -d "$bin" | grep NEEDED
           file "$bin" | grep 'ELF 64-bit LSB .*x86-64' > /dev/null
+          ls -l "$bin"
+          if file "$bin" | grep 'debug_info' > /dev/null; then
+            echo "the binary still carries debug info" >&2
+            exit 1
+          fi
           # The date reached the build inside cross's container.
           grep -aF "$CLOUD_IMAGE_DATE" "$bin" > /dev/null
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
