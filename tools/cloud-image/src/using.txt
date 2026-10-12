@@ -153,9 +153,9 @@ On Triton, pass the user-data as metadata when creating the instance
 
 After `imgadm` installs an image, its download and build files are
 removed; `--no-install` keeps the image and manifest, and `--keep` keeps
-everything. A failed import leaves what it had built in the image
-directory, and keeps its download when a digest will check it before it
-is reused.
+everything. A failed import keeps its download for the next try, and, if
+`imgadm` failed, its image and manifest for installing by hand; a build
+that fails leaves nothing in the image directory.
 
 # EXIT STATUS
 

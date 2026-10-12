@@ -749,12 +749,7 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
     }
     .await;
 
-    let plan = cleanup_plan(
-        args.keep,
-        args.no_install,
-        result.is_ok(),
-        !digests.is_empty(),
-    );
+    let plan = cleanup_plan(args.keep, args.no_install, result.is_ok());
     let mut files = Vec::new();
     if plan.source {
         files.extend([source_file.clone(), lock_file]);
@@ -804,19 +799,15 @@ struct Cleanup {
 }
 
 /// After an install, nothing is left; with `--no-install`, the image and
-/// manifest; with `--keep`, everything. A failed import keeps a download
-/// that a digest check will vet before it is reused (the pipeline reuses
-/// a download it finds, and an interrupted one is truncated), and its
-/// outputs, for installing by hand.
-fn cleanup_plan(keep: bool, no_install: bool, succeeded: bool, verified: bool) -> Cleanup {
-    if keep {
+/// manifest; with `--keep`, everything. A failed import keeps its download
+/// for the next try (the pipeline only ever leaves a complete download
+/// under its name, and checks it again before reusing it) and, when it got
+/// as far as `imgadm`, its image and manifest, for installing by hand; a
+/// failed build leaves none, as the pipeline removes them.
+fn cleanup_plan(keep: bool, no_install: bool, succeeded: bool) -> Cleanup {
+    if keep || !succeeded {
         Cleanup {
             source: false,
-            outputs: false,
-        }
-    } else if !succeeded {
-        Cleanup {
-            source: !verified,
             outputs: false,
         }
     } else {
@@ -974,9 +965,7 @@ mod tests {
     /// only a download a digest check will vet before it is reused.
     #[test]
     fn cleanup_keeps_only_what_is_wanted() {
-        let plan = |keep, no_install, succeeded, verified| {
-            cleanup_plan(keep, no_install, succeeded, verified)
-        };
+        let plan = |keep, no_install, succeeded| cleanup_plan(keep, no_install, succeeded);
         let all = Cleanup {
             source: true,
             outputs: true,
@@ -989,15 +978,13 @@ mod tests {
             source: false,
             outputs: false,
         };
-        assert_eq!(plan(false, false, true, true), all);
-        assert_eq!(plan(false, false, true, false), all);
-        assert_eq!(plan(false, true, true, true), source_only);
-        assert_eq!(plan(true, false, true, true), nothing);
-        assert_eq!(plan(true, true, false, false), nothing);
-        // A failed import keeps a download the digest check will vet on
-        // the next run, but not one nothing would check.
-        assert_eq!(plan(false, false, false, true), nothing);
-        assert_eq!(plan(false, false, false, false), source_only);
+        assert_eq!(plan(false, false, true), all);
+        assert_eq!(plan(false, true, true), source_only);
+        assert_eq!(plan(true, false, true), nothing);
+        assert_eq!(plan(true, true, false), nothing);
+        // A failed import keeps its download for the next try: the
+        // pipeline only ever leaves a complete download under its name.
+        assert_eq!(plan(false, false, false), nothing);
     }
 
     /// Only the files the import made are removed, and a directory only
