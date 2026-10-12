@@ -484,6 +484,25 @@ fn one_image(image: &Image) -> (Distro, BuildList) {
     (distro, builds)
 }
 
+/// For `import <uuid>`: the image about to be imported must be the one
+/// asked for. The UUID is looked up in `v1/images.json` and the image then
+/// resolved from the release's own file, so if the index changed between
+/// the two reads they can differ, and nothing is imported.
+pub fn confirm_requested_uuid(
+    requested: Option<uuid::Uuid>,
+    resolved: Option<uuid::Uuid>,
+) -> Result<()> {
+    if let Some(requested) = requested {
+        anyhow::ensure!(
+            resolved == Some(requested),
+            "asked for image {requested}, but the index now gives {}; see \
+             `cloud-image avail`",
+            resolved.map_or("an image with no known UUID".to_string(), |u| u.to_string())
+        );
+    }
+    Ok(())
+}
+
 /// The image with this UUID, for `import <uuid>`.
 pub fn find_by_uuid(rows: &[Available], uuid: uuid::Uuid) -> Option<&Available> {
     rows.iter().find(|r| r.uuid == Some(uuid))
@@ -979,6 +998,25 @@ mod tests {
             Some(&row.release)
         );
         assert!(find_by_uuid(&rows, uuid::Uuid::nil()).is_none());
+    }
+
+    /// `import <uuid>` installs that image or nothing: if the index moved
+    /// on between the lookup and the import, the UUIDs differ.
+    #[test]
+    fn an_import_by_uuid_must_get_that_uuid() {
+        let asked = uuid::Uuid::from_u128(1);
+        let other = uuid::Uuid::from_u128(2);
+        assert!(confirm_requested_uuid(None, Some(other)).is_ok());
+        assert!(confirm_requested_uuid(Some(asked), Some(asked)).is_ok());
+        let err = confirm_requested_uuid(Some(asked), Some(other))
+            .err()
+            .map(|e| format!("{e:#}"))
+            .unwrap_or_default();
+        assert!(
+            err.contains(&asked.to_string()) && err.contains(&other.to_string()),
+            "{err}"
+        );
+        assert!(confirm_requested_uuid(Some(asked), None).is_err());
     }
 
     /// Without a release, the user is shown what they could import.

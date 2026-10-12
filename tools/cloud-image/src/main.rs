@@ -601,7 +601,8 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
     let base = &args.index.trim_end_matches('/').to_string();
     let index = client::Client::new_with_client(base, http.clone());
     // A UUID from `avail` names a release's current image, default variant.
-    if let Ok(uuid) = uuid::Uuid::parse_str(&args.distro) {
+    let requested_uuid = uuid::Uuid::parse_str(&args.distro).ok();
+    if let Some(uuid) = requested_uuid {
         anyhow::ensure!(
             args.release.is_none() && args.variant.is_none(),
             "an image UUID names the release and variant itself; give no release \
@@ -644,6 +645,7 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
     let url = import::primary_url(artifact)?;
     let info = import::image_info(&distro, &builds.release, build, artifact);
     let digests = import::index_digests(artifact)?;
+    import::confirm_requested_uuid(requested_uuid, import::index_uuid(&digests))?;
 
     println!(
         "Image:   {} {} build {}",
