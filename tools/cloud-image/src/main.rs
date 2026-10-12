@@ -750,7 +750,6 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         anyhow::Ok(outputs)
     }
     .await;
-    drop(lock);
 
     let plan = cleanup_plan(
         args.keep,
@@ -766,6 +765,9 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         files.extend([outputs.gz_path.clone(), outputs.manifest_path.clone()]);
     }
     remove_leftovers(&files, &[workdir.clone(), output_dir]);
+    // Only now: another import of this image waiting on the lock must not
+    // find its download, or the lock file, removed under it.
+    drop(lock);
 
     let outputs = match result {
         Ok(outputs) => outputs,
