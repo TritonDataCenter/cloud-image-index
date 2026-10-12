@@ -1,3 +1,28 @@
+# VERIFICATION
+
+`import` checks a download before it uses it. The image must match the
+digest the index publishes, and before the download starts, the vendor's
+own checksum file, fetched separately over HTTPS, must give the same
+digest. Both the image and the checksum file must be HTTPS URLs. This
+catches a wrong or stale digest in the index, and an image that changed
+at the vendor without its checksum file changing.
+
+It does not protect against a malicious index: the index says where both
+the image and the checksum file are, so a tampered index could point
+both at a host it controls. Trust the index as you trust any download
+source.
+
+Images the vendor cannot confirm need `--allow-unverified`: those with no
+published digest, which only TLS protects, and those whose digest the
+vendor gives only in a document with no generic layout, which are checked
+against the index's digest alone. `cloud-image avail` shows which images
+these are in its CHECK column.
+
+`self-update` and install.sh check the downloaded binary against the
+release's `SHA256SUMS`, and run it with `--version`, before replacing
+anything. Both files come from the same GitHub release, so this catches
+a corrupted download, not a tampered release.
+
 # USING THE IMAGES
 
 An imported image is a bhyve image for SmartOS 20260306T044811Z or
@@ -114,6 +139,30 @@ On Triton, pass the user-data as metadata when creating the instance
   user-data, which is why SmartOS always provides one.
 - Talos does not use cloud-init. Create it without user-data and
   configure it with `talosctl` once it has booted.
+
+# FILES
+
+- `/opt/tools/sbin/cloud-image` and `/opt/tools/man/man8/cloud-image.8.gz`:
+  where install.sh installs the binary and this page. `self-update`
+  replaces the binary where it is and rewrites a page beside it.
+- `/var/tmp/cloud-image/cache/<distro>-<release>-<version>/`: an import's
+  download, and its `.lock` while the import runs (`--workdir`).
+- `/var/tmp/cloud-image/image/<distro>-<release>-<version>/`: the image an
+  import builds, `*.x86_64.zfs.gz`, and its manifest, `*.json`
+  (`--output-dir`).
+
+After `imgadm` installs an image, its download and build files are
+removed; `--no-install` keeps the image and manifest, and `--keep` keeps
+everything. A failed import leaves what it had built in the image
+directory, and keeps its download when a digest will check it before it
+is reused.
+
+# EXIT STATUS
+
+- 0: success. For `self-update --check`, there is no update to install.
+- 1: an error, described on standard error. `import` with no release also
+  exits 1, after listing the releases.
+- 2: `self-update --check` found a release to install.
 
 # FURTHER READING
 

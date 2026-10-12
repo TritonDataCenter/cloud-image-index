@@ -75,6 +75,8 @@ enum Command {
     /// is rewritten to match. SmartOS only.
     SelfUpdate(SelfUpdateArgs),
     /// Write the man page, `cloud-image.8`, into a directory.
+    // Hidden, but stable: install.sh and `self-update` run the newly
+    // installed binary's `man --out` to write its own page.
     #[command(hide = true)]
     Man {
         /// The directory to write the pages to, created if missing.
@@ -148,7 +150,8 @@ struct ImportArgs {
     /// Import an image the vendor cannot confirm: one with no published
     /// digest (trusting the TLS connection alone), or one whose digest
     /// the vendor gives only in a document with no generic layout
-    /// (checked against the index's digest alone).
+    /// (checked against the index's digest alone). The image's decoders
+    /// then run, as root, on bytes the vendor has not vouched for.
     #[arg(long)]
     allow_unverified: bool,
     /// Resolve the image and check the index against the vendor, but
@@ -945,6 +948,10 @@ mod tests {
         for wanted in [
             ".SS \"How a guest gets its configuration\"",
             ".SH \"FURTHER READING\"",
+            ".SH VERIFICATION",
+            ".SH FILES",
+            ".SH \"EXIT STATUS\"",
+            "/var/tmp/cloud\\-image/cache/",
             "\\fBcloud\\-init:user\\-data\\fR",
             ".nf\n",
             "    \"cloud\\-init:user\\-data\": $userdata",
