@@ -720,14 +720,8 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
     // The pipeline creates it too, but would not say which path failed.
     create_dir(&output_dir)?;
     let lock = host::acquire_workdir_lock(&workdir)?;
-    // Where the pipeline keeps the download and its lock: the last segment
-    // of the URL, and `.lock` (nocloud-import's names).
-    let source_file = workdir.join(
-        url.path_segments()
-            .and_then(|mut s| s.next_back())
-            .unwrap_or_default(),
-    );
-    let lock_file = workdir.join(".lock");
+    let source_file = nocloud_import::download_path(&workdir, &url)?;
+    let lock_file = host::workdir_lock_path(&workdir);
 
     let source = nocloud_import::Source { url, format };
     let result = async {
