@@ -379,9 +379,6 @@ pub fn check(tree: &Tree) -> Vec<String> {
     problems
 }
 
-/// Rules for one release's build list: it has builds, each build and
-/// each artifact within a build is listed once, every artifact can be
-/// downloaded from somewhere, and digests are well formed.
 /// The image list the tree's distro and release files call for. A
 /// missing release file counts as no builds; other checks report it.
 fn image_list(tree: &Tree, distro_list: &DistroList) -> ImageList {
@@ -409,6 +406,9 @@ fn image_list(tree: &Tree, distro_list: &DistroList) -> ImageList {
     crate::image_list(distro_list, &distros)
 }
 
+/// Rules for one release's build list: it has builds, each build and
+/// each artifact within a build is listed once, every artifact can be
+/// downloaded from somewhere, and digests are well formed.
 fn check_builds(problems: &mut Vec<String>, distro: &str, release: &str, list: &BuildList) {
     if list.builds.is_empty() {
         problems.push(format!("{distro}/{release}: no builds"));
