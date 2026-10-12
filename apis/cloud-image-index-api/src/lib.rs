@@ -281,14 +281,13 @@ pub struct OsinfoRef {
 }
 
 // ---------------------------------------------------------------------
-// v1/distros/<distro>/releases/<release>/{index,archive}.json and
+// v1/distros/<distro>/releases/<release>/index.json and
 // v1/distros/<distro>/aliases/*.json
 // ---------------------------------------------------------------------
 
 /// The builds of one release. Used for
 /// `v1/distros/<distro>/releases/<release>/index.json` (builds in the
-/// vendor's main tree), `.../archive.json` (builds that survive only in
-/// a vendor vault), and the alias files under
+/// vendor's main tree) and the alias files under
 /// `v1/distros/<distro>/aliases/`, which are a copy of the aliased
 /// release's `index.json`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -346,8 +345,8 @@ pub struct Artifact {
     pub ssh_key_injection: Option<bool>,
     /// Size in bytes of the file as downloaded, when known.
     pub size: Option<u64>,
-    /// Where the file can be downloaded. Current builds have a
-    /// `primary` location; archived builds have none.
+    /// Where the file can be downloaded. Every build has a `primary`
+    /// location.
     pub locations: Vec<Location>,
     pub integrity: Option<Integrity>,
 }
@@ -628,15 +627,6 @@ pub trait CloudImageIndexApi {
     /// not of the format; `v1/images.json` has the same builds.
     #[endpoint { method = GET, path = "/v1/distros/{distro}/releases/{release}/index.json", unpublished = true }]
     async fn release_builds(
-        rqctx: RequestContext<Self::Context>,
-        path: Path<ReleasePath>,
-    ) -> Result<HttpResponseOk<BuildList>, HttpError>;
-
-    /// Archived builds of a release, available only from a vendor vault.
-    ///
-    /// The final build of each end-of-life point release.
-    #[endpoint { method = GET, path = "/v1/distros/{distro}/releases/{release}/archive.json" }]
-    async fn release_archive(
         rqctx: RequestContext<Self::Context>,
         path: Path<ReleasePath>,
     ) -> Result<HttpResponseOk<BuildList>, HttpError>;

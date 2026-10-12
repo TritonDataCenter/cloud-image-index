@@ -45,8 +45,6 @@ pub struct Tree {
     pub distros: BTreeMap<String, Distro>,
     /// (distro, release) -> current builds
     pub releases: BTreeMap<(String, String), BuildList>,
-    /// (distro, release) -> archived builds
-    pub archives: BTreeMap<(String, String), BuildList>,
     /// (distro, alias) -> alias file contents
     pub aliases: BTreeMap<(String, Alias), BuildList>,
 }
@@ -175,12 +173,6 @@ fn load_with(root: &Path, strictness: Strictness) -> Result<Tree, Vec<String>> {
             ["v1", "distros", distro, "releases", release, "index.json"] => {
                 read_file(&path, strictness).map(|v| {
                     tree.releases
-                        .insert(((*distro).to_string(), (*release).to_string()), v);
-                })
-            }
-            ["v1", "distros", distro, "releases", release, "archive.json"] => {
-                read_file(&path, strictness).map(|v| {
-                    tree.archives
                         .insert(((*distro).to_string(), (*release).to_string()), v);
                 })
             }
@@ -340,7 +332,7 @@ pub fn check(tree: &Tree) -> Vec<String> {
         }
     }
 
-    for ((distro, release), list) in tree.releases.iter().chain(&tree.archives) {
+    for ((distro, release), list) in &tree.releases {
         check_builds(&mut problems, distro, release, list);
     }
 
@@ -380,44 +372,16 @@ pub fn check(tree: &Tree) -> Vec<String> {
             }
         }
     }
-    for ((distro, release), list) in tree.releases.iter().chain(&tree.archives) {
+    for ((distro, release), list) in &tree.releases {
         check_known_values(&mut problems, distro, release, list);
-    }
-
-    for ((distro, release), list) in &tree.archives {
-        check_build_list_names(&mut problems, distro, release, list);
-        if !tree
-            .distros
-            .get(distro)
-            .is_some_and(|d| d.releases.iter().any(|r| &r.id == release))
-        {
-            problems.push(format!(
-                "{distro}/{release}: archive for a release not listed in the distro index"
-            ));
-        }
-        for build in &list.builds {
-            for artifact in &build.artifacts {
-                if artifact
-                    .locations
-                    .iter()
-                    .any(|l| l.kind == Some(LocationKind::Primary))
-                {
-                    problems.push(format!(
-                        "{distro}/{release}/{}: archived build must not have a primary location",
-                        build.build
-                    ));
-                }
-            }
-        }
     }
 
     problems
 }
 
-/// Rules for one build list, current or archived: it has builds, each
-/// build and each artifact within a build is listed once, every
-/// artifact can be downloaded from somewhere, and digests are well
-/// formed.
+/// Rules for one release's build list: it has builds, each build and
+/// each artifact within a build is listed once, every artifact can be
+/// downloaded from somewhere, and digests are well formed.
 /// The image list the tree's distro and release files call for. A
 /// missing release file counts as no builds; other checks report it.
 fn image_list(tree: &Tree, distro_list: &DistroList) -> ImageList {

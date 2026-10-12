@@ -31,10 +31,6 @@ fn examples_cover_every_file_kind() -> Result<(), String> {
     assert!(tree.docs_html.is_some());
     assert!(!tree.distros.is_empty());
     assert!(!tree.releases.is_empty());
-    assert!(
-        !tree.archives.is_empty(),
-        "need at least one archive.json example"
-    );
     assert!(!tree.aliases.is_empty());
     Ok(())
 }

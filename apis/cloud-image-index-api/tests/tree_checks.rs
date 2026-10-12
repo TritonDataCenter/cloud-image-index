@@ -127,15 +127,6 @@ fn orphan_alias_file_is_caught() -> Result<(), String> {
 }
 
 #[test]
-fn archived_build_with_primary_location_is_caught() -> Result<(), String> {
-    let s = Scratch::new("archive-primary")?;
-    s.edit_json("v1/distros/rocky/releases/9/archive.json", |v| {
-        v["builds"][0]["artifacts"][0]["locations"][0]["kind"] = serde_json::json!("primary");
-    })?;
-    s.expect_problem("archived build must not have a primary location")
-}
-
-#[test]
 fn release_field_mismatch_is_caught() -> Result<(), String> {
     let s = Scratch::new("release-mismatch")?;
     s.edit_json("v1/distros/rocky/releases/8/index.json", |v| {
@@ -223,24 +214,6 @@ fn alias_file_for_a_distro_not_in_the_index_is_caught() -> Result<(), String> {
 }
 
 #[test]
-fn archive_for_a_distro_not_in_the_index_is_caught() -> Result<(), String> {
-    let s = Scratch::new("archive-ghost-distro")?;
-    let mut list = s.read_json("v1/distros/rocky/releases/9/archive.json")?;
-    list["distro"] = "ghost".into();
-    s.write_json("v1/distros/ghost/releases/9/archive.json", list)?;
-    s.expect_problem("ghost/9: archive for a release not listed in the distro index")
-}
-
-#[test]
-fn archive_for_an_unlisted_release_is_caught() -> Result<(), String> {
-    let s = Scratch::new("archive-unlisted-release")?;
-    let mut list = s.read_json("v1/distros/rocky/releases/9/archive.json")?;
-    list["release"] = "7".into();
-    s.write_json("v1/distros/rocky/releases/7/archive.json", list)?;
-    s.expect_problem("rocky/7: archive for a release not listed in the distro index")
-}
-
-#[test]
 fn distro_summary_disagreeing_with_the_distro_index_is_caught() -> Result<(), String> {
     let s = Scratch::new("summary-differs")?;
     s.edit_json("v1/index.json", |v| {
@@ -298,15 +271,6 @@ fn release_without_builds_is_caught() -> Result<(), String> {
         v["builds"] = serde_json::json!([]);
     })?;
     s.expect_problem("rocky/8: no builds")
-}
-
-#[test]
-fn archived_artifact_without_locations_is_caught() -> Result<(), String> {
-    let s = Scratch::new("archive-no-locations")?;
-    s.edit_json("v1/distros/rocky/releases/9/archive.json", |v| {
-        v["builds"][0]["artifacts"][0]["locations"] = serde_json::json!([]);
-    })?;
-    s.expect_problem("artifact base/x86_64/qcow2 has no locations")
 }
 
 #[test]

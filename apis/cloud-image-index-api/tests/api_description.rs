@@ -20,15 +20,10 @@ fn stub_api_description_builds_with_file_tree_paths() -> Result<(), String> {
         .get("paths")
         .and_then(|p| p.as_object())
         .ok_or("OpenAPI document has no paths")?;
-    for expected in [
-        "/v1/index.json",
-        "/v1/openapi.json",
-        "/v1/images.json",
-        "/v1/distros/{distro}/releases/{release}/archive.json",
-    ] {
+    for expected in ["/v1/index.json", "/v1/openapi.json", "/v1/images.json"] {
         assert!(paths.contains_key(expected), "missing path {expected}");
     }
-    assert_eq!(paths.len(), 4, "unexpected extra paths: {:?}", paths.keys());
+    assert_eq!(paths.len(), 3, "unexpected extra paths: {:?}", paths.keys());
     Ok(())
 }
 

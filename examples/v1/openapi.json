@@ -73,7 +73,7 @@
             "nullable": true
           },
           "locations": {
-            "description": "Where the file can be downloaded. Current builds have a `primary` location; archived builds have none.",
+            "description": "Where the file can be downloaded. Every build has a `primary` location.",
             "items": {
               "$ref": "#/components/schemas/Location"
             },
@@ -148,30 +148,6 @@
         "required": [
           "artifacts",
           "build"
-        ],
-        "type": "object"
-      },
-      "BuildList": {
-        "description": "The builds of one release. Used for `v1/distros/<distro>/releases/<release>/index.json` (builds in the vendor's main tree), `.../archive.json` (builds that survive only in a vendor vault), and the alias files under `v1/distros/<distro>/aliases/`, which are a copy of the aliased release's `index.json`.",
-        "properties": {
-          "builds": {
-            "description": "Newest first.",
-            "items": {
-              "$ref": "#/components/schemas/Build"
-            },
-            "type": "array"
-          },
-          "distro": {
-            "type": "string"
-          },
-          "release": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "builds",
-          "distro",
-          "release"
         ],
         "type": "object"
       },
@@ -621,49 +597,6 @@
   },
   "openapi": "3.0.3",
   "paths": {
-    "/v1/distros/{distro}/releases/{release}/archive.json": {
-      "get": {
-        "description": "The final build of each end-of-life point release.",
-        "operationId": "release_archive",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "distro",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "release",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BuildList"
-                }
-              }
-            },
-            "description": "successful operation"
-          },
-          "4XX": {
-            "$ref": "#/components/responses/Error"
-          },
-          "5XX": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "summary": "Archived builds of a release, available only from a vendor vault."
-      }
-    },
     "/v1/images.json": {
       "get": {
         "description": "The same builds as the release files, in one request.",
