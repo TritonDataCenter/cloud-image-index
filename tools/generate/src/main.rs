@@ -25,9 +25,13 @@
 //! A previous tree that exists but cannot be read stops every command
 //! before anything is written.
 //! A release whose image the vendor no longer serves (HTTP 404 or 410)
-//! is reported and left out; any other failure fails the vendor (see
-//! "Update policy" in docs/design.md). A command exits non-zero if its
-//! vendor failed or the tree it wrote does not validate.
+//! is reported and left out; any other failure to resolve a release
+//! fails the vendor (see "Update policy" in docs/design.md). Facts a
+//! request could not read for a known file (its HTTP metadata, digest
+//! or signatures) are carried over from the previous tree with a
+//! warning, but a new build with no digest fails the vendor. A command
+//! exits non-zero if its vendor failed or the tree it wrote does not
+//! validate.
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -39,8 +43,8 @@ use generate::lifecycle;
 use generate::policy::{self, Candidate};
 use generate::{
     HeadInfo, OnResolveFailure, artifact, build, digests, fail_if_transient, fill_from_previous,
-    http_failure, is_transient_error, on_resolve_failure, signature, vendor_does_not_serve,
-    with_retries, write,
+    http_failure, is_transient_error, on_resolve_failure, require_digest, signature,
+    vendor_does_not_serve, with_retries, write,
 };
 use resolvers::verify::{ChecksumSource, fetch_expected_hash};
 use resolvers::{ResolvedImage, Vendor, VersionEntry};
@@ -94,7 +98,8 @@ enum Command {
     Vendor {
         #[arg(value_enum)]
         vendor: Vendor,
-        /// The published tree, for keeping known builds' first_seen.
+        /// The published tree, for keeping known builds' first_seen and
+        /// carrying over facts a run could not read.
         #[arg(long)]
         previous: PathBuf,
         /// Directory to write the fragment's `v1/` into.
@@ -244,6 +249,8 @@ async fn build_for(
         checksum_failed,
         signatures_failed,
     );
+    require_digest(&source, &artifact, checksum_failed)
+        .with_context(|| format!("{vendor}: {}", image.url))?;
     Ok(Some(build(image, artifact, now)))
 }
 
@@ -385,6 +392,7 @@ async fn generate_vendor(
         name: Some(vendor.label().to_string()),
         os_family: os_family(vendor),
         homepage: Some(homepage),
+        checked_at: Some(now),
         dev_channel: plan.dev_channel,
         releases,
     };

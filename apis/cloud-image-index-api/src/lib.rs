@@ -6,10 +6,11 @@
 
 //! The cloud-image-index format.
 //!
-//! The index is a tree of static JSON files served over plain HTTPS (in
-//! the first iteration, GitHub Pages). This crate describes that tree as
-//! a Dropshot API trait so that an OpenAPI document can be generated and
-//! published, and so that a reference server can serve the same tree.
+//! The index is a tree of static JSON files served over plain HTTPS (from
+//! GitHub Pages, at <https://cloud-images.tritoncloud.io>). This crate
+//! describes that tree as a Dropshot API trait so that an OpenAPI
+//! document can be generated and published, and so that a reference
+//! server (not built yet) could serve the same tree.
 //! Every endpoint path is the path of a file; no path is both a file and
 //! a directory. Dropshot does not allow a literal path segment and a
 //! variable one at the same level, so literal names (`distros`,
@@ -34,8 +35,7 @@ use serde::{Deserialize, Serialize};
 /// `enum` or a `pattern`, so generated clients take the value as a
 /// string and accept, and keep, values added after they were generated;
 /// and every OpenAPI tool can read it (a lookahead pattern excluding the
-/// known values, as an earlier shape used, is beyond Go's RE2, which
-/// rejected the whole document).
+/// known values is beyond Go's RE2, which rejects the whole document).
 fn open_enum_schema(description: &str) -> Schema {
     Schema::Object(SchemaObject {
         metadata: Some(Box::new(Metadata {
@@ -66,7 +66,7 @@ macro_rules! open_enum {
         pub enum $ty {
             $( $(#[doc = $variant_doc])* $variant, )+
             /// A value this version of the index does not define. The
-            /// index itself never publishes one; clients should accept it.
+            /// index itself never publishes one; clients must accept it.
             #[serde(untagged)]
             Other(String),
         }
@@ -86,6 +86,10 @@ macro_rules! open_enum {
                     lines.iter().map(|l| l.trim()).collect::<Vec<_>>().join(" ")
                 };
                 let mut description = join(&[$($doc),*]);
+                description.push_str(
+                    "\n\nLater versions of the index may add values; clients \
+                     must accept values they do not know.",
+                );
                 description.push_str("\n\nKnown values:\n");
                 $(
                     let value = serde_json::to_value($ty::$variant)
@@ -119,12 +123,19 @@ pub struct DistroList {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct DistroSummary {
     /// Our short name for the distro, also its directory name
-    /// (e.g. `ubuntu`, `rocky`, `centos-stream`).
+    /// (e.g. `ubuntu`, `rocky`, `centos-stream`). Follows the same rule
+    /// as a build's `build`.
     pub id: String,
     /// Human-facing name (e.g. `Rocky Linux`).
     pub name: Option<String>,
     pub os_family: OsFamily,
     pub homepage: Option<String>,
+    /// When the index last regenerated this distro from its vendor
+    /// (UTC). Facts a run could not read, such as a checksum file that
+    /// did not answer, are carried over from the previous run. A run
+    /// that fails for a vendor keeps its previous data and this time, so
+    /// an old value means the vendor's data is stale.
+    pub checked_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -140,10 +151,12 @@ pub enum OsFamily {
 // ---------------------------------------------------------------------
 
 /// `v1/images.json`: every current build in the index, one entry each,
-/// so a client can list or search them with a single request. It repeats
-/// what the distro and release files say: the distros in `v1/index.json`
-/// order, each distro's releases in its order, and each release's
-/// current builds newest first. Archived builds are left out.
+/// so a client can list or search them with a single request. Entries
+/// come in `v1/index.json`'s distro order, then each distro's releases
+/// in the order the vendor lists them, then each release's current
+/// builds newest first. Archived builds are left out. Pick a release by
+/// its aliases, not by its position: where a development release sorts
+/// differs between vendors.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct ImageList {
     pub images: Vec<Image>,
@@ -154,9 +167,8 @@ pub struct ImageList {
 pub struct Image {
     /// The distro, as `v1/index.json` lists it.
     pub distro: DistroSummary,
-    /// The release, as the distro's `index.json` lists it.
+    /// The release the build belongs to.
     pub release: Release,
-    /// The build, as the release's `index.json` lists it.
     pub build: Build,
 }
 
@@ -187,38 +199,44 @@ pub fn image_list(list: &DistroList, distros: &[(Distro, Vec<BuildList>)]) -> Im
 // v1/distros/<distro>/index.json
 // ---------------------------------------------------------------------
 
-/// `v1/distros/<distro>/index.json`: a distro and its releases, newest first.
+/// `v1/distros/<distro>/index.json`: a distro and its releases, in the
+/// order the vendor lists them.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Distro {
     pub id: String,
     pub name: Option<String>,
     pub os_family: OsFamily,
     pub homepage: Option<String>,
+    /// When the index last regenerated this distro from its vendor
+    /// (UTC). Facts a run could not read, such as a checksum file that
+    /// did not answer, are carried over from the previous run. A run
+    /// that fails for a vendor keeps its previous data and this time, so
+    /// an old value means the vendor's data is stale.
+    pub checked_at: Option<DateTime<Utc>>,
     /// The vendor's name for the channel the `dev` alias follows
-    /// (e.g. `bloody`, `sid`, `rawhide`, `edge`). Null when the vendor
-    /// has no development channel in the index.
+    /// (e.g. `bloody`, `beta`, `rc`). Null when the vendor has no
+    /// development channel in the index.
     pub dev_channel: Option<String>,
     pub releases: Vec<Release>,
 }
 
-/// One release of a distro. A release is the vendor's major release or
-/// series (`noble`, `9`, `trixie`); point releases are recorded on
-/// builds.
+/// One release of a distro. A release is usually the vendor's major
+/// release or series (`noble`, `9`, `trixie`), with point releases
+/// recorded on builds; FreeBSD lists each supported point release as a
+/// release (`14.4`, `15.1`).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Release {
     /// Release token, also the release's directory name (e.g. `noble`,
-    /// `9`, `1.14`). For vendors that publish channels rather than
-    /// releases it is what the channel resolved to (OmniOS `r151058`,
-    /// Arch `rolling`).
+    /// `9`, `1.14`). Follows the same rule as a build's `build`. For
+    /// vendors that publish channels rather than releases it is what the
+    /// channel resolved to (OmniOS `r151058`, Arch `rolling`).
     pub id: String,
     /// Vendor version string (e.g. `24.04`, `9`, `1.14`).
     pub version: Option<String>,
     /// Human-facing title (e.g. `24.04 LTS Noble Numbat`).
     pub title: Option<String>,
     /// Aliases this release currently holds. Each alias is held by at
-    /// most one release of a distro, and has a file of the same name
-    /// (`latest.json`, `lts.json`, `dev.json`) in the distro's
-    /// `aliases/` directory.
+    /// most one release of a distro.
     #[serde(default)]
     pub aliases: Vec<Alias>,
     /// The vendor's end-of-support date, when published.
@@ -236,8 +254,8 @@ open_enum! {
         /// The newest release the vendor itself labels long-term
         /// support. Absent for vendors that do not use that label.
         Lts,
-        /// The vendor's development channel (see the distro's
-        /// `dev_channel`).
+        /// The vendor's development release: what its development
+        /// channel resolves to, or its newest pre-release.
         Dev,
     }
 }
@@ -276,7 +294,9 @@ pub struct BuildList {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Build {
     /// The vendor's build id or serial (e.g. `20260927`,
-    /// `9.8-20260525.0`, `v1.14.2`).
+    /// `9.8-20260525.0`, `1.14.2`). At most 64 characters from
+    /// `[A-Za-z0-9._-]`, never containing `..`, so clients can name files
+    /// and directories after it.
     pub build: String,
     /// Vendor point release this build belongs to, for distros that
     /// have them (e.g. `9.8`).
@@ -297,7 +317,8 @@ pub struct Build {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Artifact {
     /// The vendor's flavour of the image (e.g. `server`, `base`, `lvm`,
-    /// `genericcloud`, `nocloud`).
+    /// `genericcloud`, `nocloud`). Follows the same rule as a build's
+    /// `build`.
     pub variant: Option<String>,
     /// Whether this is the vendor's default variant.
     pub default_variant: Option<bool>,
@@ -318,17 +339,18 @@ pub struct Artifact {
     pub ssh_key_injection: Option<bool>,
     /// Size in bytes of the file as downloaded, when known.
     pub size: Option<u64>,
-    /// Where the file can be downloaded. Every build has a `primary`
+    /// Where the file can be downloaded. Always includes a `primary`
     /// location.
     pub locations: Vec<Location>,
     pub integrity: Option<Integrity>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum Firmware {
-    Bios,
-    Uefi,
+open_enum! {
+    /// Firmware an image boots with.
+    pub enum Firmware {
+        Bios,
+        Uefi,
+    }
 }
 
 open_enum! {
@@ -355,9 +377,9 @@ open_enum! {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Location {
     pub url: String,
-    /// Which kind of location this is. The index always says; clients
-    /// should not depend on it, since a minimal client just downloads
-    /// the first location.
+    /// Which kind of location this is. The index always says, and every
+    /// artifact has a `primary` location; a minimal client can download
+    /// that one and ignore the rest.
     pub kind: Option<LocationKind>,
     /// Whether the vendor answers `url` with a redirect to a different
     /// host: a mirror network, or a CDN such as GitHub's asset host.
@@ -366,15 +388,16 @@ pub struct Location {
     pub redirects_off_host: Option<bool>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum LocationKind {
-    /// The vendor's main download tree.
-    Primary,
-    /// A vendor archive of builds no longer in the main tree.
-    Vault,
-    /// A mirror the vendor names.
-    Mirror,
+open_enum! {
+    /// Which kind of download location this is.
+    pub enum LocationKind {
+        /// The vendor's main download tree.
+        Primary,
+        /// A vendor archive of builds no longer in the main tree.
+        Vault,
+        /// A mirror the vendor names.
+        Mirror,
+    }
 }
 
 /// Everything the vendor offers for checking a download. Clients choose
@@ -390,7 +413,9 @@ pub struct Integrity {
     #[serde(default)]
     pub signatures: Vec<Signature>,
     /// HTTP metadata the vendor's server reported for the file. Useful
-    /// mostly when there are no digests.
+    /// mostly when there are no digests. Its fields are null when the
+    /// file redirects off-host (see the location's
+    /// `redirects_off_host`), since each mirror reports its own.
     pub http: Option<HttpMetadata>,
 }
 
@@ -404,11 +429,12 @@ pub struct Digest {
     pub source: Option<ChecksumSource>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum DigestAlgorithm {
-    Sha256,
-    Sha512,
+open_enum! {
+    /// Hash algorithm of a digest.
+    pub enum DigestAlgorithm {
+        Sha256,
+        Sha512,
+    }
 }
 
 /// A vendor document that contains the artifact's hash.
@@ -429,7 +455,8 @@ open_enum! {
         Gnu,
         /// BSD style: `SHA256 (<filename>) = <hex>` per line.
         Bsd,
-        /// The file contains only the hex hash.
+        /// The hash is the file's first whitespace-separated token;
+        /// anything after it is not a filename to match.
         Bare,
         /// Hash appears in a vendor document with no generic format (for
         /// example a JSON feed or an HTML page); re-checking it needs
@@ -543,8 +570,6 @@ pub trait CloudImageIndexApi {
     ) -> Result<HttpResponseOk<DistroList>, HttpError>;
 
     /// Every current build in the index, with its distro and release.
-    ///
-    /// The same builds as the release files, in one request.
     #[endpoint { method = GET, path = "/v1/images.json" }]
     async fn images(
         rqctx: RequestContext<Self::Context>,

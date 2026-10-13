@@ -158,6 +158,65 @@ fn unknown_enum_value_in_our_own_output_is_caught() -> Result<(), String> {
 }
 
 #[test]
+fn unknown_digest_algorithm_in_our_own_output_is_caught() -> Result<(), String> {
+    let s = Scratch::new("unknown-digest-algorithm")?;
+    s.edit_json("v1/distros/rocky/releases/9/index.json", |v| {
+        v["builds"][0]["artifacts"][0]["integrity"]["digests"][0]["algorithm"] =
+            serde_json::json!("sha265");
+    })?;
+    s.expect_problem("unknown digest algorithm \"sha265\"")
+}
+
+#[test]
+fn unknown_location_kind_in_our_own_output_is_caught() -> Result<(), String> {
+    let s = Scratch::new("unknown-location-kind")?;
+    s.edit_json("v1/distros/rocky/releases/9/index.json", |v| {
+        v["builds"][0]["artifacts"][0]["locations"][0]["kind"] = serde_json::json!("primry");
+    })?;
+    s.expect_problem("unknown location kind \"primry\"")
+}
+
+#[test]
+fn unknown_firmware_in_our_own_output_is_caught() -> Result<(), String> {
+    let s = Scratch::new("unknown-firmware")?;
+    s.edit_json("v1/distros/rocky/releases/9/index.json", |v| {
+        v["builds"][0]["artifacts"][0]["firmware"] = serde_json::json!(["uefii"]);
+    })?;
+    s.expect_problem("unknown firmware \"uefii\"")
+}
+
+#[test]
+fn a_build_id_that_could_name_another_path_is_caught() -> Result<(), String> {
+    // Clients name directories after build ids (see `Build.build`).
+    let s = Scratch::new("bad-build-id")?;
+    for file in [
+        "v1/distros/talos/releases/1.14/index.json",
+        "v1/distros/talos/aliases/latest.json",
+    ] {
+        s.edit_json(file, |v| {
+            v["builds"][0]["build"] = serde_json::json!("1..14")
+        })?;
+    }
+    s.edit_json("v1/images.json", |v| {
+        for image in v["images"].as_array_mut().into_iter().flatten() {
+            if image["distro"]["id"] == "talos" {
+                image["build"]["build"] = serde_json::json!("1..14");
+            }
+        }
+    })?;
+    s.expect_problem("invalid build id \"1..14\"")
+}
+
+#[test]
+fn a_variant_that_could_name_another_path_is_caught() -> Result<(), String> {
+    let s = Scratch::new("bad-variant")?;
+    s.edit_json("v1/distros/rocky/releases/9/index.json", |v| {
+        v["builds"][0]["artifacts"][0]["variant"] = serde_json::json!("base/x");
+    })?;
+    s.expect_problem("invalid variant \"base/x\"")
+}
+
+#[test]
 fn missing_openapi_document_is_caught() -> Result<(), String> {
     let s = Scratch::new("openapi-missing")?;
     std::fs::remove_file(s.0.join("v1/openapi.json")).map_err(|e| e.to_string())?;
@@ -303,6 +362,15 @@ fn digest_that_is_not_lowercase_hex_of_the_right_length_is_caught() -> Result<()
         v["builds"][0]["artifacts"][0]["integrity"]["digests"][0]["value"] = "ABC123".into();
     })?;
     s.expect_problem("digest is not lowercase hex of the right length")
+}
+
+#[test]
+fn checked_at_differing_from_the_distro_list_is_caught() -> Result<(), String> {
+    let s = Scratch::new("checked-at")?;
+    s.edit_json("v1/distros/talos/index.json", |v| {
+        v["checked_at"] = serde_json::json!("2001-01-01T00:00:00Z");
+    })?;
+    s.expect_problem("talos: checked_at differs from v1/index.json")
 }
 
 #[test]

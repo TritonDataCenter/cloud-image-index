@@ -619,6 +619,7 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
     let (build, artifact) = import::choose_artifact(builds, ARCH, args.variant.as_deref())?;
     let format = import::source_format(&artifact.format, &artifact.compression)?;
     let url = import::primary_url(artifact)?;
+    import::check_ids(&distro, &builds.release, build, artifact)?;
     let info = import::image_info(&distro, &builds.release, build, artifact);
     let digests = import::index_digests(artifact)?;
     import::confirm_requested_uuid(requested_uuid, import::index_uuid(&digests))?;
@@ -628,20 +629,21 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         info.vendor, info.series, info.version
     );
     println!("Source:  {url}");
-    if import::needs_allow_unverified(&digests) && !args.allow_unverified {
-        if digests.is_empty() {
-            anyhow::bail!(
-                "{} publishes no digest for this image; pass --allow-unverified to \
-                 import it trusting TLS alone",
-                info.vendor
-            );
-        }
-        anyhow::bail!(
-            "{} gives this image's digest only in a document with no generic \
-             layout, so it cannot confirm the index's digest; pass \
-             --allow-unverified to check the image against the index alone",
-            info.vendor
+    if !import::reads_nocloud(artifact) {
+        eprintln!(
+            "note: {}",
+            import::without_nocloud_note(&info.vendor, &info.series)
         );
+    }
+    let unknown = import::unknown_digest_algorithms(artifact);
+    if import::needs_allow_unverified(&digests) && !args.allow_unverified {
+        anyhow::bail!(
+            "{}",
+            import::why_unverified(&info.vendor, &digests, &unknown)
+        );
+    }
+    if !unknown.is_empty() {
+        eprintln!("note: {}", import::unknown_digest_note(&unknown));
     }
     let (check, expected): (Box<dyn nocloud_import::SourceCheck>, _) = if digests.is_empty() {
         (Box::new(TlsOnly), Vec::new())
@@ -773,7 +775,9 @@ struct Cleanup {
 /// After an install, nothing is left; with `--no-install`, the image and
 /// manifest; with `--keep`, everything. A failed import keeps its download
 /// for the next try (the pipeline only ever leaves a complete download
-/// under its name, and checks it again before reusing it) and, when it got
+/// under its name, and runs the import's check on it again before
+/// reusing it; with `--allow-unverified` and no digest, that check
+/// accepts it) and, when it got
 /// as far as `imgadm`, its image and manifest, for installing by hand; a
 /// failed build leaves none, as the pipeline removes them.
 fn cleanup_plan(keep: bool, no_install: bool, succeeded: bool) -> Cleanup {
@@ -934,7 +938,8 @@ mod tests {
 
     /// What an import leaves behind: nothing after an install, the image
     /// files with --no-install, everything with --keep; after a failure,
-    /// only a download a digest check will vet before it is reused.
+    /// only the download, which the import's check runs on again before
+    /// it is reused.
     #[test]
     fn cleanup_keeps_only_what_is_wanted() {
         let plan = |keep, no_install, succeeded| cleanup_plan(keep, no_install, succeeded);

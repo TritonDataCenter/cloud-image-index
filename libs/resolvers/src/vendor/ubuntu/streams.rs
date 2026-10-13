@@ -24,7 +24,7 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 use url::Url;
 
-use crate::vendor::VersionEntry;
+use crate::vendor::{VersionEntry, natural_cmp};
 
 pub const STREAMS_URL: &str =
     "https://cloud-images.ubuntu.com/releases/streams/v1/com.ubuntu.cloud:released:download.json";
@@ -106,12 +106,13 @@ pub fn resolve(streams: &Streams, token: &str) -> Result<StreamsImage> {
             .ok_or_else(|| anyhow::anyhow!("no Ubuntu product matches release token {token:?}"))?
     };
 
-    // Serial keys are date-stamped (`YYYYMMDD` or `YYYYMMDD.N`), so
-    // lexicographic ordering picks the newest build correctly.
+    // Serial keys are date-stamped (`YYYYMMDD` or `YYYYMMDD.N`). The
+    // map orders them as strings, which puts `.10` before `.9`, so the
+    // newest is found by comparing the numbers.
     let (serial, ver) = product
         .versions
         .iter()
-        .next_back()
+        .max_by(|a, b| natural_cmp(a.0, b.0))
         .ok_or_else(|| anyhow::anyhow!("no versions for {}", product.release))?;
 
     let item = ver
@@ -265,6 +266,22 @@ pub(crate) mod tests {
         let img = resolve(&s, "noble").unwrap();
         assert_eq!(img.codename, "noble");
         assert_eq!(img.serial, "20260301");
+    }
+
+    /// Serials take a `.N` suffix when a day has several builds; `.10`
+    /// is newer than `.9` although it sorts before it as a string.
+    #[test]
+    fn a_tenth_build_of_the_day_is_newer_than_the_ninth() {
+        let json = r#"{"products": {"com.ubuntu.cloud:server:24.04:amd64": {
+            "arch": "amd64", "release": "noble", "release_title": "24.04 LTS",
+            "supported": true, "version": "24.04", "versions": {
+              "20260301.9": { "items": { "disk1.img": { "path": "p9", "sha256": "nine", "size": 1 } } },
+              "20260301.10": { "items": { "disk1.img": { "path": "p10", "sha256": "ten", "size": 1 } } }
+            }}}}"#;
+        let s: Streams = serde_json::from_str(json).unwrap();
+        let img = resolve(&s, "noble").unwrap();
+        assert_eq!(img.serial, "20260301.10");
+        assert_eq!(img.sha256, "ten");
     }
 
     #[test]

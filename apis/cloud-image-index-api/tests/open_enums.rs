@@ -6,10 +6,13 @@
 
 //! Open enums: value sets expected to grow. Known values parse to their
 //! variants, unknown values are kept in `Other`, and the schema tells
-//! generated clients the same (`oneOf`: a known value, or any other
-//! string).
+//! generated clients the same (a plain string, whose description lists
+//! the known values).
 
-use cloud_image_index_api::{Alias, ChecksumFormat, Compression, ImageFormat, SignatureKind};
+use cloud_image_index_api::{
+    Alias, ChecksumFormat, Compression, DigestAlgorithm, Firmware, ImageFormat, LocationKind,
+    SignatureKind,
+};
 use schemars::JsonSchema;
 use serde_json::json;
 
@@ -32,6 +35,18 @@ fn known_values_parse_to_their_variants() -> Result<(), serde_json::Error> {
         SignatureKind::PgpDetached
     );
     assert_eq!(serde_json::from_value::<Alias>(json!("lts"))?, Alias::Lts);
+    assert_eq!(
+        serde_json::from_value::<DigestAlgorithm>(json!("sha512"))?,
+        DigestAlgorithm::Sha512
+    );
+    assert_eq!(
+        serde_json::from_value::<LocationKind>(json!("primary"))?,
+        LocationKind::Primary
+    );
+    assert_eq!(
+        serde_json::from_value::<Firmware>(json!("uefi"))?,
+        Firmware::Uefi
+    );
     Ok(())
 }
 
@@ -42,12 +57,19 @@ fn unknown_values_are_kept() -> Result<(), serde_json::Error> {
     assert_eq!(serde_json::to_value(&c)?, json!("lz4"));
     let a: Alias = serde_json::from_value(json!("beta"))?;
     assert_eq!(a, Alias::Other("beta".to_string()));
+    let d: DigestAlgorithm = serde_json::from_value(json!("blake2b"))?;
+    assert_eq!(d, DigestAlgorithm::Other("blake2b".to_string()));
+    let k: LocationKind = serde_json::from_value(json!("cdn"))?;
+    assert_eq!(k, LocationKind::Other("cdn".to_string()));
+    let f: Firmware = serde_json::from_value(json!("openfirmware"))?;
+    assert_eq!(f, Firmware::Other("openfirmware".to_string()));
     Ok(())
 }
 
 /// The schema is a plain string that names the known values in its
 /// description: no `enum`, which would reject later values, and no
-/// `pattern` or `oneOf`, whose lookahead regex Go's RE2 cannot compile.
+/// `pattern` (or `oneOf` around one): a pattern excluding the known
+/// values needs a lookahead, which Go's RE2 cannot compile.
 #[test]
 fn schema_is_a_string_that_lists_the_known_values() {
     let schema = serde_json::to_value(schemars::schema_for!(Compression)).unwrap_or_default();
@@ -59,5 +81,9 @@ fn schema_is_a_string_that_lists_the_known_values() {
     for value in ["none", "gzip", "xz", "zstd", "bzip2"] {
         assert!(description.contains(&format!("`{value}`")), "{description}");
     }
+    assert!(
+        description.contains("Later versions of the index may add values"),
+        "{description}"
+    );
     assert_eq!(Compression::schema_name(), "Compression");
 }

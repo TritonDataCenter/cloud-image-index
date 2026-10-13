@@ -15,7 +15,7 @@
 //! - `Arch-Linux-x86_64-cloudimg.qcow2` — rolling pointer
 //! - `<file>.SHA256` — Linux-style `<hex>  <filename>` sidecar
 //! - `<file>.sig` and `<file>.SHA256.sig` — detached GPG signatures
-//!   (TLS-only trust for now; GPG verification is a follow-up)
+//!   (the index does not publish them yet)
 //!
 //! We list `/images/`, pick the highest `v…/` entry
 //! (`vYYYYMMDD.NNNNNN`, numbers compared as numbers), then fetch
@@ -45,10 +45,7 @@ pub struct Resolved {
 pub async fn resolve(http: &reqwest::Client, release: &str) -> Result<Resolved> {
     let token = release.trim();
     let build = if token.eq_ignore_ascii_case("latest") {
-        let builds = fetch_builds(http).await?;
-        builds
-            .into_iter()
-            .max()
+        newest(fetch_builds(http).await?)
             .ok_or_else(|| anyhow::anyhow!("no Arch Linux builds found at {IMAGES_BASE}"))?
     } else {
         parse_build(token)?
@@ -82,6 +79,14 @@ async fn fetch_builds(http: &reqwest::Client) -> Result<Vec<String>> {
         .await
         .with_context(|| format!("read body of {IMAGES_BASE}"))?;
     Ok(parse_builds_from_html(&body))
+}
+
+/// The newest of `builds`, comparing numbers as numbers (`.100000`
+/// after `.99999`).
+fn newest(builds: Vec<String>) -> Option<String> {
+    builds
+        .into_iter()
+        .max_by(|a, b| crate::vendor::natural_cmp(a, b))
 }
 
 fn parse_builds_from_html(body: &str) -> Vec<String> {
@@ -157,6 +162,18 @@ mod tests {
                 "20260501.523211".to_string(),
             ]
         );
+    }
+
+    /// `latest` is the newest build by number, not the greatest string:
+    /// `.100000` is newer than `.99999`.
+    #[test]
+    fn latest_is_the_newest_build_by_number() {
+        let body = r#"href="v20260501.99999/" href="v20260501.100000/""#;
+        assert_eq!(
+            newest(parse_builds_from_html(body)).as_deref(),
+            Some("20260501.100000")
+        );
+        assert_eq!(newest(Vec::new()), None);
     }
 
     #[test]

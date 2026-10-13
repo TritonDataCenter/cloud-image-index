@@ -70,8 +70,10 @@ pub(crate) fn natural_cmp(a: &str, b: &str) -> std::cmp::Ordering {
 /// help auto-lists supported vendors and validates the argument
 /// before any I/O. The variant→string mapping is derived from
 /// `serde::Serialize` (kebab-case), and `Display` delegates to
-/// the crate-local [`crate::enum_to_display`], so adding a vendor is a single-line
-/// enum-variant addition with no string-matching boilerplate.
+/// the crate-local [`crate::enum_to_display`], so the id needs no
+/// string-matching boilerplate. Adding a vendor still takes a module,
+/// an entry in [`Vendor::ALL`], and an arm in each exhaustive `match`
+/// on `Vendor` (the compiler lists them).
 #[derive(clap::ValueEnum, serde::Serialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum Vendor {
@@ -115,7 +117,8 @@ impl Vendor {
     ];
 
     /// Kebab-case identifier (the same string clap/serde use, e.g.
-    /// `centos-stream`). Stable wire id for the distributions endpoint.
+    /// `centos-stream`). The distro's id in the index, and its
+    /// directory name.
     pub fn id(&self) -> String {
         crate::enum_to_display(self)
     }
@@ -131,7 +134,9 @@ impl Vendor {
             Vendor::Fedora => "Fedora",
             Vendor::Freebsd => "FreeBSD",
             Vendor::Omnios => "OmniOS",
-            Vendor::Openbsd => "OpenBSD",
+            // The images are a community build, not the OpenBSD
+            // project's (see the openbsd module).
+            Vendor::Openbsd => "OpenBSD (community build)",
             Vendor::Opensuse => "openSUSE Leap",
             Vendor::Oracle => "Oracle Linux",
             Vendor::Rocky => "Rocky Linux",
@@ -207,10 +212,11 @@ pub fn all_vendors() -> Vec<VendorInfo> {
 }
 
 /// One resolvable release in a vendor's catalog. The `token` is exactly
-/// what [`VendorProfile::resolve`] accepts; the remaining fields are
-/// display sugar for a version picker. `supported` is false for
-/// EOL / pre-release / dev channels the vendor still serves; callers
-/// decide whether to offer those.
+/// what [`VendorProfile::resolve`] accepts; the remaining fields decide
+/// whether the entry becomes a release in the index, which aliases it
+/// holds and its published end-of-support date (see the generator's
+/// policy). `supported` is false for EOL / pre-release / dev channels
+/// the vendor still serves; callers decide whether to offer those.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 pub struct VersionEntry {
     /// Release token to feed back into `resolve` (e.g. `noble`, `9`,
@@ -245,9 +251,9 @@ pub enum SourceFormat {
     Qcow2,
     Xz,
     Raw,
-    /// VMDK (VMware Virtual Disk). Used by OmniOS's cloud images.
-    /// The release-resolution path is wired up; the conversion step
-    /// is deferred pending a vendored vmdk reader.
+    /// VMDK (VMware Virtual Disk). Used by OmniOS's cloud images;
+    /// monitor-reef's nocloud-import converts it with its vendored
+    /// VMDK reader.
     Vmdk,
     /// gzipped raw disk image. Used by SmartOS
     /// (`smartos-<rel>-USB.img.gz`); a client can stream a gzip
@@ -335,22 +341,27 @@ pub trait VendorProfile: Send + Sync {
     #[allow(dead_code)]
     fn name(&self) -> &str;
 
-    /// List the releases this vendor can resolve, newest-first. Reads
-    /// only the SAME hardcoded distro index the resolver already uses
-    /// (no new hosts). Offline/rolling vendors return their accepted
+    /// List the releases this vendor can resolve, newest-first, usually
+    /// from the same vendor index the resolver reads (Fedora also asks
+    /// its update system, Bodhi, which releases are supported).
+    /// Offline/rolling vendors return their accepted
     /// channel tokens (e.g. `stable`/`lts`/`bloody`, `latest`) without
     /// a network read.
     async fn list_versions(&self, http: &reqwest::Client) -> Result<Vec<VersionEntry>>;
 
     /// Validate the release token, then resolve it. Token validation
-    /// lives at this boundary (not just in the admin route that calls
-    /// `list_versions`) so the bounded-charset guard travels with every
-    /// caller: the per-vendor [`VendorProfile::resolve_release`] impls
+    /// lives at this boundary so the bounded-charset guard travels with
+    /// every caller: the per-vendor [`VendorProfile::resolve_release`] impls
     /// interpolate the token straight into URL templates, so an
     /// unbounded token is a path-injection / second-request vector.
+    ///
+    /// The build id the resolver reports (`version`) is held to the same
+    /// rule, since clients name directories after it.
     async fn resolve(&self, release: &str, http: &reqwest::Client) -> Result<ResolvedImage> {
         validate_version_token(release)?;
-        self.resolve_release(release, http).await
+        let image = self.resolve_release(release, http).await?;
+        validate_version_token(&image.version).context("build id")?;
+        Ok(image)
     }
 
     /// Resolve a release token into a concrete image. Callers must go
@@ -360,23 +371,15 @@ pub trait VendorProfile: Send + Sync {
     -> Result<ResolvedImage>;
 }
 
-/// Maximum accepted release-token length.
-const MAX_VERSION_TOKEN_LEN: usize = 64;
-
 /// Validate a release token before it reaches a resolver's URL template:
 /// bounded `[A-Za-z0-9._-]{1,64}` with an explicit `..` reject, so no
 /// path separator or dot-dot traversal can be smuggled into the
 /// per-vendor URL the resolver builds. A real version token (series
 /// name, version string, or channel like `latest`/`stable`) never needs
 /// anything outside this set. Enforced by [`VendorProfile::resolve`].
+/// The rule is the index's id rule ([`ids::is_valid_id`]).
 pub fn validate_version_token(token: &str) -> Result<()> {
-    let ok = !token.is_empty()
-        && token.len() <= MAX_VERSION_TOKEN_LEN
-        && !token.contains("..")
-        && token
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'));
-    if ok {
+    if ids::is_valid_id(token) {
         Ok(())
     } else {
         anyhow::bail!(
@@ -389,9 +392,10 @@ pub fn validate_version_token(token: &str) -> Result<()> {
 /// `ResolvedImage` shape used by the RHEL-derivative profiles
 /// (alma, rocky, oracle, centosstream, fedora, opensuse). All of them
 /// share `SourceFormat::Qcow2`, `os = "linux"`, `ssh_key = true`, and
-/// a `Sha256Pinned` verifier driven by a hash that release discovery
-/// already extracted; the only per-vendor variation is the series,
-/// version, description, and homepage strings.
+/// a hash that release discovery already extracted, checked with a
+/// `Sha256Pinned` verifier (Fedora swaps in its own); the series,
+/// version, description, homepage, checksum document, point release
+/// and signatures vary per vendor.
 pub(super) struct PinnedQcow2 {
     pub url: Url,
     pub series: String,
@@ -629,5 +633,74 @@ mod tests {
             Err(e) => e,
         };
         assert!(err.to_string().contains("invalid version token"));
+    }
+
+    /// Variants name files and directories too (see `resolve`).
+    #[test]
+    fn every_default_variant_is_a_valid_token() {
+        for vendor in Vendor::ALL {
+            let variant = vendor.default_variant();
+            assert!(validate_version_token(variant).is_ok(), "{variant:?}");
+        }
+    }
+
+    /// A profile whose resolver reports a given build id.
+    struct ReportsBuild(&'static str);
+
+    #[async_trait]
+    impl VendorProfile for ReportsBuild {
+        fn name(&self) -> &str {
+            "test"
+        }
+
+        async fn list_versions(&self, _http: &reqwest::Client) -> Result<Vec<VersionEntry>> {
+            Ok(Vec::new())
+        }
+
+        async fn resolve_release(
+            &self,
+            release: &str,
+            _http: &reqwest::Client,
+        ) -> Result<ResolvedImage> {
+            let url = Url::parse("https://example.com/image.qcow2")?;
+            PinnedQcow2 {
+                url: url.clone(),
+                series: release.to_string(),
+                version: self.0.to_string(),
+                description: String::new(),
+                homepage: "https://example.com/",
+                sha256: "0".repeat(64),
+                document: crate::verify::ChecksumDocument {
+                    url,
+                    filename: String::new(),
+                    style: crate::verify::SumsStyle::Bare,
+                },
+                point_release: None,
+                signatures: Vec::new(),
+            }
+            .into_resolved("test")
+        }
+    }
+
+    /// The build id names directories on the machines that import the
+    /// image, so a resolver cannot report one that would escape them.
+    #[tokio::test]
+    async fn resolve_rejects_a_bad_build_id() {
+        let http = crate::test_client_builder()
+            .build()
+            .unwrap_or_else(|e| panic!("{e}"));
+        for bad in ["../../etc", "a/b", ""] {
+            let err = match ReportsBuild(bad).resolve("9", &http).await {
+                Ok(_) => panic!("build id {bad:?} must be rejected"),
+                Err(e) => e,
+            };
+            assert!(format!("{err:#}").contains("build id"), "{err:#}");
+        }
+        assert!(
+            ReportsBuild("9.8-20260525.0")
+                .resolve("9", &http)
+                .await
+                .is_ok()
+        );
     }
 }

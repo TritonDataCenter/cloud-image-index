@@ -15,12 +15,41 @@ we tell you what the vendor publishes and where. Images are always
 downloaded from the vendor, and clients decide for themselves how much
 to trust us versus cross-checking against the vendor.
 
+One exception: the OpenBSD project does not publish cloud images, so
+the index lists a community build from
+<https://github.com/hcartiaux/openbsd-cloud-image>, as "OpenBSD
+(community build)". Its checksums come from the same place, so for
+OpenBSD "the vendor" means that project, not the OpenBSD project.
+
 The index is published at
 <https://cloud-images.tritoncloud.io/v1/index.json>, with every current
 build in one file at <https://cloud-images.tritoncloud.io/v1/images.json>
 and its OpenAPI description at
 <https://cloud-images.tritoncloud.io/v1/openapi.json>, and regenerated
 daily. See [docs/design.md](docs/design.md).
+
+## Stability
+
+From 1.0:
+
+- **The index format** is the three published files under `v1/`:
+  `index.json`, `images.json` and `openapi.json`. Within `v1/`, changes
+  are compatible ones only: new optional fields, and new values for the
+  fields whose description says the set can grow (aliases, image formats,
+  compressions, firmware, location kinds, digest algorithms, checksum
+  formats, signature kinds). Clients must ignore fields they do not know
+  and accept those new values. A breaking change goes to a new `v2/`
+  tree, published alongside `v1/`. Other files in the tree (per-distro
+  files, the landing page) are not part of the format and may change at
+  any time. Release ids follow the vendor's naming and can change with
+  it; the aliases name the current release of each kind: `latest` the
+  newest generally available, `lts` the newest long-term support, and
+  `dev` the development release.
+- **`cloud-image`** keeps its commands, options, `avail` columns and
+  `-j` fields, exit codes and install locations through 1.x. New ones
+  may be added; removing or changing one waits for 2.0.
+
+Report security issues privately, as [SECURITY.md](SECURITY.md) describes.
 
 ## cloud-image for SmartOS
 
@@ -44,8 +73,8 @@ To release a new version, bump `version` in `tools/cloud-image/Cargo.toml`,
 merge that, and push a matching tag from the merge commit:
 
 ```
-git tag -m "cloud-image v0.9.1" v0.9.1
-git push origin v0.9.1
+git tag -m "cloud-image v1.0.1" v1.0.1
+git push origin v1.0.1
 ```
 
 The illumos workflow builds the binary and publishes it, with

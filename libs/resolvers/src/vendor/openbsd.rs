@@ -6,6 +6,8 @@
 
 //! OpenBSD cloud-image vendor profile.
 //!
+//! The OpenBSD project publishes no cloud images, so this is a community
+//! build, and the index names the distro "OpenBSD (community build)".
 //! Uses the bsd-cloud-image.org-blessed builds at
 //! `hcartiaux/openbsd-cloud-image` GitHub releases. Resolves
 //! either `latest` (via the GitHub Releases API) or an explicit

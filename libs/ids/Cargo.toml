@@ -1,0 +1,16 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# Copyright 2026 Edgecast Cloud LLC.
+
+[package]
+name = "cloud-image-index-ids"
+version = "0.1.0"
+edition.workspace = true
+description = "The rule for ids in the cloud-image-index, shared by the format, the resolvers and the client without pulling in either's dependencies"
+license = "MPL-2.0"
+publish = false
+
+[lints]
+workspace = true

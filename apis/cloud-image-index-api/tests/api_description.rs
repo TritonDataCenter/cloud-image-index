@@ -81,8 +81,8 @@ fn landing_page_is_not_in_the_published_document() -> Result<(), String> {
 }
 
 /// The landing page links to the published files by relative paths, so
-/// it works at any base URL (GitHub Pages now, a custom domain later,
-/// or a mirror).
+/// it works at any base URL (the custom domain, GitHub Pages' own
+/// address, or a mirror).
 #[test]
 fn landing_page_links_are_relative() {
     let page = cloud_image_index_api::INDEX_HTML;

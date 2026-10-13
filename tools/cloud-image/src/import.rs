@@ -26,8 +26,7 @@
 
 use anyhow::{Context, Result};
 use client::types::{
-    Artifact, Build, Compression, DigestAlgorithm, Image, ImageFormat, ImageList, LocationKind,
-    OsFamily, Release,
+    Artifact, Build, Compression, Image, ImageFormat, ImageList, OsFamily, Release,
 };
 use nocloud_import::{ExpectedDigest, ImageInfo, SourceFormat};
 use resolvers::verify::SumsStyle;
@@ -63,8 +62,7 @@ pub enum Requested<'a> {
 }
 
 /// Check `name` against the releases and aliases `distro` lists, so a
-/// wrong name gets a plain error naming the choices (the index's file
-/// host answers a missing file with an HTML page, not a JSON error).
+/// wrong name gets a plain error naming the choices.
 pub fn release_request<'a>(distro: &Distro, name: &'a str) -> Result<Requested<'a>> {
     let aliases: Vec<String> = distro.releases.iter().flat_map(alias_names).collect();
     if aliases.iter().any(|a| a == name) {
@@ -175,7 +173,7 @@ pub fn primary_url(artifact: &Artifact) -> Result<Url> {
     let location = artifact
         .locations
         .iter()
-        .find(|l| l.kind == Some(LocationKind::Primary))
+        .find(|l| l.kind.as_ref().is_some_and(|k| k.as_str() == "primary"))
         .context("the artifact has no primary location")?;
     https_url(&location.url).with_context(|| format!("location {:?}", location.url))
 }
@@ -207,8 +205,9 @@ pub struct IndexDigest {
     pub vendor: Option<VendorDocument>,
 }
 
-/// The digests the index publishes for `artifact`. Empty when the vendor
-/// publishes none (e.g. Talos).
+/// The digests the index publishes for `artifact` in an algorithm this
+/// client can check. Empty when the vendor publishes none (e.g. Talos),
+/// or only in algorithms added to the index after this client.
 pub fn index_digests(artifact: &Artifact) -> Result<Vec<IndexDigest>> {
     let Some(integrity) = &artifact.integrity else {
         return Ok(Vec::new());
@@ -216,11 +215,15 @@ pub fn index_digests(artifact: &Artifact) -> Result<Vec<IndexDigest>> {
     integrity
         .digests
         .iter()
-        .map(|digest| {
-            let algorithm = match digest.algorithm {
-                DigestAlgorithm::Sha256 => nocloud_import::DigestAlgorithm::Sha256,
-                DigestAlgorithm::Sha512 => nocloud_import::DigestAlgorithm::Sha512,
+        .filter_map(|digest| {
+            let algorithm = match digest.algorithm.as_str() {
+                "sha256" => nocloud_import::DigestAlgorithm::Sha256,
+                "sha512" => nocloud_import::DigestAlgorithm::Sha512,
+                _ => return None,
             };
+            Some((digest, algorithm))
+        })
+        .map(|(digest, algorithm)| {
             let vendor = match &digest.source {
                 None => None,
                 Some(source) => {
@@ -306,6 +309,70 @@ pub async fn confirm_with_vendor(
     Ok((expected, notes))
 }
 
+/// Whether the image reads its configuration with cloud-init's NoCloud
+/// datasource, which is how SmartOS gives a bhyve guest its cloud-init
+/// configuration.
+pub fn reads_nocloud(artifact: &Artifact) -> bool {
+    artifact.datasources.iter().any(|d| d == "nocloud")
+}
+
+/// What to tell someone about to use an image that does not read NoCloud.
+pub fn without_nocloud_note(distro: &str, release: &str) -> String {
+    format!(
+        "{distro} {release} does not use cloud-init's NoCloud datasource: a \
+         guest made from it does not read the cloud-init configuration \
+         (user-data, SSH keys) SmartOS gives through it"
+    )
+}
+
+/// The algorithms of the artifact's digests that this client cannot
+/// check, because they were added to the index after it.
+pub fn unknown_digest_algorithms(artifact: &Artifact) -> Vec<String> {
+    let Some(integrity) = &artifact.integrity else {
+        return Vec::new();
+    };
+    integrity
+        .digests
+        .iter()
+        .map(|d| d.algorithm.as_str())
+        .filter(|a| !matches!(*a, "sha256" | "sha512"))
+        .map(str::to_string)
+        .collect()
+}
+
+/// What to tell someone about to use an image with a digest this client
+/// cannot check.
+pub fn unknown_digest_note(algorithms: &[String]) -> String {
+    format!(
+        "the index has a {} digest for it, which this cloud-image cannot \
+         check; run `cloud-image self-update` to check it",
+        algorithms.join(" and ")
+    )
+}
+
+/// Why an import needs `--allow-unverified` (see
+/// [`needs_allow_unverified`]): `vendor`'s digests the client can check,
+/// and the algorithms of those it cannot.
+pub fn why_unverified(vendor: &str, digests: &[IndexDigest], unknown: &[String]) -> String {
+    if !unknown.is_empty() {
+        return format!(
+            "{}, or pass --allow-unverified to import it without that check",
+            unknown_digest_note(unknown)
+        );
+    }
+    if digests.is_empty() {
+        return format!(
+            "{vendor} publishes no digest for this image; pass --allow-unverified \
+             to import it trusting TLS alone"
+        );
+    }
+    format!(
+        "{vendor} gives this image's digest only in a document with no generic \
+         layout, so it cannot confirm the index's digest; pass \
+         --allow-unverified to check the image against the index alone"
+    )
+}
+
 /// How the built image is named and described, following tritonadm's
 /// nocloud images (`<distro>-<release>-nocloud`, version = the build).
 /// A variant other than the vendor's default is appended to the version
@@ -329,25 +396,55 @@ pub fn image_info(distro: &Distro, release: &str, build: &Build, artifact: &Arti
         (Some(variant), Some(false) | None) => format!("{}-{variant}", build.build),
         _ => build.build.clone(),
     };
+    let nocloud = reads_nocloud(artifact);
+    let description = if nocloud {
+        format!(
+            "{title} CloudInit NoCloud compatible image. Built to run on bhyve virtual machines."
+        )
+    } else {
+        format!(
+            "{title} image, without cloud-init's NoCloud datasource. Built to run on bhyve \
+             virtual machines."
+        )
+    };
     ImageInfo {
         vendor: distro.id.clone(),
         series: release.to_string(),
         version,
         os: os.to_string(),
-        description: format!(
-            "{title} CloudInit NoCloud compatible image. Built to run on bhyve virtual machines."
-        ),
+        description,
         homepage: distro.homepage.clone().unwrap_or_default(),
-        ssh_key: artifact.ssh_key_injection.unwrap_or(true),
+        // When the index does not say, a NoCloud image takes keys from
+        // metadata, as cloud-init does by default.
+        ssh_key: artifact.ssh_key_injection.unwrap_or(nocloud),
     }
 }
 
 /// The name of the directories an import keeps its download and its
 /// output in: one per build and variant, since the pipeline reuses a
 /// download it finds there, and some vendors name every build's file
-/// alike.
+/// alike. Its parts come from the index, so [`check_ids`] must accept
+/// them first.
 pub fn directory_name(info: &ImageInfo) -> String {
     format!("{}-{}-{}", info.vendor, info.series, info.version)
+}
+
+/// Require the ids an import names files and directories after to follow
+/// the index's id rule, so none can climb out of the directory it is made
+/// in. `--index` can point at any index, so the client checks them too.
+pub fn check_ids(distro: &Distro, release: &str, build: &Build, artifact: &Artifact) -> Result<()> {
+    let ids = [
+        ("distro id", Some(distro.id.as_str())),
+        ("release id", Some(release)),
+        ("build id", Some(build.build.as_str())),
+        ("variant", artifact.variant.as_deref()),
+    ];
+    for (what, id) in ids {
+        if let Some(id) = id {
+            resolvers::validate_version_token(id).with_context(|| what.to_string())?;
+        }
+    }
+    Ok(())
 }
 
 /// How an import would be checked.
@@ -404,6 +501,11 @@ pub struct Available {
     /// Whether the local image store has it; `None` when the store was
     /// not read (off SmartOS).
     pub installed: Option<bool>,
+    /// Whether the image reads NoCloud (see [`reads_nocloud`]).
+    pub nocloud: bool,
+    /// Algorithms of its digests this client cannot check (see
+    /// [`unknown_digest_algorithms`]).
+    pub unknown_digests: Vec<String>,
 }
 
 /// The image an import of the release in `builds` would produce, with the
@@ -428,6 +530,8 @@ pub fn available(distro: &Distro, builds: &BuildList) -> Result<Available> {
         check: Check::of(&digests),
         uuid: index_uuid(&digests),
         installed: None,
+        nocloud: reads_nocloud(artifact),
+        unknown_digests: unknown_digest_algorithms(artifact),
     })
 }
 
@@ -452,7 +556,21 @@ pub fn avail_rows(list: &ImageList, only: Option<&str>) -> Result<(Vec<Available
         }
         let (distro, builds) = one_image(image);
         match available(&distro, &builds) {
-            Ok(row) => rows.push(row),
+            Ok(row) => {
+                // Only for one distro: every plain `avail` would repeat it.
+                if !row.nocloud && only.is_some() {
+                    notes.push(without_nocloud_note(&row.distro, &row.release));
+                }
+                if !row.unknown_digests.is_empty() {
+                    notes.push(format!(
+                        "{} {}: {}",
+                        row.distro,
+                        row.release,
+                        unknown_digest_note(&row.unknown_digests)
+                    ));
+                }
+                rows.push(row);
+            }
             Err(e) => notes.push(format!(
                 "leaving out {} {}: {e:#}",
                 image.distro.id, image.release.id
@@ -676,6 +794,7 @@ pub fn avail_json(rows: &[Available]) -> serde_json::Value {
                 "aliases": r.aliases,
                 "check": r.check.as_str(),
                 "installed": r.installed,
+                "nocloud": r.nocloud,
             })
         })
         .collect()
@@ -823,6 +942,121 @@ mod tests {
             directory_name(&image_info(&distro, &talos.release, build, artifact)),
             directory_name(&image_info(&distro, &talos.release, &later, artifact)),
         );
+        Ok(())
+    }
+
+    /// An image without cloud-init's NoCloud datasource (the SmartOS USB
+    /// image) is not described as one, and is not assumed to take SSH
+    /// keys from metadata unless the index says it does.
+    #[test]
+    fn an_image_without_nocloud_is_not_described_as_one() -> anyhow::Result<()> {
+        let rocky = rocky9();
+        let (build, artifact) = choose_artifact(&rocky, "x86_64", None)?;
+        let info = image_info(&rocky_distro(), &rocky.release, build, artifact);
+        assert!(info.description.contains("NoCloud"), "{}", info.description);
+        assert!(info.ssh_key);
+
+        let plain = edited(&rocky, |a| {
+            a["datasources"] = serde_json::json!([]);
+            a["ssh_key_injection"] = serde_json::Value::Null;
+        });
+        let info = image_info(&rocky_distro(), &rocky.release, build, &plain);
+        assert!(
+            !info.description.contains("NoCloud compatible"),
+            "{}",
+            info.description
+        );
+        assert!(
+            info.description
+                .contains("without cloud-init's NoCloud datasource"),
+            "{}",
+            info.description
+        );
+        assert!(!info.ssh_key);
+
+        let unknown = edited(&rocky, |a| a["ssh_key_injection"] = serde_json::Value::Null);
+        let info = image_info(&rocky_distro(), &rocky.release, build, &unknown);
+        assert!(
+            info.ssh_key,
+            "a NoCloud image takes keys unless the index says not"
+        );
+        let refuses = edited(&rocky, |a| a["ssh_key_injection"] = false.into());
+        let info = image_info(&rocky_distro(), &rocky.release, build, &refuses);
+        assert!(!info.ssh_key);
+        Ok(())
+    }
+
+    /// `avail <distro>` still lists such an image, with a note saying what
+    /// it lacks; a plain `avail` does not repeat the note on every run.
+    #[test]
+    fn avail_notes_an_image_without_nocloud() -> anyhow::Result<()> {
+        let mut json = serde_json::to_value(images())?;
+        let images = json["images"]
+            .as_array_mut()
+            .unwrap_or_else(|| panic!("images is a list"));
+        let rocky = images
+            .iter_mut()
+            .find(|i| i["distro"]["id"] == "rocky")
+            .unwrap_or_else(|| panic!("the examples have rocky"));
+        rocky["build"]["artifacts"][0]["datasources"] = serde_json::json!([]);
+        let rocky_release = rocky["release"]["id"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let list: client::types::ImageList = serde_json::from_value(json)?;
+        let (rows, notes) = avail_rows(&list, Some("rocky"))?;
+        assert!(rows.iter().any(|r| r.release == rocky_release));
+        assert!(
+            notes
+                .iter()
+                .any(|n| n.contains(&format!("rocky {rocky_release}"))
+                    && n.contains("does not use cloud-init's NoCloud datasource")),
+            "{notes:?}"
+        );
+        let (_, unfiltered) = avail_rows(&list, None)?;
+        assert!(unfiltered.is_empty(), "{unfiltered:?}");
+        let json = avail_json(&rows);
+        let rocky_json = json
+            .as_array()
+            .into_iter()
+            .flatten()
+            .find(|r| r["release"] == rocky_release.as_str())
+            .unwrap_or_else(|| panic!("rocky is in -j"));
+        assert_eq!(rocky_json["nocloud"], serde_json::json!(false));
+        Ok(())
+    }
+
+    /// Directories are made and written as root after these ids, so ids
+    /// from the index (which `--index` can point anywhere) must follow the
+    /// id rule; each is checked on its own and named when it does not.
+    #[test]
+    fn ids_that_would_escape_the_directory_are_refused() -> anyhow::Result<()> {
+        let rocky = rocky9();
+        let (build, artifact) = choose_artifact(&rocky, "x86_64", None)?;
+        check_ids(&rocky_distro(), &rocky.release, build, artifact)?;
+        let error = |r: anyhow::Result<()>| r.err().map(|e| format!("{e:#}")).unwrap_or_default();
+        let mut bad = build.clone();
+        for id in ["../../etc", "a/b", ""] {
+            bad.build = id.to_string();
+            let err = error(check_ids(&rocky_distro(), &rocky.release, &bad, artifact));
+            assert!(err.contains("build id"), "{id:?}: {err}");
+        }
+        let distro = Distro {
+            id: "../rocky".to_string(),
+            ..rocky_distro()
+        };
+        let err = error(check_ids(&distro, &rocky.release, build, artifact));
+        assert!(err.contains("distro id"), "{err}");
+        let err = error(check_ids(&rocky_distro(), "..", build, artifact));
+        assert!(err.contains("release id"), "{err}");
+        let variant = edited(&rocky, |a| a["variant"] = "base/x".into());
+        let err = error(check_ids(&rocky_distro(), &rocky.release, build, &variant));
+        assert!(err.contains("variant"), "{err}");
+        // A build id and a variant may each use the whole length.
+        let mut long = build.clone();
+        long.build = "1".repeat(64);
+        let long_variant = edited(&rocky, |a| a["variant"] = "v".repeat(64).into());
+        check_ids(&rocky_distro(), &rocky.release, &long, &long_variant)?;
         Ok(())
     }
 
@@ -1201,6 +1435,89 @@ mod tests {
         let talos = talos();
         let (_, artifact) = choose_artifact(&talos, "x86_64", None)?;
         assert!(needs_allow_unverified(&index_digests(artifact)?));
+        Ok(())
+    }
+
+    /// A digest in an algorithm added to the index after this client
+    /// cannot be checked, so it is left out rather than refused.
+    #[test]
+    fn a_digest_in_an_unknown_algorithm_is_left_out() -> anyhow::Result<()> {
+        let ubuntu = ubuntu();
+        let artifact = edited(&ubuntu, |a| {
+            a["integrity"]["digests"][0]["algorithm"] = "blake2b".into()
+        });
+        let digests = index_digests(&artifact)?;
+        assert!(digests.is_empty());
+        assert!(needs_allow_unverified(&digests));
+        assert_eq!(unknown_digest_algorithms(&artifact), ["blake2b"]);
+        Ok(())
+    }
+
+    /// Refusing an unverified import says why: a digest this client cannot
+    /// check calls for a newer client, not for trusting TLS alone.
+    #[test]
+    fn an_unverified_import_says_why() -> anyhow::Result<()> {
+        let ubuntu = ubuntu();
+        let (_, artifact) = choose_artifact(&ubuntu, "x86_64", None)?;
+        assert!(unknown_digest_algorithms(artifact).is_empty());
+
+        let none = why_unverified("talos", &[], &[]);
+        assert!(none.contains("publishes no digest"), "{none}");
+        assert!(none.contains("--allow-unverified"), "{none}");
+
+        let newer = why_unverified("ubuntu", &[], &["blake2b".to_string()]);
+        assert!(!newer.contains("publishes no digest"), "{newer}");
+        assert!(newer.contains("blake2b"), "{newer}");
+        assert!(newer.contains("cloud-image self-update"), "{newer}");
+
+        let document = edited(&ubuntu, |a| {
+            a["integrity"]["digests"][0]["source"]["format"] = "vendor_document".into()
+        });
+        let index_only = why_unverified("ubuntu", &index_digests(&document)?, &[]);
+        assert!(index_only.contains("no generic layout"), "{index_only}");
+        Ok(())
+    }
+
+    /// `avail` notes a digest this client cannot check.
+    #[test]
+    fn avail_notes_a_digest_this_client_cannot_check() -> anyhow::Result<()> {
+        let mut json = serde_json::to_value(images())?;
+        for image in json["images"].as_array_mut().into_iter().flatten() {
+            if image["distro"]["id"] == "ubuntu" {
+                image["build"]["artifacts"][0]["integrity"]["digests"][0]["algorithm"] =
+                    "blake2b".into();
+            }
+        }
+        let list: client::types::ImageList = serde_json::from_value(json)?;
+        let (_, notes) = avail_rows(&list, None)?;
+        assert!(
+            notes
+                .iter()
+                .any(|n| n.contains("blake2b") && n.contains("cloud-image self-update")),
+            "{notes:?}"
+        );
+        Ok(())
+    }
+
+    /// A location of a kind added after this client is not the primary
+    /// one, and does not stop the client finding the primary.
+    #[test]
+    fn a_location_of_an_unknown_kind_is_not_primary() -> anyhow::Result<()> {
+        let ubuntu = ubuntu();
+        let only_unknown = edited(&ubuntu, |a| a["locations"][0]["kind"] = "cdn".into());
+        assert!(primary_url(&only_unknown).is_err());
+        let both = edited(&ubuntu, |a| {
+            let primary = a["locations"][0].clone();
+            let mut cdn = primary.clone();
+            cdn["kind"] = "cdn".into();
+            cdn["url"] = "https://cdn.example/x.img".into();
+            a["locations"] = serde_json::json!([cdn, primary]);
+        });
+        assert!(
+            primary_url(&both)?
+                .as_str()
+                .ends_with("server-cloudimg-amd64.img")
+        );
         Ok(())
     }
 

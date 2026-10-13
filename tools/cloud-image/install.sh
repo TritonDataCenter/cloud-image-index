@@ -55,17 +55,24 @@ main() {
     [[ -n $want && $got == "$want" ]] ||
         fail "$asset does not match the release's SHA256SUMS"
 
-    # Replace the binary with a rename, so a running cloud-image keeps the
+    # Run the new binary before it replaces anything, as self-update
+    # does, so one that cannot run leaves an existing install alone. Then
+    # replace the binary with a rename, so a running cloud-image keeps the
     # file it started from.
     mkdir -p "$prefix/sbin" "$prefix/man/man8"
-    cp "$tmp/$asset" "$prefix/sbin/.cloud-image.new"
-    chmod 0755 "$prefix/sbin/.cloud-image.new"
-    mv -f "$prefix/sbin/.cloud-image.new" "$prefix/sbin/cloud-image"
-    "$prefix/sbin/cloud-image" man --out "$prefix/man/man8"
+    local new=$prefix/sbin/.cloud-image.new
+    cp "$tmp/$asset" "$new"
+    chmod 0755 "$new"
+    local version
+    version=$("$new" --version) || {
+        rm -f "$new"
+        fail "the downloaded cloud-image does not run"
+    }
+    "$new" man --out "$prefix/man/man8"
     gzip -f "$prefix/man/man8/cloud-image.8"
+    mv -f "$new" "$prefix/sbin/cloud-image"
 
-    echo "Installed $("$prefix/sbin/cloud-image" --version) as" \
-        "$prefix/sbin/cloud-image; see cloud-image(8)."
+    echo "Installed $version as $prefix/sbin/cloud-image; see cloud-image(8)."
 }
 
 fail() {

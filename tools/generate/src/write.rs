@@ -182,6 +182,7 @@ pub fn distro_list(distros: &[(Distro, Vec<BuildList>)]) -> DistroList {
                 name: d.name.clone(),
                 os_family: d.os_family,
                 homepage: d.homepage.clone(),
+                checked_at: d.checked_at,
             })
             .collect(),
     }
@@ -207,8 +208,10 @@ fn alias_file(alias: &Alias) -> Result<&'static str> {
     }
 }
 
-/// Replace `root/v1` with the given index. Each distro comes with the
-/// build lists of its releases, in the same order as `distro.releases`.
+/// Replace `root/v1` with the given index, and write the landing page
+/// (`index.html`) and the API documentation (`docs/index.html`). Each
+/// distro comes with the build lists of its releases, in the same order
+/// as `distro.releases`.
 pub fn write_tree(
     root: &Path,
     list: &DistroList,
@@ -327,6 +330,7 @@ mod tests {
                 name: Some("D".to_string()),
                 os_family: OsFamily::Linux,
                 homepage: Some("https://d.example/".to_string()),
+                checked_at: None,
                 dev_channel: None,
                 releases: vec![release("2"), release("1")],
             },
@@ -356,6 +360,7 @@ mod tests {
             name: Some(id.to_uppercase()),
             os_family: OsFamily::Linux,
             homepage: Some(format!("https://{id}.example/")),
+            checked_at: None,
             dev_channel: None,
             releases: releases
                 .iter()
@@ -392,14 +397,19 @@ mod tests {
     #[test]
     fn merge_prefers_fresh_fragments_and_carries_over_the_rest_in_order() -> Result<()> {
         let prev_root = scratch("merge-prev");
-        let previous = vec![distro("a", &["1"]), distro("b", &["1"])];
+        let mut previous = vec![distro("a", &["1"]), distro("b", &["1"])];
+        for (d, _) in &mut previous {
+            d.checked_at = Some(at(100));
+        }
         write_tree(&prev_root, &distro_list(&previous), &previous)?;
         let prev_tree =
             api::tree::validate(&prev_root).map_err(|p| anyhow::anyhow!(p.join("\n")))?;
         let _ = std::fs::remove_dir_all(&prev_root);
 
         let order = ["c", "b", "a"].map(String::from);
-        let merged = merge(&order, Some(&prev_tree), vec![distro("b", &["2", "1"])])?;
+        let mut fresh = distro("b", &["2", "1"]);
+        fresh.0.checked_at = Some(at(200));
+        let merged = merge(&order, Some(&prev_tree), vec![fresh])?;
         let summary: Vec<(String, Vec<String>)> = merged
             .iter()
             .map(|(d, _)| {
@@ -414,6 +424,20 @@ mod tests {
             vec![
                 ("b".to_string(), vec!["2".to_string(), "1".to_string()]),
                 ("a".to_string(), vec!["1".to_string()]),
+            ]
+        );
+        // The fresh vendor was checked this run; the carried-over one
+        // keeps the time it was last checked, and the distro list says so.
+        let checked: Vec<_> = distro_list(&merged)
+            .distros
+            .into_iter()
+            .map(|d| (d.id, d.checked_at))
+            .collect();
+        assert_eq!(
+            checked,
+            vec![
+                ("b".to_string(), Some(at(200))),
+                ("a".to_string(), Some(at(100))),
             ]
         );
         Ok(())
@@ -592,6 +616,7 @@ mod tests {
             name: Some("D".to_string()),
             os_family: OsFamily::Linux,
             homepage: Some("https://d.example/".to_string()),
+            checked_at: None,
             dev_channel: None,
             releases: vec![Release {
                 id: "r".to_string(),
@@ -608,6 +633,7 @@ mod tests {
                 name: Some("D".to_string()),
                 os_family: OsFamily::Linux,
                 homepage: Some("https://d.example/".to_string()),
+                checked_at: None,
             }],
         };
         write_tree(

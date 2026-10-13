@@ -4,19 +4,22 @@
       "id": "ubuntu",
       "name": "Ubuntu",
       "os_family": "linux",
-      "homepage": "https://ubuntu.com/"
+      "homepage": "https://ubuntu.com/",
+      "checked_at": "2026-10-01T06:00:00Z"
     },
     {
       "id": "rocky",
       "name": "Rocky Linux",
       "os_family": "linux",
-      "homepage": "https://rockylinux.org/"
+      "homepage": "https://rockylinux.org/",
+      "checked_at": "2026-10-01T06:00:00Z"
     },
     {
       "id": "talos",
       "name": "Talos Linux",
       "os_family": "linux",
-      "homepage": "https://www.talos.dev/"
+      "homepage": "https://www.talos.dev/",
+      "checked_at": "2026-10-01T06:00:00Z"
     }
   ]
 }

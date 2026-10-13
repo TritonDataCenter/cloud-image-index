@@ -22,3 +22,17 @@
 pub mod generated {
     include!(concat!(env!("OUT_DIR"), "/types.rs"));
 }
+
+/// The types a client generated from the OpenAPI document 1.0 published
+/// would use (`fixtures/v1.0/openapi.json`).
+#[allow(
+    clippy::all,
+    clippy::pedantic,
+    clippy::unwrap_used,
+    clippy::expect_used,
+    unused,
+    missing_docs
+)]
+pub mod v1_0 {
+    include!(concat!(env!("OUT_DIR"), "/types_v1_0.rs"));
+}
