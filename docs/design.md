@@ -298,16 +298,18 @@ spec with typify and checks:
   tree checks still enforce its own rules (e.g. current builds have a
   location marked `primary`).
 - Open enums, whose value sets are expected to grow (`ImageFormat`,
-  `Compression`, `ChecksumFormat`, `SignatureKind`, `Alias`), accept
+  `Compression`, `Firmware`, `LocationKind`, `DigestAlgorithm`,
+  `ChecksumFormat`, `SignatureKind`, `Alias`), accept
   and keep values a client does not know. In Rust they have an
   `Other(String)` catch-all; in the schema they are plain strings, whose
   description lists the known values and what each means. They have no
   `enum`, which would reject later values, and no `pattern`: a pattern
   excluding the known values needs a lookahead, which Go's RE2 cannot
   compile, so Go tooling would reject the whole document.
-- Closed enums (`OsFamily`, `LocationKind`, `DigestAlgorithm`,
-  `Firmware`) reject unknown values; adding a value to one is a breaking
-  change.
+- `OsFamily` is the one closed enum: it rejects unknown values, and
+  adding a value is a breaking change. Every other enum is open, since
+  a single unknown value in a closed one makes a client reject all of
+  `images.json`, not just the entry that has it.
 - The index itself never publishes an `Other` value: the tree checks
   reject one, so typos are caught rather than published.
 

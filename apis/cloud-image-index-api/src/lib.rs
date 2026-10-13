@@ -332,11 +332,12 @@ pub struct Artifact {
     pub integrity: Option<Integrity>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum Firmware {
-    Bios,
-    Uefi,
+open_enum! {
+    /// Firmware an image boots with.
+    pub enum Firmware {
+        Bios,
+        Uefi,
+    }
 }
 
 open_enum! {
@@ -374,15 +375,16 @@ pub struct Location {
     pub redirects_off_host: Option<bool>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum LocationKind {
-    /// The vendor's main download tree.
-    Primary,
-    /// A vendor archive of builds no longer in the main tree.
-    Vault,
-    /// A mirror the vendor names.
-    Mirror,
+open_enum! {
+    /// Which kind of download location this is.
+    pub enum LocationKind {
+        /// The vendor's main download tree.
+        Primary,
+        /// A vendor archive of builds no longer in the main tree.
+        Vault,
+        /// A mirror the vendor names.
+        Mirror,
+    }
 }
 
 /// Everything the vendor offers for checking a download. Clients choose
@@ -412,11 +414,12 @@ pub struct Digest {
     pub source: Option<ChecksumSource>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum DigestAlgorithm {
-    Sha256,
-    Sha512,
+open_enum! {
+    /// Hash algorithm of a digest.
+    pub enum DigestAlgorithm {
+        Sha256,
+        Sha512,
+    }
 }
 
 /// A vendor document that contains the artifact's hash.

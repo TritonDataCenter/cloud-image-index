@@ -30,7 +30,8 @@ From 1.0:
   `index.json`, `images.json` and `openapi.json`. Within `v1/`, changes
   are compatible ones only: new optional fields, and new values for the
   fields whose description says the set can grow (aliases, image formats,
-  compressions, checksum formats, signature kinds). Clients must ignore
+  compressions, firmware, location kinds, digest algorithms, checksum
+  formats, signature kinds). Clients must ignore
   fields they do not know and accept those new values. A breaking change
   goes to a new `v2/` tree, published alongside `v1/`. Other files in the
   tree (per-distro files, the landing page) are not part of the format

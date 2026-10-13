@@ -26,8 +26,7 @@
 
 use anyhow::{Context, Result};
 use client::types::{
-    Artifact, Build, Compression, DigestAlgorithm, Image, ImageFormat, ImageList, LocationKind,
-    OsFamily, Release,
+    Artifact, Build, Compression, Image, ImageFormat, ImageList, OsFamily, Release,
 };
 use nocloud_import::{ExpectedDigest, ImageInfo, SourceFormat};
 use resolvers::verify::SumsStyle;
@@ -175,7 +174,7 @@ pub fn primary_url(artifact: &Artifact) -> Result<Url> {
     let location = artifact
         .locations
         .iter()
-        .find(|l| l.kind == Some(LocationKind::Primary))
+        .find(|l| l.kind.as_ref().is_some_and(|k| k.as_str() == "primary"))
         .context("the artifact has no primary location")?;
     https_url(&location.url).with_context(|| format!("location {:?}", location.url))
 }
@@ -207,8 +206,9 @@ pub struct IndexDigest {
     pub vendor: Option<VendorDocument>,
 }
 
-/// The digests the index publishes for `artifact`. Empty when the vendor
-/// publishes none (e.g. Talos).
+/// The digests the index publishes for `artifact` in an algorithm this
+/// client can check. Empty when the vendor publishes none (e.g. Talos),
+/// or only in algorithms added to the index after this client.
 pub fn index_digests(artifact: &Artifact) -> Result<Vec<IndexDigest>> {
     let Some(integrity) = &artifact.integrity else {
         return Ok(Vec::new());
@@ -216,11 +216,15 @@ pub fn index_digests(artifact: &Artifact) -> Result<Vec<IndexDigest>> {
     integrity
         .digests
         .iter()
-        .map(|digest| {
-            let algorithm = match digest.algorithm {
-                DigestAlgorithm::Sha256 => nocloud_import::DigestAlgorithm::Sha256,
-                DigestAlgorithm::Sha512 => nocloud_import::DigestAlgorithm::Sha512,
+        .filter_map(|digest| {
+            let algorithm = match digest.algorithm.as_str() {
+                "sha256" => nocloud_import::DigestAlgorithm::Sha256,
+                "sha512" => nocloud_import::DigestAlgorithm::Sha512,
+                _ => return None,
             };
+            Some((digest, algorithm))
+        })
+        .map(|(digest, algorithm)| {
             let vendor = match &digest.source {
                 None => None,
                 Some(source) => {
@@ -1201,6 +1205,42 @@ mod tests {
         let talos = talos();
         let (_, artifact) = choose_artifact(&talos, "x86_64", None)?;
         assert!(needs_allow_unverified(&index_digests(artifact)?));
+        Ok(())
+    }
+
+    /// A digest in an algorithm added to the index after this client
+    /// cannot be checked, so it is left out rather than refused.
+    #[test]
+    fn a_digest_in_an_unknown_algorithm_is_left_out() -> anyhow::Result<()> {
+        let ubuntu = ubuntu();
+        let artifact = edited(&ubuntu, |a| {
+            a["integrity"]["digests"][0]["algorithm"] = "blake2b".into()
+        });
+        let digests = index_digests(&artifact)?;
+        assert!(digests.is_empty());
+        assert!(needs_allow_unverified(&digests));
+        Ok(())
+    }
+
+    /// A location of a kind added after this client is not the primary
+    /// one, and does not stop the client finding the primary.
+    #[test]
+    fn a_location_of_an_unknown_kind_is_not_primary() -> anyhow::Result<()> {
+        let ubuntu = ubuntu();
+        let only_unknown = edited(&ubuntu, |a| a["locations"][0]["kind"] = "cdn".into());
+        assert!(primary_url(&only_unknown).is_err());
+        let both = edited(&ubuntu, |a| {
+            let primary = a["locations"][0].clone();
+            let mut cdn = primary.clone();
+            cdn["kind"] = "cdn".into();
+            cdn["url"] = "https://cdn.example/x.img".into();
+            a["locations"] = serde_json::json!([cdn, primary]);
+        });
+        assert!(
+            primary_url(&both)?
+                .as_str()
+                .ends_with("server-cloudimg-amd64.img")
+        );
         Ok(())
     }
 

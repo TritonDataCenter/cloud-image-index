@@ -26,7 +26,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 use crate::{
-    Alias, BuildList, ChecksumFormat, Compression, DigestAlgorithm, Distro, DistroList,
+    Alias, BuildList, ChecksumFormat, Compression, DigestAlgorithm, Distro, DistroList, Firmware,
     ImageFormat, ImageList, LocationKind, SignatureKind,
 };
 
@@ -443,6 +443,8 @@ fn check_builds(problems: &mut Vec<String>, distro: &str, release: &str, list: &
                 let len = match digest.algorithm {
                     DigestAlgorithm::Sha256 => 64,
                     DigestAlgorithm::Sha512 => 128,
+                    // Reported by check_known_values.
+                    DigestAlgorithm::Other(_) => continue,
                 };
                 let hex = digest
                     .value
@@ -471,8 +473,21 @@ fn check_known_values(problems: &mut Vec<String>, distro: &str, release: &str, l
             if let Compression::Other(v) = &artifact.compression {
                 problems.push(format!("{at}: unknown compression {v:?}"));
             }
+            for firmware in &artifact.firmware {
+                if let Firmware::Other(v) = firmware {
+                    problems.push(format!("{at}: unknown firmware {v:?}"));
+                }
+            }
+            for location in &artifact.locations {
+                if let Some(LocationKind::Other(v)) = &location.kind {
+                    problems.push(format!("{at}: unknown location kind {v:?}"));
+                }
+            }
             let integrity = artifact.integrity.as_ref();
             for digest in integrity.iter().flat_map(|i| &i.digests) {
+                if let DigestAlgorithm::Other(v) = &digest.algorithm {
+                    problems.push(format!("{at}: unknown digest algorithm {v:?}"));
+                }
                 if let Some(ChecksumFormat::Other(v)) = digest.source.as_ref().map(|s| &s.format) {
                     problems.push(format!("{at}: unknown checksum format {v:?}"));
                 }

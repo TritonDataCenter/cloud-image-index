@@ -9,7 +9,10 @@
 //! generated clients the same (`oneOf`: a known value, or any other
 //! string).
 
-use cloud_image_index_api::{Alias, ChecksumFormat, Compression, ImageFormat, SignatureKind};
+use cloud_image_index_api::{
+    Alias, ChecksumFormat, Compression, DigestAlgorithm, Firmware, ImageFormat, LocationKind,
+    SignatureKind,
+};
 use schemars::JsonSchema;
 use serde_json::json;
 
@@ -32,6 +35,18 @@ fn known_values_parse_to_their_variants() -> Result<(), serde_json::Error> {
         SignatureKind::PgpDetached
     );
     assert_eq!(serde_json::from_value::<Alias>(json!("lts"))?, Alias::Lts);
+    assert_eq!(
+        serde_json::from_value::<DigestAlgorithm>(json!("sha512"))?,
+        DigestAlgorithm::Sha512
+    );
+    assert_eq!(
+        serde_json::from_value::<LocationKind>(json!("primary"))?,
+        LocationKind::Primary
+    );
+    assert_eq!(
+        serde_json::from_value::<Firmware>(json!("uefi"))?,
+        Firmware::Uefi
+    );
     Ok(())
 }
 
@@ -42,6 +57,12 @@ fn unknown_values_are_kept() -> Result<(), serde_json::Error> {
     assert_eq!(serde_json::to_value(&c)?, json!("lz4"));
     let a: Alias = serde_json::from_value(json!("beta"))?;
     assert_eq!(a, Alias::Other("beta".to_string()));
+    let d: DigestAlgorithm = serde_json::from_value(json!("blake2b"))?;
+    assert_eq!(d, DigestAlgorithm::Other("blake2b".to_string()));
+    let k: LocationKind = serde_json::from_value(json!("cdn"))?;
+    assert_eq!(k, LocationKind::Other("cdn".to_string()));
+    let f: Firmware = serde_json::from_value(json!("openfirmware"))?;
+    assert_eq!(f, Firmware::Other("openfirmware".to_string()));
     Ok(())
 }
 

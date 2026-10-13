@@ -194,10 +194,7 @@
         "type": "object"
       },
       "DigestAlgorithm": {
-        "enum": [
-          "sha256",
-          "sha512"
-        ],
+        "description": "Hash algorithm of a digest.\n\nKnown values:\n\n- `sha256`\n- `sha512`",
         "type": "string"
       },
       "DistroList": {
@@ -267,10 +264,7 @@
         "type": "object"
       },
       "Firmware": {
-        "enum": [
-          "bios",
-          "uefi"
-        ],
+        "description": "Firmware an image boots with.\n\nKnown values:\n\n- `bios`\n- `uefi`",
         "type": "string"
       },
       "HttpMetadata": {
@@ -401,29 +395,8 @@
         "type": "object"
       },
       "LocationKind": {
-        "oneOf": [
-          {
-            "description": "The vendor's main download tree.",
-            "enum": [
-              "primary"
-            ],
-            "type": "string"
-          },
-          {
-            "description": "A vendor archive of builds no longer in the main tree.",
-            "enum": [
-              "vault"
-            ],
-            "type": "string"
-          },
-          {
-            "description": "A mirror the vendor names.",
-            "enum": [
-              "mirror"
-            ],
-            "type": "string"
-          }
-        ]
+        "description": "Which kind of download location this is.\n\nKnown values:\n\n- `primary`: The vendor's main download tree.\n- `vault`: A vendor archive of builds no longer in the main tree.\n- `mirror`: A mirror the vendor names.",
+        "type": "string"
       },
       "OsFamily": {
         "enum": [

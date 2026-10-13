@@ -158,6 +158,34 @@ fn unknown_enum_value_in_our_own_output_is_caught() -> Result<(), String> {
 }
 
 #[test]
+fn unknown_digest_algorithm_in_our_own_output_is_caught() -> Result<(), String> {
+    let s = Scratch::new("unknown-digest-algorithm")?;
+    s.edit_json("v1/distros/rocky/releases/9/index.json", |v| {
+        v["builds"][0]["artifacts"][0]["integrity"]["digests"][0]["algorithm"] =
+            serde_json::json!("sha265");
+    })?;
+    s.expect_problem("unknown digest algorithm \"sha265\"")
+}
+
+#[test]
+fn unknown_location_kind_in_our_own_output_is_caught() -> Result<(), String> {
+    let s = Scratch::new("unknown-location-kind")?;
+    s.edit_json("v1/distros/rocky/releases/9/index.json", |v| {
+        v["builds"][0]["artifacts"][0]["locations"][0]["kind"] = serde_json::json!("primry");
+    })?;
+    s.expect_problem("unknown location kind \"primry\"")
+}
+
+#[test]
+fn unknown_firmware_in_our_own_output_is_caught() -> Result<(), String> {
+    let s = Scratch::new("unknown-firmware")?;
+    s.edit_json("v1/distros/rocky/releases/9/index.json", |v| {
+        v["builds"][0]["artifacts"][0]["firmware"] = serde_json::json!(["uefii"]);
+    })?;
+    s.expect_problem("unknown firmware \"uefii\"")
+}
+
+#[test]
 fn missing_openapi_document_is_caught() -> Result<(), String> {
     let s = Scratch::new("openapi-missing")?;
     std::fs::remove_file(s.0.join("v1/openapi.json")).map_err(|e| e.to_string())?;

@@ -144,15 +144,33 @@ fn unknown_alias_is_accepted_and_kept() -> Result<(), String> {
 }
 
 #[test]
-fn unknown_values_in_closed_enums_are_rejected() -> Result<(), String> {
+fn unknown_digest_algorithm_is_accepted_and_kept() -> Result<(), String> {
+    unknown_value_survives(
+        |v| artifact(v)["integrity"]["digests"][0]["algorithm"] = json!("blake2b"),
+        |v| &mut artifact(v)["integrity"]["digests"][0]["algorithm"],
+    )
+}
+
+#[test]
+fn unknown_location_kind_is_accepted_and_kept() -> Result<(), String> {
+    unknown_value_survives(
+        |v| artifact(v)["locations"][0]["kind"] = json!("cdn"),
+        |v| &mut artifact(v)["locations"][0]["kind"],
+    )
+}
+
+#[test]
+fn unknown_firmware_is_accepted_and_kept() -> Result<(), String> {
+    unknown_value_survives(
+        |v| artifact(v)["firmware"] = json!(["openfirmware"]),
+        |v| &mut artifact(v)["firmware"][0],
+    )
+}
+
+#[test]
+fn unknown_os_family_is_rejected() -> Result<(), String> {
     let v = images_with(|v| rocky9(v)["distro"]["os_family"] = json!("windows"))?;
     assert!(parses(v).is_err(), "os_family");
-    let v = images_with(|v| artifact(v)["locations"][0]["kind"] = json!("cdn"))?;
-    assert!(parses(v).is_err(), "location kind");
-    let v = images_with(|v| artifact(v)["integrity"]["digests"][0]["algorithm"] = json!("md5"))?;
-    assert!(parses(v).is_err(), "digest algorithm");
-    let v = images_with(|v| artifact(v)["firmware"] = json!(["openfirmware"]))?;
-    assert!(parses(v).is_err(), "firmware");
     Ok(())
 }
 
