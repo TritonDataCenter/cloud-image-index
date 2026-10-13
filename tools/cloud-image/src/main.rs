@@ -1149,6 +1149,91 @@ mod tests {
         Ok(())
     }
 
+    /// Every option 1.x keeps (README, "Stability"), spelled as scripts
+    /// spell it: renaming a field would rename its flag. `man --out` is
+    /// hidden but kept too: install.sh and `self-update` run the new
+    /// binary's `man --out`, so an older 1.x relies on it.
+    #[test]
+    fn the_options_are_the_ones_1x_keeps() -> Result<()> {
+        let args = Args::try_parse_from([
+            "cloud-image",
+            "import",
+            "ubuntu",
+            "latest",
+            "--index",
+            "https://example.com",
+            "--variant",
+            "v",
+            "--dataset",
+            "zones/d",
+            "--workdir",
+            "/w",
+            "--output-dir",
+            "/o",
+            "--no-install",
+            "--keep",
+            "--allow-unverified",
+            "--dry-run",
+        ])?;
+        let Command::Import(import) = args.command else {
+            anyhow::bail!("not an import");
+        };
+        assert_eq!(
+            (
+                import.distro.as_str(),
+                import.release.as_deref(),
+                import.index.as_str(),
+                import.variant.as_deref(),
+                import.dataset.as_deref(),
+            ),
+            (
+                "ubuntu",
+                Some("latest"),
+                "https://example.com",
+                Some("v"),
+                Some("zones/d")
+            )
+        );
+        assert_eq!(import.workdir, Some(PathBuf::from("/w")));
+        assert_eq!(import.output_dir, Some(PathBuf::from("/o")));
+        assert!(import.no_install && import.keep && import.allow_unverified && import.dry_run);
+
+        let args = Args::try_parse_from([
+            "cloud-image",
+            "avail",
+            "ubuntu",
+            "--index",
+            "https://example.com",
+            "--json",
+            "--no-header",
+        ])?;
+        let Command::Avail(avail) = args.command else {
+            anyhow::bail!("not avail");
+        };
+        assert_eq!(avail.index, "https://example.com");
+        assert!(avail.json && avail.no_header);
+
+        let args = Args::try_parse_from([
+            "cloud-image",
+            "self-update",
+            "--check",
+            "--release",
+            "v1.0.0",
+        ])?;
+        let Command::SelfUpdate(update) = args.command else {
+            anyhow::bail!("not self-update");
+        };
+        assert!(update.check);
+        assert_eq!(update.release.as_deref(), Some("v1.0.0"));
+
+        let args = Args::try_parse_from(["cloud-image", "man", "--out", "/m"])?;
+        let Command::Man { out } = args.command else {
+            anyhow::bail!("not man");
+        };
+        assert_eq!(out, PathBuf::from("/m"));
+        Ok(())
+    }
+
     /// SmartOS has no system CA store that rustls can find, so the client
     /// trusts the bundled Mozilla roots, all of them.
     #[test]

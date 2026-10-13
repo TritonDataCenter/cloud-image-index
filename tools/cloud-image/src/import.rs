@@ -1131,6 +1131,59 @@ mod tests {
         Ok(())
     }
 
+    /// `avail -j` keeps its fields and their types through 1.x (README,
+    /// "Stability"): exactly these keys, on every row.
+    #[test]
+    fn avail_json_has_the_fields_1x_keeps() -> anyhow::Result<()> {
+        let (rows, _) = avail_rows(&images(), None)?;
+        let json = avail_json(&rows);
+        let rows_json = json.as_array().map(Vec::as_slice).unwrap_or_default();
+        assert_eq!(rows_json.len(), rows.len());
+        let keys: std::collections::BTreeSet<&str> = [
+            "uuid",
+            "name",
+            "version",
+            "os",
+            "distro",
+            "release",
+            "aliases",
+            "check",
+            "installed",
+            "nocloud",
+        ]
+        .into();
+        for row in rows_json {
+            let object = row.as_object().unwrap_or_else(|| panic!("{row}"));
+            let got: std::collections::BTreeSet<&str> = object.keys().map(String::as_str).collect();
+            assert_eq!(got, keys, "{row}");
+            assert!(row["uuid"].is_string() || row["uuid"].is_null(), "{row}");
+            for field in ["name", "version", "os", "distro", "release"] {
+                assert!(row[field].is_string(), "{field}: {row}");
+            }
+            assert!(
+                row["aliases"]
+                    .as_array()
+                    .is_some_and(|a| a.iter().all(|v| v.is_string())),
+                "{row}"
+            );
+            assert!(
+                ["vendor", "index", "none"].contains(&row["check"].as_str().unwrap_or_default()),
+                "{row}"
+            );
+            assert!(
+                row["installed"].is_null() || row["installed"].is_boolean(),
+                "{row}"
+            );
+            assert!(row["nocloud"].is_boolean(), "{row}");
+        }
+        // The CHECK values, as the table and -j spell them.
+        assert_eq!(
+            [Check::Vendor, Check::Index, Check::None].map(Check::as_str),
+            ["vendor", "index", "none"]
+        );
+        Ok(())
+    }
+
     /// An image without cloud-init's NoCloud datasource (the SmartOS USB
     /// image) is not described as one, and is not assumed to take SSH
     /// keys from metadata unless the index says it does.
