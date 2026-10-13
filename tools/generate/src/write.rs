@@ -208,8 +208,10 @@ fn alias_file(alias: &Alias) -> Result<&'static str> {
     }
 }
 
-/// Replace `root/v1` with the given index. Each distro comes with the
-/// build lists of its releases, in the same order as `distro.releases`.
+/// Replace `root/v1` with the given index, and write the landing page
+/// (`index.html`) and the API documentation (`docs/index.html`). Each
+/// distro comes with the build lists of its releases, in the same order
+/// as `distro.releases`.
 pub fn write_tree(
     root: &Path,
     list: &DistroList,

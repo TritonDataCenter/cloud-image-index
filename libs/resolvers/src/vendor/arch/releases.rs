@@ -15,7 +15,7 @@
 //! - `Arch-Linux-x86_64-cloudimg.qcow2` — rolling pointer
 //! - `<file>.SHA256` — Linux-style `<hex>  <filename>` sidecar
 //! - `<file>.sig` and `<file>.SHA256.sig` — detached GPG signatures
-//!   (TLS-only trust for now; GPG verification is a follow-up)
+//!   (the index does not publish them yet)
 //!
 //! We list `/images/`, pick the highest `v…/` entry
 //! (`vYYYYMMDD.NNNNNN`, numbers compared as numbers), then fetch

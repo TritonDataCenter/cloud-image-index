@@ -47,8 +47,8 @@ pub use vendor::{
 
 /// Render a serde-Serialize enum to its serde-rename string form
 /// (typically kebab-case via `#[serde(rename_all = "kebab-case")]`).
-/// Inlined from the upstream tritonadm helper so the lift didn't
-/// need to drag in any of tritonadm's CLI scaffolding.
+/// A copy of tritonadm's helper of the same name, kept here so this
+/// crate does not depend on tritonadm's CLI.
 pub fn enum_to_display<T: serde::Serialize + std::fmt::Debug>(val: &T) -> String {
     serde_json::to_value(val)
         .ok()

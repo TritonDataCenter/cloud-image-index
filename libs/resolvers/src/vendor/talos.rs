@@ -10,8 +10,7 @@
 //! Image Factory at `https://factory.talos.dev/image/<schematic>/v<version>/nocloud-amd64.raw.xz`.
 //! Each "schematic" is a content-addressed (sha256) bundle of
 //! customizations; the value baked in here is the canonical empty
-//! schematic — vanilla Talos with no extensions, matching the bash
-//! builder this profile replaces.
+//! schematic: vanilla Talos with no extensions.
 //!
 //! The factory's API documents `.sha256` / `.sha512` checksum
 //! endpoints, but Sidero gates them behind an enterprise licence on

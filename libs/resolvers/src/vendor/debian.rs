@@ -183,10 +183,9 @@ impl VendorProfile for Debian {
             os: "linux".to_string(),
             series: codename.clone(),
             // The dated build id (e.g. "20261001-2618") identifies the
-            // exact image. This used to be the point release ("13.4"),
-            // which kept the manifest version stable across rebuilds of
-            // one point release; the index needs exact builds instead.
-            // The point release stays in the description.
+            // exact image. Its point release goes in `facts`, and is
+            // left unknown for a build older than the suite's current
+            // point release (see `point_release_of_build`).
             version: build,
             description: format!(
                 "Debian {version} ({codename}) CloudInit NoCloud compatible image. \

@@ -70,8 +70,10 @@ pub(crate) fn natural_cmp(a: &str, b: &str) -> std::cmp::Ordering {
 /// help auto-lists supported vendors and validates the argument
 /// before any I/O. The variant→string mapping is derived from
 /// `serde::Serialize` (kebab-case), and `Display` delegates to
-/// the crate-local [`crate::enum_to_display`], so adding a vendor is a single-line
-/// enum-variant addition with no string-matching boilerplate.
+/// the crate-local [`crate::enum_to_display`], so the id needs no
+/// string-matching boilerplate. Adding a vendor still takes a module,
+/// an entry in [`Vendor::ALL`], and an arm in each exhaustive `match`
+/// on `Vendor` (the compiler lists them).
 #[derive(clap::ValueEnum, serde::Serialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum Vendor {
@@ -115,7 +117,8 @@ impl Vendor {
     ];
 
     /// Kebab-case identifier (the same string clap/serde use, e.g.
-    /// `centos-stream`). Stable wire id for the distributions endpoint.
+    /// `centos-stream`). The distro's id in the index, and its
+    /// directory name.
     pub fn id(&self) -> String {
         crate::enum_to_display(self)
     }
@@ -209,10 +212,11 @@ pub fn all_vendors() -> Vec<VendorInfo> {
 }
 
 /// One resolvable release in a vendor's catalog. The `token` is exactly
-/// what [`VendorProfile::resolve`] accepts; the remaining fields are
-/// display sugar for a version picker. `supported` is false for
-/// EOL / pre-release / dev channels the vendor still serves; callers
-/// decide whether to offer those.
+/// what [`VendorProfile::resolve`] accepts; the remaining fields decide
+/// whether the entry becomes a release in the index, which aliases it
+/// holds and its published end-of-support date (see the generator's
+/// policy). `supported` is false for EOL / pre-release / dev channels
+/// the vendor still serves; callers decide whether to offer those.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 pub struct VersionEntry {
     /// Release token to feed back into `resolve` (e.g. `noble`, `9`,
@@ -247,9 +251,9 @@ pub enum SourceFormat {
     Qcow2,
     Xz,
     Raw,
-    /// VMDK (VMware Virtual Disk). Used by OmniOS's cloud images.
-    /// The release-resolution path is wired up; the conversion step
-    /// is deferred pending a vendored vmdk reader.
+    /// VMDK (VMware Virtual Disk). Used by OmniOS's cloud images;
+    /// monitor-reef's nocloud-import converts it with its vendored
+    /// VMDK reader.
     Vmdk,
     /// gzipped raw disk image. Used by SmartOS
     /// (`smartos-<rel>-USB.img.gz`); a client can stream a gzip
@@ -337,17 +341,17 @@ pub trait VendorProfile: Send + Sync {
     #[allow(dead_code)]
     fn name(&self) -> &str;
 
-    /// List the releases this vendor can resolve, newest-first. Reads
-    /// only the SAME hardcoded distro index the resolver already uses
-    /// (no new hosts). Offline/rolling vendors return their accepted
+    /// List the releases this vendor can resolve, newest-first, usually
+    /// from the same vendor index the resolver reads (Fedora also asks
+    /// its update system, Bodhi, which releases are supported).
+    /// Offline/rolling vendors return their accepted
     /// channel tokens (e.g. `stable`/`lts`/`bloody`, `latest`) without
     /// a network read.
     async fn list_versions(&self, http: &reqwest::Client) -> Result<Vec<VersionEntry>>;
 
     /// Validate the release token, then resolve it. Token validation
-    /// lives at this boundary (not just in the admin route that calls
-    /// `list_versions`) so the bounded-charset guard travels with every
-    /// caller: the per-vendor [`VendorProfile::resolve_release`] impls
+    /// lives at this boundary so the bounded-charset guard travels with
+    /// every caller: the per-vendor [`VendorProfile::resolve_release`] impls
     /// interpolate the token straight into URL templates, so an
     /// unbounded token is a path-injection / second-request vector.
     ///
@@ -388,9 +392,10 @@ pub fn validate_version_token(token: &str) -> Result<()> {
 /// `ResolvedImage` shape used by the RHEL-derivative profiles
 /// (alma, rocky, oracle, centosstream, fedora, opensuse). All of them
 /// share `SourceFormat::Qcow2`, `os = "linux"`, `ssh_key = true`, and
-/// a `Sha256Pinned` verifier driven by a hash that release discovery
-/// already extracted; the only per-vendor variation is the series,
-/// version, description, and homepage strings.
+/// a hash that release discovery already extracted, checked with a
+/// `Sha256Pinned` verifier (Fedora swaps in its own); the series,
+/// version, description, homepage, checksum document, point release
+/// and signatures vary per vendor.
 pub(super) struct PinnedQcow2 {
     pub url: Url,
     pub series: String,

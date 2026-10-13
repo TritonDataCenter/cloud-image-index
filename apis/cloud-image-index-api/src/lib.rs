@@ -6,10 +6,11 @@
 
 //! The cloud-image-index format.
 //!
-//! The index is a tree of static JSON files served over plain HTTPS (in
-//! the first iteration, GitHub Pages). This crate describes that tree as
-//! a Dropshot API trait so that an OpenAPI document can be generated and
-//! published, and so that a reference server can serve the same tree.
+//! The index is a tree of static JSON files served over plain HTTPS (from
+//! GitHub Pages, at <https://cloud-images.tritoncloud.io>). This crate
+//! describes that tree as a Dropshot API trait so that an OpenAPI
+//! document can be generated and published, and so that a reference
+//! server (not built yet) could serve the same tree.
 //! Every endpoint path is the path of a file; no path is both a file and
 //! a directory. Dropshot does not allow a literal path segment and a
 //! variable one at the same level, so literal names (`distros`,

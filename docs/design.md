@@ -1,7 +1,8 @@
 # cloud-image-index design
 
-Status: draft. Decisions below were made in design discussion on
-2026-10-05 and 2026-10-06. Decided items that are not implemented yet
+Status: the v1 format as published from 1.0, and the decisions behind
+it, made in design discussion from 2026-10-05. Decided items that are
+not implemented yet
 are marked **Not built yet**; undecided ones are marked **Open** or
 listed under "Open questions".
 
@@ -43,15 +44,15 @@ own home; it moves here.
 
 ## Non-goals (for the first stage)
 
-- Clients. How a client uses the index, and how much it trusts it, is
-  designed after the index exists. A client may be as trusting or as
-  paranoid as it likes; we may, for example, restrict our own clients
-  to vendor domains we trust and require TLS.
+- Clients, as part of the format. A client may be as trusting or as
+  paranoid as it likes. This repository's own client, `cloud-image`,
+  requires TLS and cross-checks the index's digests against the
+  vendor's checksum files where it can.
 - Hosting or mirroring image bits. Images are always fetched from the
   vendor.
-- Converting images (qcow2 to zvol, IMGAPI manifests, etc.). The
-  conversion pipeline also moves into this repository, but it is a
-  client concern and is separate from the index format.
+- Converting images (qcow2 to zvol, IMGAPI manifests, etc.). That is
+  a client concern, separate from the index format; `cloud-image` uses
+  monitor-reef's `nocloud-import` for it.
 
 ## Architecture
 
@@ -79,7 +80,9 @@ JSON tree in git --(GitHub Pages)--> clients
   tree from disk, to test that a generated client and the static files
   agree and to serve a mirror.
 - **Offline / air-gapped use**: a clone of the repository is a complete
-  mirror; clients take a base URL, which may be `file://`.
+  copy of the index (`site/`), which any web server can serve as a
+  mirror; clients take a base URL. `cloud-image --index` reads it over
+  HTTP(S), not from `file://`.
 
 ## File tree
 
@@ -176,7 +179,8 @@ ubuntu / noble   / 20260926 / server / x86_64 / qcow2
   vendor spellings such as Ubuntu's `amd64`.
 - **variant**: the vendor's image flavour (Debian `genericcloud` /
   `generic` / `nocloud`; Rocky Base / LVM; Ubuntu server / minimal).
-  All variants are listed, and the vendor's default is marked.
+  The vendor's default is marked. **Not built yet**: listing every
+  variant; today each build lists only the default.
 
 Identity never includes the URL: a build moved from the main tree to a
 vault keeps its identity and gains a different location.
@@ -188,9 +192,11 @@ are authoritative:
 
 - Identity: distro, release, build, variant, arch, format; point
   release where applicable; aliases this release currently holds.
-- Artifact: `url`, `size`, `format`, `compression`, `arch`, firmware
-  (UEFI / BIOS), cloud-init datasources, whether SSH keys can be
-  injected, vendor `published_at`.
+- Build: the vendor's `published_at`, and `first_seen`.
+- Artifact: `size` (the HTTP `Content-Length`), `format`,
+  `compression`, `arch`, firmware (UEFI / BIOS), cloud-init
+  datasources, whether SSH keys can be injected; its URLs are its
+  locations.
 - Locations: list of `{url, kind}` where kind is `primary`, `vault` or
   `mirror`, plus whether the vendor redirects the URL to a different
   host (e.g. `download.opensuse.org` redirects to mirrors such as
@@ -204,10 +210,12 @@ are authoritative:
     `SHA256 (file) = hex`, or bare hash) and algorithm, so a client can
     cross-check against the vendor;
   - signature URL and type, and where to find the vendor's key;
-  - when the vendor publishes no hash: the HTTP `Content-Length`,
-    `Last-Modified` and `ETag` (flagged as opaque, not a hash).
-- Bookkeeping: `first_seen`, and per distro `checked_at`: when its
-  vendor was last read successfully. A failed vendor keeps its old
+  - the HTTP `Last-Modified` and `ETag` the vendor's own host reports
+    (an ETag is opaque, not a hash), most useful when the vendor
+    publishes no hash. Both are null when the file redirects off-host,
+    since each mirror reports its own.
+- Bookkeeping: `first_seen`, and per distro `checked_at`: when the
+  index last regenerated it from its vendor. A failed vendor keeps its old
   `checked_at` with its old data, so clients can tell stale data from
   fresh. The cost is that every run changes the tree, so the index job
   commits and deploys daily even when no image changed.
@@ -341,7 +349,7 @@ Breaking changes go to a new `v2/` tree published alongside `v1/`.
   end. If endoflife.date cannot be read, those vendors fail and keep
   their previous files; `apply_lifecycle` in `tools/generate/src/main.rs`
   says how to publish without pruning instead.
-- **Timeouts**: every request has a 30-second connect timeout and a
+- **Timeouts**: every request has a 10-second connect timeout and a
   2-minute total timeout. A timeout is a transient failure.
 - **Resolver errors**: a resolver that fails on one release with a
   404/410 from the vendor leaves that release out. Any other resolver
@@ -440,7 +448,8 @@ tree. It is a first approximation. Known gaps, as of a full run on 2026-10-05:
   build's `CHECKSUM` file. Only Oracle's comes from a vendor-specific
   document (an HTML table). Signatures
   are published where the vendor serves them (Ubuntu, Alma, Rocky 9/10,
-  Alpine, Fedora); signing-key URLs are not yet known. EOL dates come
+  Alpine, Fedora), except Arch's and openSUSE's, which their resolvers
+  note but do not publish yet; signing-key URLs are not yet known. EOL dates come
   only from Alpine and Ubuntu feeds and Fedora's Bodhi; publish dates only from GitHub
   (OpenBSD, Talos `latest`); point releases from Alma, Rocky, Oracle,
   Alpine and Debian (Debian's only when the dated build is newer than
@@ -470,7 +479,8 @@ tree. It is a first approximation. Known gaps, as of a full run on 2026-10-05:
 Resolver problems found on 2026-10-05 and fixed here: Alpine filenames
 and EOL dates, openSUSE ordering and lifecycle (now from
 `get.opensuse.org`), Fedora pre-release tokens, Debian exact dated
-builds, and Ubuntu's fallback table. These fixes are not in the copies
+builds, and Ubuntu's fallback table (removed: a Simple Streams failure
+is now an error). These fixes are not in the copies
 in monitor-reef or the second copy.
 
 ## Prior art

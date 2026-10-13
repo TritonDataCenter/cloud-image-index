@@ -68,7 +68,8 @@ fn unknown_values_are_kept() -> Result<(), serde_json::Error> {
 
 /// The schema is a plain string that names the known values in its
 /// description: no `enum`, which would reject later values, and no
-/// `pattern` or `oneOf`, whose lookahead regex Go's RE2 cannot compile.
+/// `pattern` (or `oneOf` around one): a pattern excluding the known
+/// values needs a lookahead, which Go's RE2 cannot compile.
 #[test]
 fn schema_is_a_string_that_lists_the_known_values() {
     let schema = serde_json::to_value(schemars::schema_for!(Compression)).unwrap_or_default();

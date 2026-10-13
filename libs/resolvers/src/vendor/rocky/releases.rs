@@ -14,8 +14,8 @@
 //! - `Rocky-<major>-GenericCloud-Base-<ver>.x86_64.qcow2` — dated
 //! - `Rocky-<major>-GenericCloud-LVM-...` — alternate LVM flavor
 //!
-//! We pick the highest-versioned dated `-Base-` build (lexicographic
-//! sort works since we're filtering to a single major). Each dated
+//! We pick the highest-versioned dated `-Base-` build of the major,
+//! comparing numbers as numbers (see `find_latest_dated`). Each dated
 //! build has its own `<filename>.CHECKSUM` sidecar in BSD-traditional
 //! `SHA256 (filename) = hex` form, read at resolve time and pinned
 //! with `Sha256Pinned`.

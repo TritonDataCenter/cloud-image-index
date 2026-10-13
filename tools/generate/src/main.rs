@@ -25,9 +25,13 @@
 //! A previous tree that exists but cannot be read stops every command
 //! before anything is written.
 //! A release whose image the vendor no longer serves (HTTP 404 or 410)
-//! is reported and left out; any other failure fails the vendor (see
-//! "Update policy" in docs/design.md). A command exits non-zero if its
-//! vendor failed or the tree it wrote does not validate.
+//! is reported and left out; any other failure to resolve a release
+//! fails the vendor (see "Update policy" in docs/design.md). Facts a
+//! request could not read for a known file (its HTTP metadata, digest
+//! or signatures) are carried over from the previous tree with a
+//! warning, but a new build with no digest fails the vendor. A command
+//! exits non-zero if its vendor failed or the tree it wrote does not
+//! validate.
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -94,7 +98,8 @@ enum Command {
     Vendor {
         #[arg(value_enum)]
         vendor: Vendor,
-        /// The published tree, for keeping known builds' first_seen.
+        /// The published tree, for keeping known builds' first_seen and
+        /// carrying over facts a run could not read.
         #[arg(long)]
         previous: PathBuf,
         /// Directory to write the fragment's `v1/` into.

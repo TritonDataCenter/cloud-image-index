@@ -11,8 +11,9 @@
 //! has a dated `Arch-Linux-x86_64-cloudimg-<date>.<build>.qcow2`
 //! and a Linux-style `<file>.SHA256` sidecar; we fetch the sidecar
 //! at resolve time and pin the hash. Detached GPG signatures live
-//! alongside (`<file>.sig`, `<file>.SHA256.sig`) but the POC trusts
-//! TLS only — same floor as the other Sums-based vendors.
+//! alongside (`<file>.sig`, `<file>.SHA256.sig`); the index does not
+//! publish them yet, so the image is checked against the sidecar
+//! fetched over TLS, as for the other Sums-based vendors.
 
 mod releases;
 

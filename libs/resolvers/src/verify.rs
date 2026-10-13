@@ -6,11 +6,13 @@
 
 //! Checksum verification strategies for fetched upstream images.
 //!
-//! `Sha256SumsTls` and `Sha512SumsTls` fetch a vendor-published
-//! `<HASH>SUMS`-style listing over TLS and match by filename — same
-//! threat model as a TLS-fetched URL with the hash pinned in our own
-//! repo. `Sha256Pinned` is for static profiles where the caller
-//! already knows the expected digest.
+//! `Sha256SumsTls`, `Sha512SumsTls` and `Sha256BsdSumsTls` fetch a
+//! vendor-published `<HASH>SUMS`-style listing (GNU or BSD layout)
+//! over TLS and match by filename; `Sha512SidecarTls` fetches a
+//! per-image sidecar. `Sha256Pinned` holds a hash the resolver already
+//! read from a vendor document, and `TlsTrustOnly` stands for a vendor
+//! that publishes no hash. Each also names the vendor document it
+//! reads ([`Verifier::checksum_source`]), which the index publishes.
 
 use std::path::Path;
 

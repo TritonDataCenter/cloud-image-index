@@ -775,7 +775,9 @@ struct Cleanup {
 /// After an install, nothing is left; with `--no-install`, the image and
 /// manifest; with `--keep`, everything. A failed import keeps its download
 /// for the next try (the pipeline only ever leaves a complete download
-/// under its name, and checks it again before reusing it) and, when it got
+/// under its name, and runs the import's check on it again before
+/// reusing it; with `--allow-unverified` and no digest, that check
+/// accepts it) and, when it got
 /// as far as `imgadm`, its image and manifest, for installing by hand; a
 /// failed build leaves none, as the pipeline removes them.
 fn cleanup_plan(keep: bool, no_install: bool, succeeded: bool) -> Cleanup {
@@ -936,7 +938,8 @@ mod tests {
 
     /// What an import leaves behind: nothing after an install, the image
     /// files with --no-install, everything with --keep; after a failure,
-    /// only a download a digest check will vet before it is reused.
+    /// only the download, which the import's check runs on again before
+    /// it is reused.
     #[test]
     fn cleanup_keeps_only_what_is_wanted() {
         let plan = |keep, no_install, succeeded| cleanup_plan(keep, no_install, succeeded);

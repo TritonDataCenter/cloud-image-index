@@ -62,8 +62,7 @@ pub enum Requested<'a> {
 }
 
 /// Check `name` against the releases and aliases `distro` lists, so a
-/// wrong name gets a plain error naming the choices (the index's file
-/// host answers a missing file with an HTML page, not a JSON error).
+/// wrong name gets a plain error naming the choices.
 pub fn release_request<'a>(distro: &Distro, name: &'a str) -> Result<Requested<'a>> {
     let aliases: Vec<String> = distro.releases.iter().flat_map(alias_names).collect();
     if aliases.iter().any(|a| a == name) {

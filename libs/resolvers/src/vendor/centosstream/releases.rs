@@ -105,8 +105,9 @@ fn parse_stream(input: &str) -> Result<String> {
     Ok(stripped.to_string())
 }
 
-/// Lex-sort works because all candidates share the same stream
-/// prefix and the build suffix is `<YYYYMMDD>.<n>`.
+/// All candidates share the same stream prefix and the build suffix is
+/// `<YYYYMMDD>.<n>`, compared with numbers as numbers (`.10` after
+/// `.9`).
 fn find_latest_dated(body: &str, stream: &str) -> Option<String> {
     let prefix = format!("CentOS-Stream-GenericCloud-{stream}-");
     let suffix = ".x86_64.qcow2";

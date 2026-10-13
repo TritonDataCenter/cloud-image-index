@@ -7,8 +7,9 @@
 //! openSUSE Leap release discovery.
 //!
 //! `download.opensuse.org` runs MirrorCache, which exposes a JSON
-//! directory listing via the `?json=1` query — we use it for both
-//! the Leap version index and per-version appliance listings.
+//! directory listing via the `?json=1` query; we use it for the
+//! per-version appliance listings. The versions themselves come from
+//! `get.opensuse.org` (see the parent module).
 //!
 //! Filename naming changed between Leap 15.x and 16.x:
 //!
