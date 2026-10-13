@@ -362,7 +362,8 @@ pub enum SumsStyle {
     Gnu,
     /// `SHA256 (<filename>) = <hex>` per line (BSD style).
     Bsd,
-    /// The document holds only the hash (a per-image sidecar file).
+    /// A per-image sidecar file: the hash is its first
+    /// whitespace-separated token, and anything after it is ignored.
     Bare,
     /// A vendor document with no generic checksum layout (a JSON feed,
     /// an HTML page); only vendor-specific code can read the hash.

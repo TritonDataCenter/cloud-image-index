@@ -99,7 +99,9 @@ jobs:
       matrix:
         vendor: ${{ fromJSON(needs.build.outputs.vendors) }}
     steps:
-      # The published tree, for keeping known builds' first_seen. The
+      # The published tree, for keeping known builds' first_seen and
+      # carrying over facts a run could not read (digests, HTTP
+      # metadata) for files it already knows. The
       # branch's current head, not the commit the run started from: a
       # re-run or a queued run must build on the latest site/.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

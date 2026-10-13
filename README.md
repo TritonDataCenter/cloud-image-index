@@ -37,13 +37,14 @@ From 1.0:
   are compatible ones only: new optional fields, and new values for the
   fields whose description says the set can grow (aliases, image formats,
   compressions, firmware, location kinds, digest algorithms, checksum
-  formats, signature kinds). Clients must ignore
-  fields they do not know and accept those new values. A breaking change
-  goes to a new `v2/` tree, published alongside `v1/`. Other files in the
-  tree (per-distro files, the landing page) are not part of the format
-  and may change at any time. Release ids follow the vendor's naming and
-  can change with it; the `latest`, `lts` and `dev` aliases name the
-  current release.
+  formats, signature kinds). Clients must ignore fields they do not know
+  and accept those new values. A breaking change goes to a new `v2/`
+  tree, published alongside `v1/`. Other files in the tree (per-distro
+  files, the landing page) are not part of the format and may change at
+  any time. Release ids follow the vendor's naming and can change with
+  it; the aliases name the current release of each kind: `latest` the
+  newest generally available, `lts` the newest long-term support, and
+  `dev` the development release.
 - **`cloud-image`** keeps its commands, options, `avail` columns and
   `-j` fields, exit codes and install locations through 1.x. New ones
   may be added; removing or changing one waits for 2.0.
@@ -72,8 +73,8 @@ To release a new version, bump `version` in `tools/cloud-image/Cargo.toml`,
 merge that, and push a matching tag from the merge commit:
 
 ```
-git tag -m "cloud-image v0.9.1" v0.9.1
-git push origin v0.9.1
+git tag -m "cloud-image v1.0.1" v1.0.1
+git push origin v1.0.1
 ```
 
 The illumos workflow builds the binary and publishes it, with
