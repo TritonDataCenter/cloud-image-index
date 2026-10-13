@@ -3,10 +3,10 @@
   "release": "10",
   "builds": [
     {
-      "build": "10.2-20260817.0",
+      "build": "10.2-20261012.0",
       "point_release": "10.2",
       "published_at": null,
-      "first_seen": "2026-10-06T20:41:53.829545055Z",
+      "first_seen": "2026-10-13T05:35:19.551522081Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 496631808,
+          "size": 497876992,
           "locations": [
             {
-              "url": "https://repo.almalinux.org/almalinux/10/cloud/x86_64/images/AlmaLinux-10-GenericCloud-10.2-20260817.0.x86_64.qcow2",
+              "url": "https://repo.almalinux.org/almalinux/10/cloud/x86_64/images/AlmaLinux-10-GenericCloud-10.2-20261012.0.x86_64.qcow2",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,11 +32,11 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "bc59485c4828861a15887e30ff1bb913f0f16202fd7286208518f4814da1e10a",
+                "value": "cbee4726fc0f5a60694bb4f289003cc221e715dfbacebcce76b54daf386d8eca",
                 "source": {
                   "url": "https://repo.almalinux.org/almalinux/10/cloud/x86_64/images/CHECKSUM",
                   "format": "gnu",
-                  "filename": "AlmaLinux-10-GenericCloud-10.2-20260817.0.x86_64.qcow2"
+                  "filename": "AlmaLinux-10-GenericCloud-10.2-20261012.0.x86_64.qcow2"
                 }
               }
             ],
@@ -49,8 +49,8 @@
               }
             ],
             "http": {
-              "last_modified": "Mon, 17 Aug 2026 04:39:11 GMT",
-              "etag": "\"6a82906f-1d9a0000\""
+              "last_modified": "Mon, 12 Oct 2026 04:54:32 GMT",
+              "etag": "\"6acc6808-1dad0000\""
             }
           }
         }
