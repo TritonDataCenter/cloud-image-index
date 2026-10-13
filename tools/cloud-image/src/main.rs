@@ -57,8 +57,8 @@ enum Command {
     ///
     /// The UUID is the one the import will give the image. It is unknown
     /// before the download when the vendor publishes no sha256, unless the
-    /// image is installed already: then it is the installed image's, which
-    /// `import` does not accept (the image is installed). CHECK says how
+    /// image is installed already: then it is the installed image's.
+    /// `import` accepts either kind. CHECK says how
     /// the import would be checked: `vendor` (the vendor's checksum file
     /// confirms the index), `index` (the index's digest alone) or `none`;
     /// the last two need `import --allow-unverified`. On SmartOS, INSTALLED
@@ -590,19 +590,32 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
     let index = client::Client::new_with_client(base, http.clone());
     // Everything the import needs is in the one list.
     let list = image_list(&index, base).await?;
-    // A UUID from `avail` names a release's current image, default variant.
-    let requested_uuid = uuid::Uuid::parse_str(&args.distro).ok();
+    // A UUID from `avail` names a release's current image, default variant:
+    // one the index gives, or, on SmartOS, the installed image's for an
+    // image whose vendor publishes no sha256 (as `avail` shows it).
+    let mut requested_uuid = uuid::Uuid::parse_str(&args.distro).ok();
     if let Some(uuid) = requested_uuid {
         anyhow::ensure!(
             args.release.is_none() && args.variant.is_none(),
             "an image UUID names the release and variant itself; give no release \
              or --variant with it"
         );
-        let (rows, _) = import::avail_rows(&list, None)?;
+        let (mut rows, _) = import::avail_rows(&list, None)?;
+        if host::is_smartos()? {
+            match installed_images().await {
+                Ok(installed) => import::mark_installed(&mut rows, &installed),
+                Err(e) => eprintln!("note: not looking in the local image store: {e:#}"),
+            }
+        }
         let row =
-            import::find_by_uuid(&rows, uuid).with_context(|| import::uuid_not_in_index(uuid))?;
+            import::find_by_uuid(&rows, uuid).with_context(|| import::uuid_not_listed(uuid))?;
         args.distro = row.distro.clone();
         args.release = Some(row.release.clone());
+        // The index gives no UUID for this image to hold the import to;
+        // it matched the installed image by name and version.
+        if row.uuid_from_store {
+            requested_uuid = None;
+        }
     }
     let (distro, release_builds) = import::distro_from_images(&list, &args.distro)?;
     let Some(release) = args.release.as_deref() else {

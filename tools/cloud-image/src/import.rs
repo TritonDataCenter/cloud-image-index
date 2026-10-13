@@ -506,6 +506,9 @@ pub struct Available {
     /// Algorithms of its digests this client cannot check (see
     /// [`unknown_digest_algorithms`]).
     pub unknown_digests: Vec<String>,
+    /// Whether `uuid` came from the local image store rather than the
+    /// index (see [`mark_installed`]).
+    pub uuid_from_store: bool,
 }
 
 /// The image an import of the release in `builds` would produce, with the
@@ -532,6 +535,7 @@ pub fn available(distro: &Distro, builds: &BuildList) -> Result<Available> {
         installed: None,
         nocloud: reads_nocloud(artifact),
         unknown_digests: unknown_digest_algorithms(artifact),
+        uuid_from_store: false,
     })
 }
 
@@ -680,14 +684,9 @@ pub fn confirm_requested_uuid(
     Ok(())
 }
 
-/// Why `import <uuid>` found no image with that UUID in the index.
-pub fn uuid_not_in_index(uuid: uuid::Uuid) -> String {
-    format!(
-        "no image in the index has UUID {uuid} (see `cloud-image avail`). An \
-         image whose vendor publishes no sha256 has no UUID in the index; a \
-         UUID `avail` shows for one comes from the local image store, and that \
-         image is installed already"
-    )
+/// Why `import <uuid>` found no image with that UUID.
+pub fn uuid_not_listed(uuid: uuid::Uuid) -> String {
+    format!("no image `cloud-image avail` lists has UUID {uuid}")
 }
 
 /// The image with this UUID, for `import <uuid>`.
@@ -737,15 +736,15 @@ pub fn installed_match<'a>(
 }
 
 /// Record which rows the local image store has (see [`installed_match`]).
-/// A row with no UUID (no sha256 published) takes the installed image's.
-/// `import <uuid>` looks UUIDs up in the index alone, so it does not
-/// accept one of these; the image is installed already.
+/// A row with no UUID (no sha256 published) takes the installed image's,
+/// so `avail` shows it and `import <uuid>` finds the row by it.
 pub fn mark_installed(rows: &mut [Available], installed: &[Installed]) {
     for row in rows {
         let found = installed_match(row.uuid, &row.name, &row.version, installed);
         row.installed = Some(found.is_some());
         if row.uuid.is_none() {
             row.uuid = found.and_then(|i| i.uuid);
+            row.uuid_from_store = row.uuid.is_some();
         }
     }
 }
@@ -1270,25 +1269,31 @@ mod tests {
         }];
         mark_installed(&mut rows, &installed);
         assert_eq!((rows[0].installed, rows[0].uuid), (Some(true), Some(uuid)));
+        assert!(rows[0].uuid_from_store);
         assert_eq!(avail_json(&rows)[0]["uuid"], uuid.to_string());
+        // So `import <uuid>` finds the row by the UUID `avail` showed.
+        assert_eq!(
+            find_by_uuid(&rows, uuid).map(|r| r.name.as_str()),
+            Some(rows[0].name.as_str())
+        );
 
         let (mut ubuntu, _) = avail_rows(&images(), Some("ubuntu"))?;
         let before: Vec<_> = ubuntu.iter().map(|r| r.uuid).collect();
         mark_installed(&mut ubuntu, &parse_imgadm_list(IMGADM_LIST)?);
         let after: Vec<_> = ubuntu.iter().map(|r| r.uuid).collect();
         assert_eq!(before, after);
+        assert!(ubuntu.iter().all(|r| !r.uuid_from_store));
         Ok(())
     }
 
-    /// A UUID `avail` showed from the local image store is not in the
-    /// index; the error says where it came from rather than contradict
-    /// `avail`.
+    /// `import <uuid>` accepts every UUID `avail` lists, so a UUID it
+    /// does not find is simply not one of them.
     #[test]
-    fn a_uuid_not_in_the_index_is_explained() {
+    fn a_uuid_avail_does_not_list_is_refused_plainly() {
         let uuid = uuid::Uuid::nil();
-        let message = uuid_not_in_index(uuid);
+        let message = uuid_not_listed(uuid);
         assert!(message.contains(&uuid.to_string()), "{message}");
-        assert!(message.contains("local image store"), "{message}");
+        assert!(message.contains("cloud-image avail"), "{message}");
         assert!(!message.contains("until it is downloaded"), "{message}");
     }
 
