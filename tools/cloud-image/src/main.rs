@@ -585,64 +585,45 @@ impl nocloud_import::SourceCheck for TlsOnly {
     }
 }
 
-async fn import_cmd(mut args: ImportArgs) -> Result<()> {
+async fn import_cmd(args: ImportArgs) -> Result<()> {
     use nocloud_import::host;
 
     let http = http_client()?;
-    // Owned, since `args` is updated below when it names a UUID.
     let base = &args.index.trim_end_matches('/').to_string();
     let index = client::Client::new_with_client(base, http.clone());
     // Everything the import needs is in the one list.
     let list = image_list(&index, base).await?;
-    // A UUID from `avail` names a release's current image, default variant:
-    // one the index gives, or, on SmartOS, the installed image's for an
-    // image whose vendor publishes no sha256 (as `avail` shows it).
-    let mut requested_uuid = uuid::Uuid::parse_str(&args.distro).ok();
-    if let Some(uuid) = requested_uuid {
-        anyhow::ensure!(
-            args.release.is_none() && args.variant.is_none(),
-            "an image UUID names the release and variant itself; give no release \
-             or --variant with it"
-        );
-        let (mut rows, _) = import::avail_rows(&list, None)?;
-        if host::is_smartos()? {
-            match installed_images().await {
-                Ok(installed) => import::mark_installed(&mut rows, &installed),
-                Err(e) => eprintln!("note: not looking in the local image store: {e:#}"),
+    // The local image store, on SmartOS: for a UUID `avail` showed from
+    // it, and to stop an import of an image installed already.
+    let smartos = host::is_smartos()?;
+    let names_uuid = uuid::Uuid::parse_str(&args.distro).is_ok();
+    let installed = if smartos && (names_uuid || !args.no_install) {
+        match installed_images().await {
+            Ok(installed) => Some(installed),
+            Err(e) => {
+                eprintln!("note: not looking in the local image store: {e:#}");
+                None
             }
         }
-        let row =
-            import::find_by_uuid(&rows, uuid).with_context(|| import::uuid_not_listed(uuid))?;
-        args.distro = row.distro.clone();
-        args.release = Some(row.release.clone());
-        // The index gives no UUID for this image to hold the import to;
-        // it matched the installed image by name and version.
-        if row.uuid_from_store {
-            requested_uuid = None;
-        }
-    }
-    // A NAME from `avail` names a release's current image too.
-    if requested_uuid.is_none() && !import::has_distro(&list, &args.distro) {
-        let (rows, _) = import::avail_rows(&list, None)?;
-        let row = import::find_by_name(&rows, &args.distro)
-            .with_context(|| import::not_an_import_target(&list, &args.distro))?;
-        anyhow::ensure!(
-            args.release.is_none() && args.variant.is_none(),
-            "an image NAME names the release and variant itself; give no release \
-             or --variant with it"
-        );
-        args.distro = row.distro.clone();
-        args.release = Some(row.release.clone());
-    }
-    let (distro, release_builds) = import::distro_from_images(&list, &args.distro)?;
-    let Some(release) = args.release.as_deref() else {
+    } else {
+        None
+    };
+    let target = import::resolve_target(
+        &list,
+        installed.as_deref(),
+        &args.distro,
+        args.release.as_deref(),
+        args.variant.as_deref(),
+    )?;
+    let (distro, release_builds) = import::distro_from_images(&list, &target.distro)?;
+    let Some(release) = &target.release else {
         anyhow::bail!(
             "name a release or alias of {} to import:\n{}",
-            args.distro,
+            target.distro,
             import::release_choices(&distro).trim_end()
         );
     };
-    let request = import::release_request(&distro, release)?;
+    let request = import::target_request(&distro, release)?;
     let builds = import::requested_builds(&distro, &release_builds, request)?;
 
     let (build, artifact) = import::choose_artifact(builds, ARCH, args.variant.as_deref())?;
@@ -651,7 +632,7 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
     import::check_ids(&distro, &builds.release, build, artifact)?;
     let info = import::image_info(&distro, &builds.release, build, artifact);
     let digests = import::index_digests(artifact)?;
-    import::confirm_requested_uuid(requested_uuid, import::index_uuid(&digests))?;
+    import::confirm_requested_uuid(target.index_uuid, import::index_uuid(&digests))?;
 
     println!(
         "Image:   {} {} build {}",
@@ -662,24 +643,29 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
     // already, before fetching anything from the vendor or downloading
     // and building it again (a dry run says the same). One that only
     // builds the files (--no-install) goes on.
-    if !args.no_install && host::is_smartos()? {
-        match installed_images().await {
-            Ok(installed) => {
-                let found = import::installed_match(
-                    import::index_uuid(&digests),
-                    &info.image_name(),
-                    &info.version,
-                    &installed,
-                );
-                if let Some(image) = found {
-                    let uuid = image.uuid.map_or("-".to_string(), |u| u.to_string());
-                    println!();
-                    println!("Already installed as {uuid}; nothing to do.");
-                    return Ok(());
-                }
-            }
-            Err(e) => eprintln!("note: could not check whether it is installed already: {e:#}"),
+    if let (false, Some(installed)) = (args.no_install, &installed) {
+        let found = import::installed_match(
+            import::index_uuid(&digests),
+            &info.image_name(),
+            &info.version,
+            installed,
+        );
+        if let Some(image) = found {
+            let uuid = image.uuid.map_or("-".to_string(), |u| u.to_string());
+            println!();
+            println!("Already installed as {uuid}; nothing to do.");
+            return Ok(());
         }
+    }
+    // imgadm install needs the global zone: say so before asking the
+    // vendor anything.
+    if smartos && !args.dry_run {
+        let zone = host::current_zone()?;
+        anyhow::ensure!(
+            args.no_install || zone == "global",
+            "imgadm install needs the global zone (zonename={zone}); pass --no-install \
+             to build the files only"
+        );
     }
     if !import::reads_nocloud(artifact) {
         eprintln!(
@@ -725,12 +711,6 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         return Ok(());
     }
 
-    let zone = host::current_zone()?;
-    anyhow::ensure!(
-        args.no_install || zone == "global",
-        "imgadm install needs the global zone (zonename={zone}); pass --no-install \
-         to build the files only"
-    );
     let dataset = match args.dataset {
         Some(d) => d,
         None => host::default_dataset()?,
@@ -767,6 +747,9 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         println!("Image:    {}", outputs.gz_path.display());
         println!("Manifest: {}", outputs.manifest_path.display());
         println!("UUID:     {}", outputs.manifest_uuid);
+        if let Some(note) = import::store_uuid_differs(target.store_uuid, outputs.manifest_uuid) {
+            eprintln!("note: {note}");
+        }
         if !args.no_install {
             // imgadm says when it has installed the image.
             host::install_via_imgadm(&outputs.gz_path, &outputs.manifest_path).await?;

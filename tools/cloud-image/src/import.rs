@@ -713,14 +713,143 @@ pub fn uuid_not_listed(uuid: uuid::Uuid) -> String {
 }
 
 /// The image with this NAME (e.g. `ubuntu-resolute-nocloud`), for
-/// `import <name>`. Each release's current image has its own name.
-pub fn find_by_name<'a>(rows: &'a [Available], name: &str) -> Option<&'a Available> {
-    rows.iter().find(|r| r.name == name)
+/// `import <name>`. Ids may hold `-`, so two releases can share a name
+/// (distro `a-b` release `c`, distro `a` release `b-c`): that is refused
+/// rather than the first taken.
+pub fn find_by_name<'a>(rows: &'a [Available], name: &str) -> Result<Option<&'a Available>> {
+    only_one(rows.iter().filter(|r| r.name == name), name)
 }
 
-/// The image with this UUID, for `import <uuid>`.
-pub fn find_by_uuid(rows: &[Available], uuid: uuid::Uuid) -> Option<&Available> {
-    rows.iter().find(|r| r.uuid == Some(uuid))
+/// The image with this UUID, for `import <uuid>`. Two releases with one
+/// file share its UUID; that is refused too.
+pub fn find_by_uuid(rows: &[Available], uuid: uuid::Uuid) -> Result<Option<&Available>> {
+    only_one(
+        rows.iter().filter(|r| r.uuid == Some(uuid)),
+        &uuid.to_string(),
+    )
+}
+
+fn only_one<'a>(
+    mut found: impl Iterator<Item = &'a Available>,
+    arg: &str,
+) -> Result<Option<&'a Available>> {
+    let first = found.next();
+    if let (Some(first), Some(second)) = (first, found.next()) {
+        anyhow::bail!(
+            "more than one image `cloud-image avail` lists is {arg:?} ({} {} and {} {}); \
+             name it by distro and release",
+            first.distro,
+            first.release,
+            second.distro,
+            second.release
+        );
+    }
+    Ok(first)
+}
+
+/// How `import`'s arguments name a release.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TargetRelease {
+    /// As given: a release or an alias.
+    Named(String),
+    /// A release id, from the `avail` row a UUID or NAME named.
+    Id(String),
+}
+
+/// What `import`'s arguments name.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Target {
+    pub distro: String,
+    /// `None` for a distro alone, whose releases `import` lists.
+    pub release: Option<TargetRelease>,
+    /// For `import <uuid>`: the UUID the index gives, which the import
+    /// must produce.
+    pub index_uuid: Option<uuid::Uuid>,
+    /// For `import <uuid>` of an image with no sha256: the installed
+    /// image's UUID, from the local image store (see [`mark_installed`]).
+    pub store_uuid: Option<uuid::Uuid>,
+}
+
+/// Resolve `import`'s arguments. The first is tried as a UUID, then a
+/// distro, then a NAME; a UUID or NAME names the release and variant
+/// itself. `installed` is the local image store, when it was read, for
+/// UUIDs `avail` showed from it.
+pub fn resolve_target(
+    list: &ImageList,
+    installed: Option<&[Installed]>,
+    arg: &str,
+    release: Option<&str>,
+    variant: Option<&str>,
+) -> Result<Target> {
+    if let Ok(uuid) = uuid::Uuid::parse_str(arg) {
+        anyhow::ensure!(
+            release.is_none() && variant.is_none(),
+            "an image UUID names the release and variant itself; give no release \
+             or --variant with it"
+        );
+        let (mut rows, _) = avail_rows(list, None)?;
+        if let Some(installed) = installed {
+            mark_installed(&mut rows, installed);
+        }
+        let row = find_by_uuid(&rows, uuid)?.with_context(|| uuid_not_listed(uuid))?;
+        return Ok(Target {
+            distro: row.distro.clone(),
+            release: Some(TargetRelease::Id(row.release.clone())),
+            index_uuid: (!row.uuid_from_store).then_some(uuid),
+            store_uuid: row.uuid_from_store.then_some(uuid),
+        });
+    }
+    if has_distro(list, arg) {
+        return Ok(Target {
+            distro: arg.to_string(),
+            release: release.map(|r| TargetRelease::Named(r.to_string())),
+            index_uuid: None,
+            store_uuid: None,
+        });
+    }
+    let (rows, _) = avail_rows(list, None)?;
+    let row = find_by_name(&rows, arg)?.with_context(|| not_an_import_target(list, arg))?;
+    anyhow::ensure!(
+        release.is_none() && variant.is_none(),
+        "an image NAME names the release and variant itself; give no release \
+         or --variant with it"
+    );
+    Ok(Target {
+        distro: row.distro.clone(),
+        release: Some(TargetRelease::Id(row.release.clone())),
+        index_uuid: None,
+        store_uuid: None,
+    })
+}
+
+/// The release a target names: as an alias or a release when given by
+/// the user, as a release when it came from an `avail` row (so a release
+/// whose id is also an alias name is still that release).
+pub fn target_request<'a>(distro: &Distro, release: &'a TargetRelease) -> Result<Requested<'a>> {
+    match release {
+        TargetRelease::Named(name) => release_request(distro, name),
+        TargetRelease::Id(id) => {
+            anyhow::ensure!(
+                distro.releases.iter().any(|r| &r.id == id),
+                "{} has no release {id:?}",
+                distro.id
+            );
+            Ok(Requested::Release(id))
+        }
+    }
+}
+
+/// A note when an image named by a store UUID was built with another
+/// UUID: the installed image was built from other bytes than the vendor
+/// serves now under the same build.
+pub fn store_uuid_differs(store: Option<uuid::Uuid>, built: uuid::Uuid) -> Option<String> {
+    let store = store?;
+    (store != built).then(|| {
+        format!(
+            "this build has UUID {built}, but the installed image {store} has the same \
+             name and version: it was built from other bytes"
+        )
+    })
 }
 
 /// An image in the local image store, as `imgadm list -j` lists it.
@@ -750,18 +879,21 @@ pub fn parse_imgadm_list(json: &str) -> Result<Vec<Installed>> {
         .collect())
 }
 
-/// The installed image an import would produce: one with the same UUID,
-/// or, since an image whose vendor publishes no sha256 has no UUID before
-/// its download, the same name and version.
+/// The installed image an import would produce. With a UUID from the
+/// index, only an image with that UUID: the UUID derives from the file's
+/// sha256 (as tritonadm's does), so the same name and version under
+/// another UUID is other bytes. An image whose vendor publishes no sha256
+/// has no UUID before its download, so for it the same name and version.
 pub fn installed_match<'a>(
     uuid: Option<uuid::Uuid>,
     name: &str,
     version: &str,
     installed: &'a [Installed],
 ) -> Option<&'a Installed> {
-    installed
-        .iter()
-        .find(|i| (uuid.is_some() && i.uuid == uuid) || (i.name == name && i.version == version))
+    installed.iter().find(|i| match uuid {
+        Some(uuid) => i.uuid == Some(uuid),
+        None => i.name == name && i.version == version,
+    })
 }
 
 /// Record which rows the local image store has (see [`installed_match`]).
@@ -1261,9 +1393,11 @@ mod tests {
         Ok(())
     }
 
-    /// An image is installed if the store has its UUID, or (when its UUID
-    /// is not known before the download) its name and version; another
-    /// version of the same name is not this image.
+    /// An image is installed if the store has its UUID, or (only when its
+    /// UUID is not known before the download) its name and version. An
+    /// installed image with the right name and version but another UUID
+    /// (jammy here: a re-spun build, or an image built from other bytes)
+    /// is not this image; neither is another version of the same name.
     #[test]
     fn installed_images_are_marked() -> anyhow::Result<()> {
         let (mut rows, _) = avail_rows(&images(), Some("ubuntu"))?;
@@ -1277,7 +1411,7 @@ mod tests {
             [
                 ("ubuntu-resolute-nocloud", Some(true)),
                 ("ubuntu-noble-nocloud", Some(false)),
-                ("ubuntu-jammy-nocloud", Some(true)),
+                ("ubuntu-jammy-nocloud", Some(false)),
             ]
         );
         Ok(())
@@ -1302,7 +1436,7 @@ mod tests {
         assert_eq!(avail_json(&rows)[0]["uuid"], uuid.to_string());
         // So `import <uuid>` finds the row by the UUID `avail` showed.
         assert_eq!(
-            find_by_uuid(&rows, uuid).map(|r| r.name.as_str()),
+            find_by_uuid(&rows, uuid)?.map(|r| r.name.as_str()),
             Some(rows[0].name.as_str())
         );
 
@@ -1320,14 +1454,14 @@ mod tests {
     #[test]
     fn an_avail_name_finds_its_release() -> anyhow::Result<()> {
         let (rows, _) = avail_rows(&images(), None)?;
-        let row = find_by_name(&rows, "ubuntu-resolute-nocloud")
+        let row = find_by_name(&rows, "ubuntu-resolute-nocloud")?
             .unwrap_or_else(|| panic!("the examples list ubuntu resolute"));
         assert_eq!(
             (row.distro.as_str(), row.release.as_str()),
             ("ubuntu", "resolute")
         );
-        assert!(find_by_name(&rows, "ubuntu").is_none());
-        assert!(find_by_name(&rows, "ubuntu-resolute").is_none());
+        assert!(find_by_name(&rows, "ubuntu")?.is_none());
+        assert!(find_by_name(&rows, "ubuntu-resolute")?.is_none());
         Ok(())
     }
 
@@ -1339,6 +1473,177 @@ mod tests {
         assert!(message.contains("UUID or NAME"), "{message}");
         assert!(message.contains("cloud-image avail"), "{message}");
         assert!(message.contains("ubuntu, rocky, talos"), "{message}");
+    }
+
+    /// The error a result holds, with its causes, or "" for none.
+    fn error_text<T>(result: anyhow::Result<T>) -> String {
+        result.err().map(|e| format!("{e:#}")).unwrap_or_default()
+    }
+
+    /// The examples' image list, with `edit` applied to its JSON.
+    fn images_edited(edit: impl Fn(&mut Vec<serde_json::Value>)) -> client::types::ImageList {
+        let mut json = serde_json::to_value(images()).unwrap_or_else(|e| panic!("{e}"));
+        if let Some(images) = json["images"].as_array_mut() {
+            edit(images);
+        }
+        serde_json::from_value(json).unwrap_or_else(|e| panic!("{e}"))
+    }
+
+    fn resolve(arg: &str, release: Option<&str>) -> anyhow::Result<Target> {
+        resolve_target(&images(), None, arg, release, None)
+    }
+
+    /// `import`'s first argument is tried as a UUID, then a distro, then
+    /// a NAME; a UUID or NAME names the release (by id, not as an alias).
+    #[test]
+    fn an_import_target_is_a_uuid_a_distro_or_a_name() -> anyhow::Result<()> {
+        let by_distro = resolve("ubuntu", Some("latest"))?;
+        assert_eq!(by_distro.distro, "ubuntu");
+        assert_eq!(
+            by_distro.release,
+            Some(TargetRelease::Named("latest".to_string()))
+        );
+        assert_eq!((by_distro.index_uuid, by_distro.store_uuid), (None, None));
+        assert_eq!(resolve("ubuntu", None)?.release, None);
+
+        let (rows, _) = avail_rows(&images(), None)?;
+        let resolute = find_by_name(&rows, "ubuntu-resolute-nocloud")?
+            .unwrap_or_else(|| panic!("examples list ubuntu resolute"));
+        let uuid = resolute
+            .uuid
+            .unwrap_or_else(|| panic!("ubuntu has a sha256"));
+        let by_uuid = resolve(&uuid.to_string(), None)?;
+        assert_eq!(by_uuid.distro, "ubuntu");
+        assert_eq!(
+            by_uuid.release,
+            Some(TargetRelease::Id("resolute".to_string()))
+        );
+        assert_eq!((by_uuid.index_uuid, by_uuid.store_uuid), (Some(uuid), None));
+
+        let by_name = resolve("ubuntu-resolute-nocloud", None)?;
+        assert_eq!(
+            by_name.release,
+            Some(TargetRelease::Id("resolute".to_string()))
+        );
+        assert_eq!((by_name.index_uuid, by_name.store_uuid), (None, None));
+
+        // A UUID or NAME names the release and variant itself.
+        assert!(resolve(&uuid.to_string(), Some("noble")).is_err());
+        assert!(resolve("ubuntu-resolute-nocloud", Some("noble")).is_err());
+        assert!(
+            resolve_target(
+                &images(),
+                None,
+                "ubuntu-resolute-nocloud",
+                None,
+                Some("lvm")
+            )
+            .is_err()
+        );
+        // Neither a UUID, a distro nor a NAME.
+        let err = error_text(resolve("ubuntu-resolut-nocloud", None));
+        assert!(err.contains("UUID or NAME"), "{err}");
+        let err = error_text(resolve(&uuid::Uuid::nil().to_string(), None));
+        assert!(err.contains("no image `cloud-image avail` lists"), "{err}");
+        Ok(())
+    }
+
+    /// A UUID `avail` showed from the local image store (no sha256 in the
+    /// index) resolves only when the store is read, and is kept apart from
+    /// an index UUID: there is no index UUID to hold the import to.
+    #[test]
+    fn a_store_uuid_resolves_through_the_image_store() -> anyhow::Result<()> {
+        let (rows, _) = avail_rows(&images(), Some("talos"))?;
+        let uuid = uuid::Uuid::parse_str("33333333-2222-3333-4444-555555555555")?;
+        let installed = [Installed {
+            uuid: Some(uuid),
+            name: rows[0].name.clone(),
+            version: rows[0].version.clone(),
+        }];
+        let target = resolve_target(&images(), Some(&installed), &uuid.to_string(), None, None)?;
+        assert_eq!(target.distro, "talos");
+        assert_eq!((target.index_uuid, target.store_uuid), (None, Some(uuid)));
+        assert!(resolve(&uuid.to_string(), None).is_err());
+        Ok(())
+    }
+
+    /// A release id that is also an alias name: a UUID or NAME still
+    /// imports the release it names, not the alias's holder.
+    #[test]
+    fn a_name_imports_its_release_even_when_an_alias_shares_its_id() -> anyhow::Result<()> {
+        let list = images_edited(|images| {
+            for image in images.iter_mut() {
+                if image["distro"]["id"] == "ubuntu" && image["release"]["id"] == "noble" {
+                    image["release"]["id"] = "lts".into();
+                }
+            }
+        });
+        let target = resolve_target(&list, None, "ubuntu-lts-nocloud", None, None)?;
+        assert_eq!(target.release, Some(TargetRelease::Id("lts".to_string())));
+        let (distro, builds) = distro_from_images(&list, &target.distro)?;
+        let request = target_request(
+            &distro,
+            target.release.as_ref().unwrap_or_else(|| panic!("named")),
+        )?;
+        assert_eq!(requested_builds(&distro, &builds, request)?.release, "lts");
+        Ok(())
+    }
+
+    /// Two rows with one NAME (distro `a-b` release `c`, and distro `a`
+    /// release `b-c`) or one UUID (one file in two places) are refused,
+    /// rather than the first taken.
+    #[test]
+    fn an_ambiguous_uuid_or_name_is_refused() -> anyhow::Result<()> {
+        let list = images_edited(|images| {
+            let Some(talos) = images
+                .iter()
+                .find(|i| i["distro"]["id"] == "talos")
+                .cloned()
+            else {
+                return;
+            };
+            let mut a = talos.clone();
+            a["distro"]["id"] = "talos-x".into();
+            a["release"]["id"] = "y".into();
+            let mut b = talos;
+            b["release"]["id"] = "x-y".into();
+            images.push(a);
+            images.push(b);
+            let Some(ubuntu) = images
+                .iter()
+                .find(|i| i["distro"]["id"] == "ubuntu")
+                .cloned()
+            else {
+                return;
+            };
+            let mut copy = ubuntu;
+            copy["distro"]["id"] = "ubuntu-copy".into();
+            images.push(copy);
+        });
+        let err = error_text(resolve_target(&list, None, "talos-x-y-nocloud", None, None));
+        assert!(err.contains("more than one"), "{err}");
+        let (rows, _) = avail_rows(&list, Some("ubuntu-copy"))?;
+        let uuid = rows[0]
+            .uuid
+            .unwrap_or_else(|| panic!("ubuntu has a sha256"));
+        let err = error_text(resolve_target(&list, None, &uuid.to_string(), None, None));
+        assert!(err.contains("more than one"), "{err}");
+        Ok(())
+    }
+
+    /// A build from an image named by a store UUID that comes out with
+    /// another UUID is other bytes than the installed image; say so.
+    #[test]
+    fn a_build_that_differs_from_the_store_uuid_is_noted() {
+        let store = uuid::Uuid::nil();
+        assert_eq!(store_uuid_differs(Some(store), store), None);
+        assert_eq!(store_uuid_differs(None, store), None);
+        let built = uuid::Uuid::max();
+        let note = store_uuid_differs(Some(store), built).unwrap_or_default();
+        assert!(
+            note.contains(&store.to_string()) && note.contains(&built.to_string()),
+            "{note}"
+        );
     }
 
     /// `import <uuid>` accepts every UUID `avail` lists, so a UUID it
@@ -1366,6 +1671,12 @@ mod tests {
             Some("ubuntu-jammy-nocloud")
         );
         assert!(installed_match(None, "ubuntu-noble-nocloud", "20260927", &installed).is_none());
+        // With a UUID from the index, only that UUID will do: the same name
+        // and version under another UUID is other bytes.
+        let other = uuid::Uuid::parse_str("44444444-2222-3333-4444-555555555555")?;
+        assert!(
+            installed_match(Some(other), "ubuntu-jammy-nocloud", "20261004", &installed).is_none()
+        );
         Ok(())
     }
 
@@ -1458,15 +1769,16 @@ mod tests {
     }
 
     #[test]
-    fn a_uuid_finds_its_image() {
+    fn a_uuid_finds_its_image() -> anyhow::Result<()> {
         let row = ubuntu_row();
         let rows = [row.clone()];
         let uuid = row.uuid.unwrap_or_else(|| panic!("ubuntu has a sha256"));
         assert_eq!(
-            find_by_uuid(&rows, uuid).map(|r| &r.release),
+            find_by_uuid(&rows, uuid)?.map(|r| &r.release),
             Some(&row.release)
         );
-        assert!(find_by_uuid(&rows, uuid::Uuid::nil()).is_none());
+        assert!(find_by_uuid(&rows, uuid::Uuid::nil())?.is_none());
+        Ok(())
     }
 
     /// `import <uuid>` installs that image or nothing: if the index moved
