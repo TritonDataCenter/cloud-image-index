@@ -6,8 +6,8 @@
 
 //! Open enums: value sets expected to grow. Known values parse to their
 //! variants, unknown values are kept in `Other`, and the schema tells
-//! generated clients the same (`oneOf`: a known value, or any other
-//! string).
+//! generated clients the same (a plain string, whose description lists
+//! the known values).
 
 use cloud_image_index_api::{
     Alias, ChecksumFormat, Compression, DigestAlgorithm, Firmware, ImageFormat, LocationKind,

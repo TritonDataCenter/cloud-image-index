@@ -11,10 +11,10 @@
 //! - Extra fields are ignored.
 //! - Optional fields may be missing.
 //! - Enums whose value sets are expected to grow (image format,
-//!   compression, checksum format, signature kind, alias) accept values
-//!   the client does not know, and keep them.
-//! - Enums whose value sets are closed (OS family, location kind, digest
-//!   algorithm, firmware) reject unknown values.
+//!   compression, firmware, location kind, digest algorithm, checksum
+//!   format, signature kind, alias) accept values the client does not
+//!   know, and keep them.
+//! - The one closed enum, OS family, rejects unknown values.
 
 use std::path::Path;
 
