@@ -178,19 +178,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          notes="Install or update in a SmartOS global zone:
-
-          \`\`\`
-          curl -fsSL https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/install.sh | CLOUD_IMAGE_RELEASE=$GITHUB_REF_NAME bash
-          \`\`\`
-
-          The latest release is always:
-
-          \`\`\`
-          curl -fsSL https://github.com/$GITHUB_REPOSITORY/releases/latest/download/install.sh | bash
-          \`\`\`"
+          # The notes are a template, filled in with this repository and
+          # tag; GitHub appends the generated list of changes.
+          sed -e "s|@REPOSITORY@|$GITHUB_REPOSITORY|g" \
+            -e "s|@TAG@|$GITHUB_REF_NAME|g" \
+            tools/cloud-image/release-notes.md > notes.md
           gh release create "$GITHUB_REF_NAME" dist/* \
             --title "cloud-image $GITHUB_REF_NAME" \
-            --notes "$notes" \
+            --notes-file notes.md \
             --generate-notes \
             --verify-tag
