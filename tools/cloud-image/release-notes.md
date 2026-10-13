@@ -10,15 +10,9 @@ The latest release is always:
 curl -fsSL https://github.com/@REPOSITORY@/releases/latest/download/install.sh | bash
 ```
 
-**CA certificates.** The install checks every download over TLS, so `curl` needs a CA bundle. Use the one from pkgsrc tools:
+**CA certificates.** The install checks every download over TLS, so `curl` needs a CA bundle, and the SmartOS platform does not ship one yet ([illumos-extra#192](https://github.com/TritonDataCenter/illumos-extra/pull/192) adds one). pkgsrc tools provides one: in a login shell, the global zone's root profile points `curl` at it, `/opt/tools/share/mozilla-rootcerts/cacert.pem` from the `mozilla-rootcerts` package or `/opt/tools/etc/openssl/certs/ca-certificates.crt` from the pkgsrc tools bootstrap. `echo $CURL_CA_BUNDLE` shows which, if any.
 
-```
-export CURL_CA_BUNDLE=/opt/tools/etc/openssl/certs/ca-certificates.crt
-```
-
-If that file is missing, `/opt/tools/sbin/mozilla-rootcerts install` creates it (from pkgsrc tools' `mozilla-rootcerts` package).
-
-*Without pkgsrc tools (workaround):* the SmartOS platform does not yet ship a CA bundle; [illumos-extra#192](https://github.com/TritonDataCenter/illumos-extra/pull/192) adds one. Until it does, the root certificates built into the platform's Node.js can check this one download:
+*Without a CA bundle (workaround):* until the platform ships one, the root certificates built into the platform's Node.js can check this one download:
 
 ```
 /usr/node/bin/node -e 'var s=require("fs").readFileSync(process.execPath).toString("binary");process.stdout.write((s.match(/-----BEGIN CERTIFICATE-----\n[A-Za-z0-9+\/=\n]+-----END CERTIFICATE-----/g)||[]).join("\n")+"\n")' > /tmp/cloud-image-roots.pem
