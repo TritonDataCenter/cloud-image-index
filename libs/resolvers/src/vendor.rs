@@ -131,7 +131,9 @@ impl Vendor {
             Vendor::Fedora => "Fedora",
             Vendor::Freebsd => "FreeBSD",
             Vendor::Omnios => "OmniOS",
-            Vendor::Openbsd => "OpenBSD",
+            // The images are a community build, not the OpenBSD
+            // project's (see the openbsd module).
+            Vendor::Openbsd => "OpenBSD (community build)",
             Vendor::Opensuse => "openSUSE Leap",
             Vendor::Oracle => "Oracle Linux",
             Vendor::Rocky => "Rocky Linux",

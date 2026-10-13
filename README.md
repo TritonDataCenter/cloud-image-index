@@ -15,6 +15,12 @@ we tell you what the vendor publishes and where. Images are always
 downloaded from the vendor, and clients decide for themselves how much
 to trust us versus cross-checking against the vendor.
 
+One exception: the OpenBSD project does not publish cloud images, so
+the index lists a community build from
+<https://github.com/hcartiaux/openbsd-cloud-image>, as "OpenBSD
+(community build)". Its checksums come from the same place, so for
+OpenBSD "the vendor" means that project, not the OpenBSD project.
+
 The index is published at
 <https://cloud-images.tritoncloud.io/v1/index.json>, with every current
 build in one file at <https://cloud-images.tritoncloud.io/v1/images.json>
