@@ -1224,7 +1224,7 @@ dependencies = [
 [[package]]
 name = "imgapi-types"
 version = "4.13.1"
-source = "git+https://github.com/TritonDataCenter/monitor-reef?rev=31fbbcfd25427dd2201f757734c385fb745385be#31fbbcfd25427dd2201f757734c385fb745385be"
+source = "git+https://github.com/TritonDataCenter/monitor-reef?rev=d3022322a0ae2b7b893ed2a42476a178d0b0b3d6#d3022322a0ae2b7b893ed2a42476a178d0b0b3d6"
 dependencies = [
  "schemars",
  "serde",
@@ -1480,7 +1480,7 @@ checksum = "743fb55ba31b18fb1ecef6bdc9aa2743314978ac084044301a7eee33fb99a20d"
 [[package]]
 name = "nocloud-import"
 version = "0.1.0"
-source = "git+https://github.com/TritonDataCenter/monitor-reef?rev=31fbbcfd25427dd2201f757734c385fb745385be#31fbbcfd25427dd2201f757734c385fb745385be"
+source = "git+https://github.com/TritonDataCenter/monitor-reef?rev=d3022322a0ae2b7b893ed2a42476a178d0b0b3d6#d3022322a0ae2b7b893ed2a42476a178d0b0b3d6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1699,7 +1699,7 @@ dependencies = [
 [[package]]
 name = "qcow"
 version = "1.2.0"
-source = "git+https://github.com/TritonDataCenter/monitor-reef?rev=31fbbcfd25427dd2201f757734c385fb745385be#31fbbcfd25427dd2201f757734c385fb745385be"
+source = "git+https://github.com/TritonDataCenter/monitor-reef?rev=d3022322a0ae2b7b893ed2a42476a178d0b0b3d6#d3022322a0ae2b7b893ed2a42476a178d0b0b3d6"
 dependencies = [
  "binread",
  "flate2",
@@ -2812,7 +2812,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "vmdk-rs"
 version = "0.1.1"
-source = "git+https://github.com/TritonDataCenter/monitor-reef?rev=31fbbcfd25427dd2201f757734c385fb745385be#31fbbcfd25427dd2201f757734c385fb745385be"
+source = "git+https://github.com/TritonDataCenter/monitor-reef?rev=d3022322a0ae2b7b893ed2a42476a178d0b0b3d6#d3022322a0ae2b7b893ed2a42476a178d0b0b3d6"
 dependencies = [
  "async-trait",
  "byteorder",

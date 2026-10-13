@@ -49,9 +49,9 @@ dropshot = { version = "0.17.1" }
 # The response type of raw (non-JSON) dropshot endpoints.
 http = "1.5.0"
 # Builds SmartOS images from NoCloud cloud images, from monitor-reef (added
-# there in TritonDataCenter/monitor-reef#35). Pinned to the head of
-# TritonDataCenter/monitor-reef#36 until it merges.
-nocloud-import = { git = "https://github.com/TritonDataCenter/monitor-reef", rev = "31fbbcfd25427dd2201f757734c385fb745385be" }
+# there in TritonDataCenter/monitor-reef#35). Pinned to a commit on its main
+# branch.
+nocloud-import = { git = "https://github.com/TritonDataCenter/monitor-reef", rev = "d3022322a0ae2b7b893ed2a42476a178d0b0b3d6" }
 openapiv3 = "2.2.0"
 progenitor = "0.15.0"
 progenitor-client = "0.15.0"
