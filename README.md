@@ -22,6 +22,25 @@ and its OpenAPI description at
 <https://cloud-images.tritoncloud.io/v1/openapi.json>, and regenerated
 daily. See [docs/design.md](docs/design.md).
 
+## Stability
+
+From 1.0:
+
+- **The index format** is the three published files under `v1/`:
+  `index.json`, `images.json` and `openapi.json`. Within `v1/`, changes
+  are compatible ones only: new optional fields, and new values for the
+  fields whose description says the set can grow (aliases, image formats,
+  compressions, checksum formats, signature kinds). Clients must ignore
+  fields they do not know and accept those new values. A breaking change
+  goes to a new `v2/` tree, published alongside `v1/`. Other files in the
+  tree (per-distro files, the landing page) are not part of the format
+  and may change at any time. Release ids follow the vendor's naming and
+  can change with it; the `latest`, `lts` and `dev` aliases name the
+  current release.
+- **`cloud-image`** keeps its commands, options, `avail` columns and
+  `-j` fields, exit codes and install locations through 1.x. New ones
+  may be added; removing or changing one waits for 2.0.
+
 ## cloud-image for SmartOS
 
 `cloud-image` lists the images in the index and imports them into a
