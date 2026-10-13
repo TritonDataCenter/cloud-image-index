@@ -41,6 +41,8 @@ From 1.0:
   `-j` fields, exit codes and install locations through 1.x. New ones
   may be added; removing or changing one waits for 2.0.
 
+Report security issues privately, as [SECURITY.md](SECURITY.md) describes.
+
 ## cloud-image for SmartOS
 
 `cloud-image` lists the images in the index and imports them into a
