@@ -64,7 +64,9 @@ curl -fsSL https://github.com/TritonDataCenter/cloud-image-index/releases/latest
 
 This installs `/opt/tools/sbin/cloud-image` and its man page,
 `cloud-image(8)`. Then `cloud-image avail` lists the images and
-`cloud-image import <distro> <release>` imports one. Later,
+`cloud-image import` imports one, named by a UUID or NAME from that list
+(`cloud-image import ubuntu-resolute-nocloud`) or by distro and release
+or alias (`cloud-image import ubuntu latest`). Later,
 `cloud-image self-update` updates both to the newest release. The man
 page also explains how to boot the images with `vmadm` and pass them
 cloud-init user-data.

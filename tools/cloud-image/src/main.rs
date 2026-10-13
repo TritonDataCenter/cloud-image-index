@@ -66,6 +66,9 @@ enum Command {
     Avail(AvailArgs),
     /// Build a distro's image from the index and install it with imgadm.
     ///
+    /// Name the image by a UUID or NAME from `cloud-image avail`, or by
+    /// distro and release or alias (`ubuntu latest`).
+    ///
     /// The download must match the index's digest and the digest in the
     /// vendor's own checksum file. An image installed already is not
     /// downloaded again, unless --no-install asks for the files only. Off
@@ -119,7 +122,8 @@ struct AvailArgs {
 #[derive(clap::Args)]
 struct ImportArgs {
     /// The distro, as the index names it (e.g. `ubuntu`, `rocky`), or an
-    /// image's UUID from `cloud-image avail`.
+    /// image's UUID or NAME from `cloud-image avail` (e.g.
+    /// `ubuntu-resolute-nocloud`), which names the release too.
     distro: String,
     /// A release (e.g. `noble`, `9`) or alias (`latest`, `lts`, `dev`).
     /// Without one, lists the distro's releases and imports nothing.
@@ -616,6 +620,19 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         if row.uuid_from_store {
             requested_uuid = None;
         }
+    }
+    // A NAME from `avail` names a release's current image too.
+    if requested_uuid.is_none() && !import::has_distro(&list, &args.distro) {
+        let (rows, _) = import::avail_rows(&list, None)?;
+        let row = import::find_by_name(&rows, &args.distro)
+            .with_context(|| import::not_an_import_target(&list, &args.distro))?;
+        anyhow::ensure!(
+            args.release.is_none() && args.variant.is_none(),
+            "an image NAME names the release and variant itself; give no release \
+             or --variant with it"
+        );
+        args.distro = row.distro.clone();
+        args.release = Some(row.release.clone());
     }
     let (distro, release_builds) = import::distro_from_images(&list, &args.distro)?;
     let Some(release) = args.release.as_deref() else {

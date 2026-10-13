@@ -586,16 +586,39 @@ pub fn avail_rows(list: &ImageList, only: Option<&str>) -> Result<(Vec<Available
 
 /// Fail unless the image list has a distro `id`, naming the ones it has.
 fn known_distro(list: &ImageList, id: &str) -> Result<()> {
-    if list.images.iter().any(|i| i.distro.id == id) {
+    if has_distro(list, id) {
         return Ok(());
     }
+    anyhow::bail!(
+        "the index has no distro {id:?}; it has: {}",
+        distro_ids(list).join(", ")
+    )
+}
+
+/// Whether the image list has a distro `id`.
+pub fn has_distro(list: &ImageList, id: &str) -> bool {
+    list.images.iter().any(|i| i.distro.id == id)
+}
+
+/// The image list's distro ids, in its order.
+fn distro_ids(list: &ImageList) -> Vec<&str> {
     let mut ids: Vec<&str> = Vec::new();
     for image in &list.images {
         if !ids.contains(&image.distro.id.as_str()) {
             ids.push(&image.distro.id);
         }
     }
-    anyhow::bail!("the index has no distro {id:?}; it has: {}", ids.join(", "))
+    ids
+}
+
+/// Why `import` cannot tell what `arg` names: not a distro, nor a UUID or
+/// NAME `avail` lists.
+pub fn not_an_import_target(list: &ImageList, arg: &str) -> String {
+    format!(
+        "{arg:?} is not a distro in the index, nor a UUID or NAME `cloud-image \
+         avail` lists; the distros are: {}",
+        distro_ids(list).join(", ")
+    )
 }
 
 /// The distro `id` as `v1/images.json` gives it: the distro, with each
@@ -687,6 +710,12 @@ pub fn confirm_requested_uuid(
 /// Why `import <uuid>` found no image with that UUID.
 pub fn uuid_not_listed(uuid: uuid::Uuid) -> String {
     format!("no image `cloud-image avail` lists has UUID {uuid}")
+}
+
+/// The image with this NAME (e.g. `ubuntu-resolute-nocloud`), for
+/// `import <name>`. Each release's current image has its own name.
+pub fn find_by_name<'a>(rows: &'a [Available], name: &str) -> Option<&'a Available> {
+    rows.iter().find(|r| r.name == name)
 }
 
 /// The image with this UUID, for `import <uuid>`.
@@ -1284,6 +1313,32 @@ mod tests {
         assert_eq!(before, after);
         assert!(ubuntu.iter().all(|r| !r.uuid_from_store));
         Ok(())
+    }
+
+    /// `import` accepts the NAME `avail` shows, as it does the UUID: it
+    /// names one release's current image.
+    #[test]
+    fn an_avail_name_finds_its_release() -> anyhow::Result<()> {
+        let (rows, _) = avail_rows(&images(), None)?;
+        let row = find_by_name(&rows, "ubuntu-resolute-nocloud")
+            .unwrap_or_else(|| panic!("the examples list ubuntu resolute"));
+        assert_eq!(
+            (row.distro.as_str(), row.release.as_str()),
+            ("ubuntu", "resolute")
+        );
+        assert!(find_by_name(&rows, "ubuntu").is_none());
+        assert!(find_by_name(&rows, "ubuntu-resolute").is_none());
+        Ok(())
+    }
+
+    /// An argument that names nothing points at what `avail` shows.
+    #[test]
+    fn an_unknown_import_target_points_at_avail() {
+        let message = not_an_import_target(&images(), "ubuntu-resolut-nocloud");
+        assert!(message.contains("\"ubuntu-resolut-nocloud\""), "{message}");
+        assert!(message.contains("UUID or NAME"), "{message}");
+        assert!(message.contains("cloud-image avail"), "{message}");
+        assert!(message.contains("ubuntu, rocky, talos"), "{message}");
     }
 
     /// `import <uuid>` accepts every UUID `avail` lists, so a UUID it
