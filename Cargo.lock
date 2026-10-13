@@ -347,6 +347,7 @@ name = "cloud-image-index-api"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "cloud-image-index-ids",
  "dropshot",
  "http",
  "schemars",

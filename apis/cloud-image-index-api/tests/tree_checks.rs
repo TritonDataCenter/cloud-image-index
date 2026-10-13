@@ -186,6 +186,37 @@ fn unknown_firmware_in_our_own_output_is_caught() -> Result<(), String> {
 }
 
 #[test]
+fn a_build_id_that_could_name_another_path_is_caught() -> Result<(), String> {
+    // Clients name directories after build ids (see `Build.build`).
+    let s = Scratch::new("bad-build-id")?;
+    for file in [
+        "v1/distros/talos/releases/1.14/index.json",
+        "v1/distros/talos/aliases/latest.json",
+    ] {
+        s.edit_json(file, |v| {
+            v["builds"][0]["build"] = serde_json::json!("1..14")
+        })?;
+    }
+    s.edit_json("v1/images.json", |v| {
+        for image in v["images"].as_array_mut().into_iter().flatten() {
+            if image["distro"]["id"] == "talos" {
+                image["build"]["build"] = serde_json::json!("1..14");
+            }
+        }
+    })?;
+    s.expect_problem("invalid build id \"1..14\"")
+}
+
+#[test]
+fn a_variant_that_could_name_another_path_is_caught() -> Result<(), String> {
+    let s = Scratch::new("bad-variant")?;
+    s.edit_json("v1/distros/rocky/releases/9/index.json", |v| {
+        v["builds"][0]["artifacts"][0]["variant"] = serde_json::json!("base/x");
+    })?;
+    s.expect_problem("invalid variant \"base/x\"")
+}
+
+#[test]
 fn missing_openapi_document_is_caught() -> Result<(), String> {
     let s = Scratch::new("openapi-missing")?;
     std::fs::remove_file(s.0.join("v1/openapi.json")).map_err(|e| e.to_string())?;

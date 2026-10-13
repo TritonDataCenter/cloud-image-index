@@ -246,6 +246,9 @@ pub fn check(tree: &Tree) -> Vec<String> {
     }
 
     for (id, distro) in &tree.distros {
+        if !ids::is_valid_id(id) {
+            problems.push(format!("invalid distro id {id:?}"));
+        }
         if &distro.id != id {
             problems.push(format!(
                 "{id}: distro id {:?} differs from its directory",
@@ -269,6 +272,9 @@ pub fn check(tree: &Tree) -> Vec<String> {
 
         let mut seen_releases = BTreeSet::new();
         for release in &distro.releases {
+            if !ids::is_valid_id(&release.id) {
+                problems.push(format!("{id}: invalid release id {:?}", release.id));
+            }
             if !seen_releases.insert(release.id.as_str()) {
                 problems.push(format!(
                     "{id}: release {:?} listed more than once",
@@ -409,9 +415,10 @@ fn image_list(tree: &Tree, distro_list: &DistroList) -> ImageList {
     crate::image_list(distro_list, &distros)
 }
 
-/// Rules for one release's build list: it has builds, each build and
-/// each artifact within a build is listed once, every artifact can be
-/// downloaded from somewhere, and digests are well formed.
+/// Rules for one release's build list: it has builds, build ids and
+/// variants follow the id rule, each build and each artifact within a
+/// build is listed once, every artifact can be downloaded from
+/// somewhere, and digests are well formed.
 fn check_builds(problems: &mut Vec<String>, distro: &str, release: &str, list: &BuildList) {
     if list.builds.is_empty() {
         problems.push(format!("{distro}/{release}: no builds"));
@@ -419,11 +426,22 @@ fn check_builds(problems: &mut Vec<String>, distro: &str, release: &str, list: &
     let mut seen_builds = BTreeSet::new();
     for build in &list.builds {
         let at = format!("{distro}/{release}/{}", build.build);
+        if !ids::is_valid_id(&build.build) {
+            problems.push(format!(
+                "{distro}/{release}: invalid build id {:?}",
+                build.build
+            ));
+        }
         if !seen_builds.insert(build.build.as_str()) {
             problems.push(format!("{at}: build listed more than once"));
         }
         let mut seen_artifacts = BTreeSet::new();
         for artifact in &build.artifacts {
+            if let Some(variant) = &artifact.variant
+                && !ids::is_valid_id(variant)
+            {
+                problems.push(format!("{at}: invalid variant {variant:?}"));
+            }
             let format = serde_json::to_value(&artifact.format)
                 .ok()
                 .and_then(|v| v.as_str().map(str::to_string))
