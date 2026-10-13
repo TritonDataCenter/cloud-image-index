@@ -6,7 +6,9 @@
 #
 # Check formatting, lints, tests and docs on every pull request and on pushes
 # to main. The tests include the tree checks on examples/, so an API
-# change fails here until examples/v1/openapi.json is refreshed.
+# change fails here until examples/v1/openapi.json is refreshed. The
+# illumos workflow also calls this before it publishes a release, so a
+# release always passes the same checks.
 #
 # site/ is not checked here: after an API change it holds the previous
 # version's v1/openapi.json until the next index run rewrites it, and
@@ -21,6 +23,9 @@ on:
     # The index workflow's own commits only touch site/.
     paths-ignore:
       - "site/**"
+  # Called by illumos.yml for a version tag. A called workflow sees the
+  # caller's event (a push), so it runs on the self-hosted runners.
+  workflow_call:
 
 permissions:
   contents: read

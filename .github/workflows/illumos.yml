@@ -11,7 +11,8 @@
 # is a compile-and-link check; tests run in ci.yml on Linux.
 #
 # A version tag (v0.9.0) also publishes that binary as a GitHub release,
-# with SHA256SUMS and install.sh for the one-line install.
+# with SHA256SUMS and install.sh for the one-line install, but only if
+# the tagged commit is on main and passes ci.yml's checks.
 
 name: illumos
 
@@ -116,10 +117,17 @@ jobs:
           path: target/${{ env.TARGET }}/release/${{ env.BINARY }}
           if-no-files-found: error
 
+  test:
+    # For a version tag, ci.yml's checks on the tagged commit: nothing
+    # requires them to have passed before a merge, so the release runs
+    # them itself.
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: ./.github/workflows/ci.yml
+
   release:
     # Publishes the binary the build job made, for a version tag only.
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    needs: [build, test]
     # Tags are pushed from this repository, never a fork.
     runs-on:
       group: triton
@@ -128,7 +136,16 @@ jobs:
     permissions:
       contents: write
     steps:
+      # The whole history, to check the tag is on main.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Check the tagged commit is on main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "tag $GITHUB_REF_NAME is on $GITHUB_SHA, which is not on main" >&2
+            exit 1
+          fi
       - name: Install gh
         run: |
           name="gh_${GH_VERSION}_linux_amd64"
