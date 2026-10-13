@@ -55,8 +55,10 @@ enum Command {
     /// Each release's current build, named and versioned as `imgadm list`
     /// will show it after the import.
     ///
-    /// The UUID is the one the import will give the image (unknown before
-    /// the download when the vendor publishes no sha256). CHECK says how
+    /// The UUID is the one the import will give the image. It is unknown
+    /// before the download when the vendor publishes no sha256, unless the
+    /// image is installed already: then it is the installed image's, which
+    /// `import` does not accept (the image is installed). CHECK says how
     /// the import would be checked: `vendor` (the vendor's checksum file
     /// confirms the index), `index` (the index's digest alone) or `none`;
     /// the last two need `import --allow-unverified`. On SmartOS, INSTALLED
@@ -65,7 +67,9 @@ enum Command {
     /// Build a distro's image from the index and install it with imgadm.
     ///
     /// The download must match the index's digest and the digest in the
-    /// vendor's own checksum file. Off SmartOS this is always a dry run.
+    /// vendor's own checksum file. An image installed already is not
+    /// downloaded again, unless --no-install asks for the files only. Off
+    /// SmartOS this is always a dry run.
     Import(ImportArgs),
     /// Update cloud-image to the newest release, with its man page.
     ///
@@ -679,6 +683,28 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         "imgadm install needs the global zone (zonename={zone}); pass --no-install \
          to build the files only"
     );
+    // An import that ends in imgadm stops here if the image is installed
+    // already, rather than download and build it again. One that only
+    // builds the files (--no-install) goes on.
+    if !args.no_install {
+        match installed_images().await {
+            Ok(installed) => {
+                let found = import::installed_match(
+                    import::index_uuid(&digests),
+                    &info.image_name(),
+                    &info.version,
+                    &installed,
+                );
+                if let Some(image) = found {
+                    let uuid = image.uuid.map_or("-".to_string(), |u| u.to_string());
+                    println!();
+                    println!("Already installed as {uuid}; nothing to do.");
+                    return Ok(());
+                }
+            }
+            Err(e) => eprintln!("note: could not check whether it is installed already: {e:#}"),
+        }
+    }
     let dataset = match args.dataset {
         Some(d) => d,
         None => host::default_dataset()?,

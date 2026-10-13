@@ -712,15 +712,31 @@ pub fn parse_imgadm_list(json: &str) -> Result<Vec<Installed>> {
         .collect())
 }
 
-/// Record which rows the local image store has: an image with the same
-/// UUID, or, since an image whose vendor publishes no sha256 has no UUID
-/// before its download, the same name and version.
+/// The installed image an import would produce: one with the same UUID,
+/// or, since an image whose vendor publishes no sha256 has no UUID before
+/// its download, the same name and version.
+pub fn installed_match<'a>(
+    uuid: Option<uuid::Uuid>,
+    name: &str,
+    version: &str,
+    installed: &'a [Installed],
+) -> Option<&'a Installed> {
+    installed
+        .iter()
+        .find(|i| (uuid.is_some() && i.uuid == uuid) || (i.name == name && i.version == version))
+}
+
+/// Record which rows the local image store has (see [`installed_match`]).
+/// A row with no UUID (no sha256 published) takes the installed image's.
+/// `import <uuid>` looks UUIDs up in the index alone, so it does not
+/// accept one of these; the image is installed already.
 pub fn mark_installed(rows: &mut [Available], installed: &[Installed]) {
     for row in rows {
-        row.installed = Some(installed.iter().any(|i| {
-            (row.uuid.is_some() && i.uuid == row.uuid)
-                || (i.name == row.name && i.version == row.version)
-        }));
+        let found = installed_match(row.uuid, &row.name, &row.version, installed);
+        row.installed = Some(found.is_some());
+        if row.uuid.is_none() {
+            row.uuid = found.and_then(|i| i.uuid);
+        }
     }
 }
 
@@ -1226,6 +1242,48 @@ mod tests {
                 ("ubuntu-jammy-nocloud", Some(true)),
             ]
         );
+        Ok(())
+    }
+
+    /// An installed image gives `avail` the UUID the index cannot: one
+    /// whose vendor publishes no sha256 (Talos here, Alpine in practice)
+    /// has none before its download. A UUID the index gives is kept.
+    #[test]
+    fn an_installed_image_gives_a_uuid_the_index_cannot() -> anyhow::Result<()> {
+        let (mut rows, _) = avail_rows(&images(), Some("talos"))?;
+        assert_eq!(rows[0].uuid, None);
+        let uuid = uuid::Uuid::parse_str("33333333-2222-3333-4444-555555555555")?;
+        let installed = [Installed {
+            uuid: Some(uuid),
+            name: rows[0].name.clone(),
+            version: rows[0].version.clone(),
+        }];
+        mark_installed(&mut rows, &installed);
+        assert_eq!((rows[0].installed, rows[0].uuid), (Some(true), Some(uuid)));
+        assert_eq!(avail_json(&rows)[0]["uuid"], uuid.to_string());
+
+        let (mut ubuntu, _) = avail_rows(&images(), Some("ubuntu"))?;
+        let before: Vec<_> = ubuntu.iter().map(|r| r.uuid).collect();
+        mark_installed(&mut ubuntu, &parse_imgadm_list(IMGADM_LIST)?);
+        let after: Vec<_> = ubuntu.iter().map(|r| r.uuid).collect();
+        assert_eq!(before, after);
+        Ok(())
+    }
+
+    /// `import` finds the installed image it would produce the same way
+    /// `avail` marks it, so it can stop before downloading it again.
+    #[test]
+    fn an_import_finds_the_image_already_installed() -> anyhow::Result<()> {
+        let installed = parse_imgadm_list(IMGADM_LIST)?;
+        let resolute = uuid::Uuid::parse_str("006d99ef-603a-551d-b179-c56d3f6e1c32")?;
+        let by_uuid = installed_match(Some(resolute), "other-name", "1", &installed);
+        assert_eq!(by_uuid.and_then(|i| i.uuid), Some(resolute));
+        let by_name = installed_match(None, "ubuntu-jammy-nocloud", "20261004", &installed);
+        assert_eq!(
+            by_name.map(|i| i.name.as_str()),
+            Some("ubuntu-jammy-nocloud")
+        );
+        assert!(installed_match(None, "ubuntu-noble-nocloud", "20260927", &installed).is_none());
         Ok(())
     }
 
