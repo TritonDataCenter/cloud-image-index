@@ -15,20 +15,7 @@
     "schemas": {
       "Alias": {
         "description": "A release alias.\n\nKnown values:\n\n- `latest`: The newest generally-available release. Never a pre-release.\n- `lts`: The newest release the vendor itself labels long-term support. Absent for vendors that do not use that label.\n- `dev`: The vendor's development channel (see the distro's `dev_channel`).",
-        "oneOf": [
-          {
-            "enum": [
-              "latest",
-              "lts",
-              "dev"
-            ],
-            "type": "string"
-          },
-          {
-            "pattern": "^(?!(?:latest|lts|dev)$)",
-            "type": "string"
-          }
-        ]
+        "type": "string"
       },
       "Artifact": {
         "description": "One downloadable image file of a build. Within a build an artifact is identified by `variant / arch / format`.",
@@ -73,7 +60,7 @@
             "nullable": true
           },
           "locations": {
-            "description": "Where the file can be downloaded. Current builds have a `primary` location; archived builds have none.",
+            "description": "Where the file can be downloaded. Every build has a `primary` location.",
             "items": {
               "$ref": "#/components/schemas/Location"
             },
@@ -151,47 +138,9 @@
         ],
         "type": "object"
       },
-      "BuildList": {
-        "description": "The builds of one release. Used for `v1/distros/<distro>/releases/<release>/index.json` (builds in the vendor's main tree), `.../archive.json` (builds that survive only in a vendor vault), and the alias files under `v1/distros/<distro>/aliases/`, which are a copy of the aliased release's `index.json`.",
-        "properties": {
-          "builds": {
-            "description": "Newest first.",
-            "items": {
-              "$ref": "#/components/schemas/Build"
-            },
-            "type": "array"
-          },
-          "distro": {
-            "type": "string"
-          },
-          "release": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "builds",
-          "distro",
-          "release"
-        ],
-        "type": "object"
-      },
       "ChecksumFormat": {
         "description": "Layout of a vendor document that contains a hash.\n\nKnown values:\n\n- `gnu`: GNU coreutils style: `<hex>  [*]<filename>` per line.\n- `bsd`: BSD style: `SHA256 (<filename>) = <hex>` per line.\n- `bare`: The file contains only the hex hash.\n- `vendor_document`: Hash appears in a vendor document with no generic format (for example a JSON feed or an HTML page); re-checking it needs vendor-specific parsing.",
-        "oneOf": [
-          {
-            "enum": [
-              "gnu",
-              "bsd",
-              "bare",
-              "vendor_document"
-            ],
-            "type": "string"
-          },
-          {
-            "pattern": "^(?!(?:gnu|bsd|bare|vendor_document)$)",
-            "type": "string"
-          }
-        ]
+        "type": "string"
       },
       "ChecksumSource": {
         "description": "A vendor document that contains the artifact's hash.",
@@ -216,22 +165,7 @@
       },
       "Compression": {
         "description": "Compression applied to the file as downloaded.\n\nKnown values:\n\n- `none`\n- `gzip`\n- `xz`\n- `zstd`\n- `bzip2`",
-        "oneOf": [
-          {
-            "enum": [
-              "none",
-              "gzip",
-              "xz",
-              "zstd",
-              "bzip2"
-            ],
-            "type": "string"
-          },
-          {
-            "pattern": "^(?!(?:none|gzip|xz|zstd|bzip2)$)",
-            "type": "string"
-          }
-        ]
+        "type": "string"
       },
       "Digest": {
         "description": "A hash of the artifact as published by the vendor.",
@@ -265,42 +199,6 @@
           "sha512"
         ],
         "type": "string"
-      },
-      "Distro": {
-        "description": "`v1/distros/<distro>/index.json`: a distro and its releases, newest first.",
-        "properties": {
-          "dev_channel": {
-            "description": "The vendor's name for the channel the `dev` alias follows (e.g. `bloody`, `sid`, `rawhide`, `edge`). Null when the vendor has no development channel in the index.",
-            "nullable": true,
-            "type": "string"
-          },
-          "homepage": {
-            "nullable": true,
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "nullable": true,
-            "type": "string"
-          },
-          "os_family": {
-            "$ref": "#/components/schemas/OsFamily"
-          },
-          "releases": {
-            "items": {
-              "$ref": "#/components/schemas/Release"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "id",
-          "os_family",
-          "releases"
-        ],
-        "type": "object"
       },
       "DistroList": {
         "description": "`v1/index.json`: every distro in the index.",
@@ -422,20 +320,7 @@
       },
       "ImageFormat": {
         "description": "Disk image format of the file, once decompressed.\n\nKnown values:\n\n- `qcow2`\n- `raw`\n- `vmdk`",
-        "oneOf": [
-          {
-            "enum": [
-              "qcow2",
-              "raw",
-              "vmdk"
-            ],
-            "type": "string"
-          },
-          {
-            "pattern": "^(?!(?:qcow2|raw|vmdk)$)",
-            "type": "string"
-          }
-        ]
+        "type": "string"
       },
       "ImageList": {
         "description": "`v1/images.json`: every current build in the index, one entry each, so a client can list or search them with a single request. It repeats what the distro and release files say: the distros in `v1/index.json` order, each distro's releases in its order, and each release's current builds newest first. Archived builds are left out.",
@@ -635,19 +520,7 @@
       },
       "SignatureKind": {
         "description": "Kind of vendor signature.\n\nKnown values:\n\n- `pgp_detached`: Detached OpenPGP signature.\n- `pgp_clearsigned`: OpenPGP clear-signed document; `url` and `signs` are the same.",
-        "oneOf": [
-          {
-            "enum": [
-              "pgp_detached",
-              "pgp_clearsigned"
-            ],
-            "type": "string"
-          },
-          {
-            "pattern": "^(?!(?:pgp_detached|pgp_clearsigned)$)",
-            "type": "string"
-          }
-        ]
+        "type": "string"
       }
     }
   },
@@ -657,229 +530,6 @@
   },
   "openapi": "3.0.3",
   "paths": {
-    "/v1/distros/{distro}/aliases/dev.json": {
-      "get": {
-        "description": "Not found for distros with no development channel in the index.",
-        "operationId": "alias_dev",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "distro",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BuildList"
-                }
-              }
-            },
-            "description": "successful operation"
-          },
-          "4XX": {
-            "$ref": "#/components/responses/Error"
-          },
-          "5XX": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "summary": "The builds of the release holding the `dev` alias."
-      }
-    },
-    "/v1/distros/{distro}/aliases/latest.json": {
-      "get": {
-        "operationId": "alias_latest",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "distro",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BuildList"
-                }
-              }
-            },
-            "description": "successful operation"
-          },
-          "4XX": {
-            "$ref": "#/components/responses/Error"
-          },
-          "5XX": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "summary": "The builds of the release holding the `latest` alias."
-      }
-    },
-    "/v1/distros/{distro}/aliases/lts.json": {
-      "get": {
-        "description": "Not found for distros whose vendor has no LTS label.",
-        "operationId": "alias_lts",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "distro",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BuildList"
-                }
-              }
-            },
-            "description": "successful operation"
-          },
-          "4XX": {
-            "$ref": "#/components/responses/Error"
-          },
-          "5XX": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "summary": "The builds of the release holding the `lts` alias."
-      }
-    },
-    "/v1/distros/{distro}/index.json": {
-      "get": {
-        "operationId": "distro",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "distro",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Distro"
-                }
-              }
-            },
-            "description": "successful operation"
-          },
-          "4XX": {
-            "$ref": "#/components/responses/Error"
-          },
-          "5XX": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "summary": "One distro and its releases."
-      }
-    },
-    "/v1/distros/{distro}/releases/{release}/archive.json": {
-      "get": {
-        "description": "The final build of each end-of-life point release.",
-        "operationId": "release_archive",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "distro",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "release",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BuildList"
-                }
-              }
-            },
-            "description": "successful operation"
-          },
-          "4XX": {
-            "$ref": "#/components/responses/Error"
-          },
-          "5XX": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "summary": "Archived builds of a release, available only from a vendor vault."
-      }
-    },
-    "/v1/distros/{distro}/releases/{release}/index.json": {
-      "get": {
-        "operationId": "release_builds",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "distro",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "release",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BuildList"
-                }
-              }
-            },
-            "description": "successful operation"
-          },
-          "4XX": {
-            "$ref": "#/components/responses/Error"
-          },
-          "5XX": {
-            "$ref": "#/components/responses/Error"
-          }
-        },
-        "summary": "Current builds of a release, from the vendor's main tree."
-      }
-    },
     "/v1/images.json": {
       "get": {
         "description": "The same builds as the release files, in one request.",

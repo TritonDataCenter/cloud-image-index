@@ -26,44 +26,23 @@ pub mod tree;
 use chrono::{DateTime, NaiveDate, Utc};
 use dropshot::{Body, HttpError, HttpResponseOk, Path, RequestContext};
 use schemars::JsonSchema;
-use schemars::schema::{
-    InstanceType, Metadata, Schema, SchemaObject, StringValidation, SubschemaValidation,
-};
+use schemars::schema::{InstanceType, Metadata, Schema, SchemaObject};
 use serde::{Deserialize, Serialize};
 
-/// The schema for an open enum: one of the values this version of the
-/// index defines, or any other string. Clients generated from the
-/// OpenAPI document then accept, and keep, values added after they were
-/// generated. The second branch excludes the known values with a
-/// pattern, so the branches are disjoint as `oneOf` requires (typify
-/// turns a `not: {enum}` branch into an empty enum, so `not` is not
-/// used). Known values are lowercase identifiers, so they need no regex
-/// escaping.
-fn open_enum_schema(description: &str, known: Vec<serde_json::Value>) -> Schema {
-    let names: Vec<&str> = known.iter().filter_map(|v| v.as_str()).collect();
-    let string = || Some(InstanceType::String.into());
-    let known_values = SchemaObject {
-        instance_type: string(),
-        enum_values: Some(known.clone()),
-        ..SchemaObject::default()
-    };
-    let other_strings = SchemaObject {
-        instance_type: string(),
-        string: Some(Box::new(StringValidation {
-            pattern: Some(format!("^(?!(?:{})$)", names.join("|"))),
-            ..StringValidation::default()
-        })),
-        ..SchemaObject::default()
-    };
+/// The schema for an open enum: a string, with the values this version
+/// of the index defines listed in the description. It does not use
+/// `enum` or a `pattern`, so generated clients take the value as a
+/// string and accept, and keep, values added after they were generated;
+/// and every OpenAPI tool can read it (a lookahead pattern excluding the
+/// known values, as an earlier shape used, is beyond Go's RE2, which
+/// rejected the whole document).
+fn open_enum_schema(description: &str) -> Schema {
     Schema::Object(SchemaObject {
         metadata: Some(Box::new(Metadata {
             description: Some(description.to_string()),
             ..Metadata::default()
         })),
-        subschemas: Some(Box::new(SubschemaValidation {
-            one_of: Some(vec![known_values.into(), other_strings.into()]),
-            ..SubschemaValidation::default()
-        })),
+        instance_type: Some(InstanceType::String.into()),
         ..SchemaObject::default()
     })
 }
@@ -120,13 +99,7 @@ macro_rules! open_enum {
                         description.push_str(&format!("\n- `{value}`: {doc}"));
                     }
                 )+
-                open_enum_schema(
-                    &description,
-                    Self::KNOWN
-                        .iter()
-                        .filter_map(|v| serde_json::to_value(v).ok())
-                        .collect(),
-                )
+                open_enum_schema(&description)
             }
         }
     };
@@ -281,14 +254,13 @@ pub struct OsinfoRef {
 }
 
 // ---------------------------------------------------------------------
-// v1/distros/<distro>/releases/<release>/{index,archive}.json and
+// v1/distros/<distro>/releases/<release>/index.json and
 // v1/distros/<distro>/aliases/*.json
 // ---------------------------------------------------------------------
 
 /// The builds of one release. Used for
 /// `v1/distros/<distro>/releases/<release>/index.json` (builds in the
-/// vendor's main tree), `.../archive.json` (builds that survive only in
-/// a vendor vault), and the alias files under
+/// vendor's main tree) and the alias files under
 /// `v1/distros/<distro>/aliases/`, which are a copy of the aliased
 /// release's `index.json`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -346,8 +318,8 @@ pub struct Artifact {
     pub ssh_key_injection: Option<bool>,
     /// Size in bytes of the file as downloaded, when known.
     pub size: Option<u64>,
-    /// Where the file can be downloaded. Current builds have a
-    /// `primary` location; archived builds have none.
+    /// Where the file can be downloaded. Every build has a `primary`
+    /// location.
     pub locations: Vec<Location>,
     pub integrity: Option<Integrity>,
 }
@@ -579,14 +551,20 @@ pub trait CloudImageIndexApi {
     ) -> Result<HttpResponseOk<ImageList>, HttpError>;
 
     /// One distro and its releases.
-    #[endpoint { method = GET, path = "/v1/distros/{distro}/index.json" }]
+    ///
+    /// Unpublished: part of the tree, which the generator reads back, but
+    /// not of the format; `v1/images.json` has the same builds.
+    #[endpoint { method = GET, path = "/v1/distros/{distro}/index.json", unpublished = true }]
     async fn distro(
         rqctx: RequestContext<Self::Context>,
         path: Path<DistroPath>,
     ) -> Result<HttpResponseOk<Distro>, HttpError>;
 
     /// The builds of the release holding the `latest` alias.
-    #[endpoint { method = GET, path = "/v1/distros/{distro}/aliases/latest.json" }]
+    ///
+    /// Unpublished: part of the tree, which the generator reads back, but
+    /// not of the format; `v1/images.json` has the same builds.
+    #[endpoint { method = GET, path = "/v1/distros/{distro}/aliases/latest.json", unpublished = true }]
     async fn alias_latest(
         rqctx: RequestContext<Self::Context>,
         path: Path<DistroPath>,
@@ -595,7 +573,10 @@ pub trait CloudImageIndexApi {
     /// The builds of the release holding the `lts` alias.
     ///
     /// Not found for distros whose vendor has no LTS label.
-    #[endpoint { method = GET, path = "/v1/distros/{distro}/aliases/lts.json" }]
+    ///
+    /// Unpublished: part of the tree, which the generator reads back, but
+    /// not of the format; `v1/images.json` has the same builds.
+    #[endpoint { method = GET, path = "/v1/distros/{distro}/aliases/lts.json", unpublished = true }]
     async fn alias_lts(
         rqctx: RequestContext<Self::Context>,
         path: Path<DistroPath>,
@@ -604,24 +585,21 @@ pub trait CloudImageIndexApi {
     /// The builds of the release holding the `dev` alias.
     ///
     /// Not found for distros with no development channel in the index.
-    #[endpoint { method = GET, path = "/v1/distros/{distro}/aliases/dev.json" }]
+    ///
+    /// Unpublished: part of the tree, which the generator reads back, but
+    /// not of the format; `v1/images.json` has the same builds.
+    #[endpoint { method = GET, path = "/v1/distros/{distro}/aliases/dev.json", unpublished = true }]
     async fn alias_dev(
         rqctx: RequestContext<Self::Context>,
         path: Path<DistroPath>,
     ) -> Result<HttpResponseOk<BuildList>, HttpError>;
 
     /// Current builds of a release, from the vendor's main tree.
-    #[endpoint { method = GET, path = "/v1/distros/{distro}/releases/{release}/index.json" }]
-    async fn release_builds(
-        rqctx: RequestContext<Self::Context>,
-        path: Path<ReleasePath>,
-    ) -> Result<HttpResponseOk<BuildList>, HttpError>;
-
-    /// Archived builds of a release, available only from a vendor vault.
     ///
-    /// The final build of each end-of-life point release.
-    #[endpoint { method = GET, path = "/v1/distros/{distro}/releases/{release}/archive.json" }]
-    async fn release_archive(
+    /// Unpublished: part of the tree, which the generator reads back, but
+    /// not of the format; `v1/images.json` has the same builds.
+    #[endpoint { method = GET, path = "/v1/distros/{distro}/releases/{release}/index.json", unpublished = true }]
+    async fn release_builds(
         rqctx: RequestContext<Self::Context>,
         path: Path<ReleasePath>,
     ) -> Result<HttpResponseOk<BuildList>, HttpError>;

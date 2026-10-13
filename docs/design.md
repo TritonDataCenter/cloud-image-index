@@ -90,18 +90,25 @@ one at the same level (it rejects `/v1/index.json` beside
 `{release}`:
 
 ```
-index.html                                         # landing page for people (not in the OpenAPI document)
-docs/index.html                                    # API documentation (Swagger UI; not in the OpenAPI document)
-v1/index.json                                      # list of distros
-v1/openapi.json                                    # the OpenAPI document describing this tree
-v1/images.json                                     # every current build with its distro and release, in one file
-v1/distros/<distro>/index.json                     # releases, aliases, osinfo ids
-v1/distros/<distro>/aliases/latest.json            # copy of the aliased release's index.json
+v1/index.json                                      # published: list of distros
+v1/images.json                                     # published: every current build with its distro and release
+v1/openapi.json                                    # published: the OpenAPI document describing them
+index.html                                         # unpublished: landing page for people
+docs/index.html                                    # unpublished: API documentation (Swagger UI)
+v1/distros/<distro>/index.json                     # unpublished: releases, aliases, osinfo ids
+v1/distros/<distro>/aliases/latest.json            # unpublished: copy of the aliased release's index.json
 v1/distros/<distro>/aliases/lts.json
 v1/distros/<distro>/aliases/dev.json
-v1/distros/<distro>/releases/<release>/index.json  # current builds in the vendor's main tree
-v1/distros/<distro>/releases/<release>/archive.json # builds available only from a vendor vault
+v1/distros/<distro>/releases/<release>/index.json  # unpublished: current builds in the vendor's main tree
 ```
+
+The format, what the OpenAPI document describes and what clients may
+rely on, is the three published files. The unpublished files are part
+of the tree and its checks, but not of the format: the per-distro files
+are the generator's working state, which it reads back to carry a
+failing vendor's last data forward, and they may change or go away
+without a new format version. Clients read `v1/images.json`, which
+holds the same builds.
 
 `v1/images.json` repeats the distro and release files as one flat list,
 one entry per current build, so a client can list or search every image
@@ -158,7 +165,12 @@ ubuntu / noble   / 20260926 / server / x86_64 / qcow2
 - **release**: the vendor's major release or series (`noble`, `9`,
   `trixie`). For distros with point releases, the point release is a
   field on the build, not part of the release (first approximation;
-  expected to be revisited).
+  expected to be revisited). Release ids follow the vendor's naming and
+  can change when it does: OmniOS names its releases after builds
+  (`r151054r`, then `r151054s`; its dev release is dated), and Fedora's
+  `45_Beta` becomes `45` at release. The index describes what the
+  vendor offers now; the aliases (`latest`, `lts`, `dev`) are the names
+  to use for "the current one".
 - **build**: the vendor's build id or serial.
 - **arch**: osinfo-db architecture names (`x86_64`, `aarch64`), not
   vendor spellings such as Ubuntu's `amd64`.
@@ -272,9 +284,9 @@ spec with typify and checks:
 - Only what a minimal, trusting client needs to find an image and
   ingest it is required; everything else is optional (`Option`, or a
   list with `#[serde(default)]`), so it can be dropped later without
-  breaking clients. Required: `DistroList.distros`; a distro's `id`,
-  `os_family` and `releases`; a release's `id`; a build list's
-  `distro`, `release` and `builds`; a build's `build` and `artifacts`;
+  breaking clients. Required: `DistroList.distros`; a distro's `id`
+  and `os_family`; `ImageList.images`; an image's `distro`, `release`
+  and `build`; a release's `id`; a build's `build` and `artifacts`;
   an artifact's `arch`, `format`, `compression` and `locations`; a
   location's `url`. Inside optional structures the fields that make
   them usable stay required (a digest's `algorithm` and `value`, a
@@ -285,10 +297,11 @@ spec with typify and checks:
 - Open enums, whose value sets are expected to grow (`ImageFormat`,
   `Compression`, `ChecksumFormat`, `SignatureKind`, `Alias`), accept
   and keep values a client does not know. In Rust they have an
-  `Other(String)` catch-all; in the schema they are `oneOf` a known
-  value or a string matching a pattern that excludes the known values
-  (typify turns a `not: {enum}` branch into an empty enum, so `not` is
-  not used). Generated clients need the `regress` crate for the pattern.
+  `Other(String)` catch-all; in the schema they are plain strings, whose
+  description lists the known values and what each means. They have no
+  `enum`, which would reject later values, and no `pattern`: a pattern
+  excluding the known values needs a lookahead, which Go's RE2 cannot
+  compile, so Go tooling would reject the whole document.
 - Closed enums (`OsFamily`, `LocationKind`, `DigestAlgorithm`,
   `Firmware`) reject unknown values; adding a value to one is a breaking
   change.
@@ -335,21 +348,15 @@ Breaking changes go to a new `v2/` tree published alongside `v1/`.
   resolved to, or a vendor list that could only be read in part
   (Debian's suites). Dropping such a release instead could move an
   alias, such as `latest`, without anyone noticing.
-- **Vaults**: where a vendor has a vault or archive (e.g.
-  `vault.almalinux.org`), the resolver checks it, and a build that has
-  moved there is listed in `archive.json`. The archive lists only the
-  final build of each end-of-life point release, not every historical
-  build.
-  **Open** for the vault work (2026-10-06):
-  - The generator's model of a distro is its releases' current build
-    lists only: `write_tree` never writes `archive.json`, and carrying a
-    vendor over from the previous tree does not read it. Archives must
-    be added to that model before any are produced, or they would be
-    dropped on the next run.
-  - The distro index lists only current releases, so an entirely
-    retired release (e.g. a major moved wholly to the vault) would have
-    an `archive.json` that nothing points to. Retired releases need to
-    be listed, e.g. with a flag on the release or a separate list.
+- **Vaults**: **Not built.** Builds that survive only in a vendor's
+  vault or archive (e.g. `vault.almalinux.org`) are not in the index,
+  and v1 has no file for them. Adding them later is a compatible change:
+  a new published file or field. Open questions for that work
+  (2026-10-06): the generator's model of a distro would have to carry
+  archived builds, or a vendor carried over after a failure would lose
+  them; and an entirely retired release (a major moved wholly to the
+  vault) would need to be listed somewhere, since the distro index
+  lists only current releases.
 - **Failures**: a failed resolver run opens an issue. Recorded vendor
   responses are kept as test fixtures. **Not built yet**: today a
   failure shows only as a red job, and tests use small inline excerpts

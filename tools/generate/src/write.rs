@@ -40,12 +40,11 @@ pub fn previous_builds<'a>(
 }
 
 /// The previous output's artifact for `url` in a distro, from any
-/// release's current or archived builds.
+/// release's builds.
 pub fn previous_artifact<'a>(previous: &'a Tree, distro: &str, url: &str) -> Option<&'a Artifact> {
     previous
         .releases
         .iter()
-        .chain(previous.archives.iter())
         .filter(|((d, _), _)| d == distro)
         .flat_map(|(_, list)| &list.builds)
         .flat_map(|b| &b.artifacts)

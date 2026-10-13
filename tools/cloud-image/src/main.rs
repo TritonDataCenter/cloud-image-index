@@ -482,29 +482,14 @@ fn index_client(base: &str) -> Result<client::Client> {
     Ok(client::Client::new_with_client(base, http_client()?))
 }
 
-/// The distro `id`, checked against what the index lists before it is
-/// fetched: the index's file host answers a missing file with an HTML
-/// page, which a client can only report as an unreadable response.
-async fn fetch_distro(
-    index: &client::Client,
-    base: &str,
-    id: &str,
-) -> Result<client::types::Distro> {
-    let distros = index
-        .distro_list()
-        .await
-        .map_err(|e| anyhow::anyhow!("{e}"))
-        .with_context(|| format!("read the index at {base}"))?
-        .into_inner();
-    if !distros.distros.iter().any(|d| d.id == id) {
-        let ids: Vec<&str> = distros.distros.iter().map(|d| d.id.as_str()).collect();
-        anyhow::bail!("the index has no distro {id:?}; it has: {}", ids.join(", "));
-    }
+/// The index's `v1/images.json`: every current build, with its distro and
+/// release.
+async fn image_list(index: &client::Client, base: &str) -> Result<client::types::ImageList> {
     Ok(index
-        .distro(id)
+        .images()
         .await
         .map_err(|e| anyhow::anyhow!("{e}"))
-        .with_context(|| format!("read {id} from the index at {base}"))?
+        .with_context(|| format!("read the image list of the index at {base}"))?
         .into_inner())
 }
 
@@ -516,12 +501,7 @@ async fn available(
     base: &str,
     only: Option<&str>,
 ) -> Result<Vec<import::Available>> {
-    let list = index
-        .images()
-        .await
-        .map_err(|e| anyhow::anyhow!("{e}"))
-        .with_context(|| format!("read the image list of the index at {base}"))?
-        .into_inner();
+    let list = image_list(index, base).await?;
     let (rows, notes) = import::avail_rows(&list, only)?;
     for note in notes {
         eprintln!("note: {note}");
@@ -604,6 +584,8 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
     // Owned, since `args` is updated below when it names a UUID.
     let base = &args.index.trim_end_matches('/').to_string();
     let index = client::Client::new_with_client(base, http.clone());
+    // Everything the import needs is in the one list.
+    let list = image_list(&index, base).await?;
     // A UUID from `avail` names a release's current image, default variant.
     let requested_uuid = uuid::Uuid::parse_str(&args.distro).ok();
     if let Some(uuid) = requested_uuid {
@@ -612,7 +594,7 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
             "an image UUID names the release and variant itself; give no release \
              or --variant with it"
         );
-        let rows = available(&index, base, None).await?;
+        let (rows, _) = import::avail_rows(&list, None)?;
         let row = import::find_by_uuid(&rows, uuid).with_context(|| {
             format!(
                 "no image in the index has UUID {uuid} (see `cloud-image avail`; \
@@ -623,7 +605,7 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         args.distro = row.distro.clone();
         args.release = Some(row.release.clone());
     }
-    let distro = fetch_distro(&index, base, &args.distro).await?;
+    let (distro, release_builds) = import::distro_from_images(&list, &args.distro)?;
     let Some(release) = args.release.as_deref() else {
         anyhow::bail!(
             "name a release or alias of {} to import:\n{}",
@@ -631,20 +613,10 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
             import::release_choices(&distro).trim_end()
         );
     };
-    let builds = match import::release_request(&distro, release)? {
-        import::Requested::Alias("latest") => index.alias_latest(&args.distro).await,
-        import::Requested::Alias("lts") => index.alias_lts(&args.distro).await,
-        import::Requested::Alias("dev") => index.alias_dev(&args.distro).await,
-        import::Requested::Alias(other) => {
-            anyhow::bail!("alias {other:?} is not one this client knows how to fetch")
-        }
-        import::Requested::Release(release) => index.release_builds(&args.distro, release).await,
-    }
-    .map_err(|e| anyhow::anyhow!("{e}"))
-    .with_context(|| format!("read {} {release} from the index at {base}", args.distro))?
-    .into_inner();
+    let request = import::release_request(&distro, release)?;
+    let builds = import::requested_builds(&distro, &release_builds, request)?;
 
-    let (build, artifact) = import::choose_artifact(&builds, ARCH, args.variant.as_deref())?;
+    let (build, artifact) = import::choose_artifact(builds, ARCH, args.variant.as_deref())?;
     let format = import::source_format(&artifact.format, &artifact.compression)?;
     let url = import::primary_url(artifact)?;
     let info = import::image_info(&distro, &builds.release, build, artifact);

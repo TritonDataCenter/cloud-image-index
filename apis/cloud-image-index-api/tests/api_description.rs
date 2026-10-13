@@ -8,7 +8,8 @@
 //! allow a literal path segment and a variable one at the same level,
 //! so the tree keeps them apart (`distros/{distro}`, `aliases/...`,
 //! `releases/{release}`). Check that Dropshot accepts the layout and
-//! that every file in the tree is in the generated OpenAPI document.
+//! that the generated OpenAPI document has exactly the published files:
+//! the per-distro files are part of the tree but not of the format.
 
 use cloud_image_index_api::openapi;
 
@@ -19,20 +20,10 @@ fn stub_api_description_builds_with_file_tree_paths() -> Result<(), String> {
         .get("paths")
         .and_then(|p| p.as_object())
         .ok_or("OpenAPI document has no paths")?;
-    for expected in [
-        "/v1/index.json",
-        "/v1/openapi.json",
-        "/v1/images.json",
-        "/v1/distros/{distro}/index.json",
-        "/v1/distros/{distro}/aliases/latest.json",
-        "/v1/distros/{distro}/aliases/lts.json",
-        "/v1/distros/{distro}/aliases/dev.json",
-        "/v1/distros/{distro}/releases/{release}/index.json",
-        "/v1/distros/{distro}/releases/{release}/archive.json",
-    ] {
+    for expected in ["/v1/index.json", "/v1/openapi.json", "/v1/images.json"] {
         assert!(paths.contains_key(expected), "missing path {expected}");
     }
-    assert_eq!(paths.len(), 9, "unexpected extra paths: {:?}", paths.keys());
+    assert_eq!(paths.len(), 3, "unexpected extra paths: {:?}", paths.keys());
     Ok(())
 }
 
