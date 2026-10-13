@@ -31,7 +31,7 @@ const FIXTURES: &str = "../../tests/typify-client/fixtures/v1.0";
 const FIXTURE_SHA256: &[(&str, &str)] = &[
     (
         "openapi.json",
-        "5cd28bc45f909a03a89a06748e00bbd3a7e81eb62e2c949808fb0520cfcea9e9",
+        "75efdfff8896d577819e19d6433c4c3c73840b017565539a5a18dde55448b01d",
     ),
     (
         "images.json",
