@@ -86,6 +86,10 @@ macro_rules! open_enum {
                     lines.iter().map(|l| l.trim()).collect::<Vec<_>>().join(" ")
                 };
                 let mut description = join(&[$($doc),*]);
+                description.push_str(
+                    "\n\nLater versions of the index may add values; clients \
+                     should accept and keep values they do not know.",
+                );
                 description.push_str("\n\nKnown values:\n");
                 $(
                     let value = serde_json::to_value($ty::$variant)
@@ -144,10 +148,10 @@ pub enum OsFamily {
 // ---------------------------------------------------------------------
 
 /// `v1/images.json`: every current build in the index, one entry each,
-/// so a client can list or search them with a single request. It repeats
-/// what the distro and release files say: the distros in `v1/index.json`
-/// order, each distro's releases in its order, and each release's
-/// current builds newest first. Archived builds are left out.
+/// so a client can list or search them with a single request. Entries
+/// come in `v1/index.json`'s distro order, then each distro's releases
+/// newest first, then each release's current builds newest first.
+/// Archived builds are left out.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct ImageList {
     pub images: Vec<Image>,
@@ -158,9 +162,8 @@ pub struct ImageList {
 pub struct Image {
     /// The distro, as `v1/index.json` lists it.
     pub distro: DistroSummary,
-    /// The release, as the distro's `index.json` lists it.
+    /// The release the build belongs to.
     pub release: Release,
-    /// The build, as the release's `index.json` lists it.
     pub build: Build,
 }
 
@@ -203,15 +206,16 @@ pub struct Distro {
     /// this time, so an old value means the vendor's data is stale.
     pub checked_at: Option<DateTime<Utc>>,
     /// The vendor's name for the channel the `dev` alias follows
-    /// (e.g. `bloody`, `sid`, `rawhide`, `edge`). Null when the vendor
-    /// has no development channel in the index.
+    /// (e.g. `bloody`, `beta`, `rc`). Null when the vendor has no
+    /// development channel in the index.
     pub dev_channel: Option<String>,
     pub releases: Vec<Release>,
 }
 
-/// One release of a distro. A release is the vendor's major release or
-/// series (`noble`, `9`, `trixie`); point releases are recorded on
-/// builds.
+/// One release of a distro. A release is usually the vendor's major
+/// release or series (`noble`, `9`, `trixie`), with point releases
+/// recorded on builds; FreeBSD lists each supported point release as a
+/// release (`14.4`, `15.1`).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Release {
     /// Release token, also the release's directory name (e.g. `noble`,
@@ -224,9 +228,7 @@ pub struct Release {
     /// Human-facing title (e.g. `24.04 LTS Noble Numbat`).
     pub title: Option<String>,
     /// Aliases this release currently holds. Each alias is held by at
-    /// most one release of a distro, and has a file of the same name
-    /// (`latest.json`, `lts.json`, `dev.json`) in the distro's
-    /// `aliases/` directory.
+    /// most one release of a distro.
     #[serde(default)]
     pub aliases: Vec<Alias>,
     /// The vendor's end-of-support date, when published.
@@ -244,8 +246,8 @@ open_enum! {
         /// The newest release the vendor itself labels long-term
         /// support. Absent for vendors that do not use that label.
         Lts,
-        /// The vendor's development channel (see the distro's
-        /// `dev_channel`).
+        /// The release the vendor's development channel currently
+        /// resolves to.
         Dev,
     }
 }
@@ -284,7 +286,7 @@ pub struct BuildList {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Build {
     /// The vendor's build id or serial (e.g. `20260927`,
-    /// `9.8-20260525.0`, `v1.14.2`).
+    /// `9.8-20260525.0`, `1.14.2`).
     pub build: String,
     /// Vendor point release this build belongs to, for distros that
     /// have them (e.g. `9.8`).
@@ -364,9 +366,9 @@ open_enum! {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Location {
     pub url: String,
-    /// Which kind of location this is. The index always says; clients
-    /// should not depend on it, since a minimal client just downloads
-    /// the first location.
+    /// Which kind of location this is. The index always says, and every
+    /// artifact has a `primary` location; a minimal client can download
+    /// that one and ignore the rest.
     pub kind: Option<LocationKind>,
     /// Whether the vendor answers `url` with a redirect to a different
     /// host: a mirror network, or a CDN such as GitHub's asset host.
@@ -400,7 +402,9 @@ pub struct Integrity {
     #[serde(default)]
     pub signatures: Vec<Signature>,
     /// HTTP metadata the vendor's server reported for the file. Useful
-    /// mostly when there are no digests.
+    /// mostly when there are no digests. Its fields are null when the
+    /// file redirects off-host (see the location's
+    /// `redirects_off_host`), since each mirror reports its own.
     pub http: Option<HttpMetadata>,
 }
 
@@ -440,7 +444,8 @@ open_enum! {
         Gnu,
         /// BSD style: `SHA256 (<filename>) = <hex>` per line.
         Bsd,
-        /// The file contains only the hex hash.
+        /// The hash is the file's first whitespace-separated token;
+        /// anything after it is not a filename to match.
         Bare,
         /// Hash appears in a vendor document with no generic format (for
         /// example a JSON feed or an HTML page); re-checking it needs
@@ -554,8 +559,6 @@ pub trait CloudImageIndexApi {
     ) -> Result<HttpResponseOk<DistroList>, HttpError>;
 
     /// Every current build in the index, with its distro and release.
-    ///
-    /// The same builds as the release files, in one request.
     #[endpoint { method = GET, path = "/v1/images.json" }]
     async fn images(
         rqctx: RequestContext<Self::Context>,

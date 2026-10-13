@@ -80,5 +80,9 @@ fn schema_is_a_string_that_lists_the_known_values() {
     for value in ["none", "gzip", "xz", "zstd", "bzip2"] {
         assert!(description.contains(&format!("`{value}`")), "{description}");
     }
+    assert!(
+        description.contains("Later versions of the index may add values"),
+        "{description}"
+    );
     assert_eq!(Compression::schema_name(), "Compression");
 }

@@ -580,7 +580,7 @@
         "osinfo": null
       },
       "build": {
-        "build": "v1.14.2",
+        "build": "1.14.2",
         "point_release": null,
         "published_at": "2026-09-29T20:44:07Z",
         "first_seen": "2026-10-05T17:00:00Z",
