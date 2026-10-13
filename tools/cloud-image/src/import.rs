@@ -910,16 +910,16 @@ pub fn mark_installed(rows: &mut [Available], installed: &[Installed]) {
     }
 }
 
-/// `rows` as a table in the style of `imgadm avail`. An INSTALLED column
-/// (`yes` or `no`) is added when the rows say whether they are installed.
-/// Every row has every field, `-` when empty, so that scripts splitting on
-/// whitespace find each column in the same place.
-pub fn avail_table(rows: &[Available], header: bool) -> String {
-    let known = rows.iter().any(|r| r.installed.is_some());
+/// `rows` as a table in the style of `imgadm avail`. With
+/// `installed_column` (on SmartOS) an INSTALLED column says `yes` or `no`,
+/// or `-` when the local image store could not be read. Every row has
+/// every field, `-` when empty, so that scripts splitting on whitespace
+/// find each column in the same place.
+pub fn avail_table(rows: &[Available], header: bool, installed_column: bool) -> String {
     let mut lines: Vec<Vec<String>> = Vec::new();
     if header {
         let mut names = vec!["UUID", "NAME", "VERSION", "OS", "ALIASES", "CHECK"];
-        if known {
+        if installed_column {
             names.push("INSTALLED");
         }
         lines.push(names.into_iter().map(str::to_string).collect());
@@ -937,17 +937,17 @@ pub fn avail_table(rows: &[Available], header: bool) -> String {
             },
             row.check.as_str().to_string(),
         ];
-        if known {
-            let mark = if row.installed == Some(true) {
-                "yes"
-            } else {
-                "no"
+        if installed_column {
+            let mark = match row.installed {
+                Some(true) => "yes",
+                Some(false) => "no",
+                None => "-",
             };
             cells.push(mark.to_string());
         }
         lines.push(cells);
     }
-    let mut widths = vec![0; if known { 7 } else { 6 }];
+    let mut widths = vec![0; if installed_column { 7 } else { 6 }];
     for line in &lines {
         for (width, cell) in widths.iter_mut().zip(line) {
             *width = (*width).max(cell.len());
@@ -1738,10 +1738,16 @@ mod tests {
     #[test]
     fn the_installed_column_appears_when_known() -> anyhow::Result<()> {
         let (mut rows, _) = avail_rows(&images(), Some("ubuntu"))?;
-        assert!(!avail_table(&rows, true).contains("INSTALLED"));
+        assert!(!avail_table(&rows, true, false).contains("INSTALLED"));
         assert_eq!(avail_json(&rows)[0]["installed"], serde_json::Value::Null);
+        // On SmartOS the column is always there, so scripts find each
+        // column in the same place: `-` when the store could not be read.
+        let unread = avail_table(&rows, true, true);
+        let lines: Vec<&str> = unread.lines().collect();
+        assert!(lines[0].ends_with("CHECK   INSTALLED"), "{unread}");
+        assert!(lines[1].ends_with("vendor  -"), "{unread}");
         mark_installed(&mut rows, &parse_imgadm_list(IMGADM_LIST)?);
-        let table = avail_table(&rows, true);
+        let table = avail_table(&rows, true, true);
         let lines: Vec<&str> = table.lines().collect();
         assert!(lines[0].ends_with("CHECK   INSTALLED"), "{table}");
         assert!(lines[1].ends_with("vendor  yes"), "{table}");
@@ -1783,14 +1789,14 @@ mod tests {
         let uuid = ubuntu.uuid.map(|u| u.to_string()).unwrap_or_default();
         let rows = [ubuntu, talos];
         assert_eq!(
-            avail_table(&rows, true),
+            avail_table(&rows, true, false),
             format!(
                 "UUID                                  NAME                     VERSION   OS     ALIASES     CHECK\n\
                  {uuid}  ubuntu-resolute-nocloud  20260927  linux  latest,lts  vendor\n\
                  -                                     talos-1.14-nocloud       1.14.2    linux  latest      none\n"
             )
         );
-        assert!(!avail_table(&rows, false).contains("UUID"));
+        assert!(!avail_table(&rows, false, false).contains("UUID"));
     }
 
     /// Every row has the same number of fields, so `awk` or `cut` find the
@@ -1798,9 +1804,9 @@ mod tests {
     #[test]
     fn every_row_has_every_field() -> anyhow::Result<()> {
         let (mut rows, _) = avail_rows(&images(), None)?;
-        for table in [avail_table(&rows, false), {
+        for table in [avail_table(&rows, false, false), {
             mark_installed(&mut rows, &parse_imgadm_list(IMGADM_LIST)?);
-            avail_table(&rows, false)
+            avail_table(&rows, false, true)
         }] {
             let counts: Vec<usize> = table
                 .lines()
@@ -1811,7 +1817,7 @@ mod tests {
                 "{counts:?}\n{table}"
             );
         }
-        let noble = avail_table(&rows, false)
+        let noble = avail_table(&rows, false, true)
             .lines()
             .find(|l| l.contains("ubuntu-noble-nocloud"))
             .map(str::to_string)

@@ -62,7 +62,8 @@ enum Command {
     /// the import would be checked: `vendor` (the vendor's checksum file
     /// confirms the index), `index` (the index's digest alone) or `none`;
     /// the last two need `import --allow-unverified`. On SmartOS, INSTALLED
-    /// marks the images already in the local image store.
+    /// marks the images already in the local image store (`-` when it
+    /// could not be read).
     Avail(AvailArgs),
     /// Build a distro's image from the index and install it with imgadm.
     ///
@@ -537,7 +538,8 @@ async fn avail_cmd(args: AvailArgs) -> Result<()> {
     let base = args.index.trim_end_matches('/');
     let index = index_client(base)?;
     let mut rows = available(&index, base, args.distro.as_deref()).await?;
-    if nocloud_import::host::is_smartos()? {
+    let smartos = nocloud_import::host::is_smartos()?;
+    if smartos {
         match installed_images().await {
             Ok(installed) => import::mark_installed(&mut rows, &installed),
             Err(e) => eprintln!("note: not showing which images are installed: {e:#}"),
@@ -549,7 +551,7 @@ async fn avail_cmd(args: AvailArgs) -> Result<()> {
             serde_json::to_string_pretty(&import::avail_json(&rows))?
         );
     } else {
-        print!("{}", import::avail_table(&rows, !args.no_header));
+        print!("{}", import::avail_table(&rows, !args.no_header, smartos));
     }
     Ok(())
 }
