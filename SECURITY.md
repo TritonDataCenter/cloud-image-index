@@ -1,6 +1,6 @@
 # Security
 
-Please report security issues to <security@smartos.org>, not in a public
+Please report security issues to <security@tritondatacenter.com>, not in a public
 issue or pull request.
 
 That covers anything in this repository: the published index (for
