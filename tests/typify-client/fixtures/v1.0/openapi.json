@@ -14,7 +14,7 @@
     },
     "schemas": {
       "Alias": {
-        "description": "A release alias.\n\nLater versions of the index may add values; clients should accept and keep values they do not know.\n\nKnown values:\n\n- `latest`: The newest generally-available release. Never a pre-release.\n- `lts`: The newest release the vendor itself labels long-term support. Absent for vendors that do not use that label.\n- `dev`: The release the vendor's development channel currently resolves to.",
+        "description": "A release alias.\n\nLater versions of the index may add values; clients must accept values they do not know.\n\nKnown values:\n\n- `latest`: The newest generally-available release. Never a pre-release.\n- `lts`: The newest release the vendor itself labels long-term support. Absent for vendors that do not use that label.\n- `dev`: The vendor's development release: what its development channel resolves to, or its newest pre-release.",
         "type": "string"
       },
       "Artifact": {
@@ -60,7 +60,7 @@
             "nullable": true
           },
           "locations": {
-            "description": "Where the file can be downloaded. Every build has a `primary` location.",
+            "description": "Where the file can be downloaded. Always includes a `primary` location.",
             "items": {
               "$ref": "#/components/schemas/Location"
             },
@@ -79,7 +79,7 @@
             "type": "boolean"
           },
           "variant": {
-            "description": "The vendor's flavour of the image (e.g. `server`, `base`, `lvm`, `genericcloud`, `nocloud`). The same characters as a build id.",
+            "description": "The vendor's flavour of the image (e.g. `server`, `base`, `lvm`, `genericcloud`, `nocloud`). Follows the same rule as a build's `build`.",
             "nullable": true,
             "type": "string"
           }
@@ -139,7 +139,7 @@
         "type": "object"
       },
       "ChecksumFormat": {
-        "description": "Layout of a vendor document that contains a hash.\n\nLater versions of the index may add values; clients should accept and keep values they do not know.\n\nKnown values:\n\n- `gnu`: GNU coreutils style: `<hex>  [*]<filename>` per line.\n- `bsd`: BSD style: `SHA256 (<filename>) = <hex>` per line.\n- `bare`: The hash is the file's first whitespace-separated token; anything after it is not a filename to match.\n- `vendor_document`: Hash appears in a vendor document with no generic format (for example a JSON feed or an HTML page); re-checking it needs vendor-specific parsing.",
+        "description": "Layout of a vendor document that contains a hash.\n\nLater versions of the index may add values; clients must accept values they do not know.\n\nKnown values:\n\n- `gnu`: GNU coreutils style: `<hex>  [*]<filename>` per line.\n- `bsd`: BSD style: `SHA256 (<filename>) = <hex>` per line.\n- `bare`: The hash is the file's first whitespace-separated token; anything after it is not a filename to match.\n- `vendor_document`: Hash appears in a vendor document with no generic format (for example a JSON feed or an HTML page); re-checking it needs vendor-specific parsing.",
         "type": "string"
       },
       "ChecksumSource": {
@@ -164,7 +164,7 @@
         "type": "object"
       },
       "Compression": {
-        "description": "Compression applied to the file as downloaded.\n\nLater versions of the index may add values; clients should accept and keep values they do not know.\n\nKnown values:\n\n- `none`\n- `gzip`\n- `xz`\n- `zstd`\n- `bzip2`",
+        "description": "Compression applied to the file as downloaded.\n\nLater versions of the index may add values; clients must accept values they do not know.\n\nKnown values:\n\n- `none`\n- `gzip`\n- `xz`\n- `zstd`\n- `bzip2`",
         "type": "string"
       },
       "Digest": {
@@ -194,7 +194,7 @@
         "type": "object"
       },
       "DigestAlgorithm": {
-        "description": "Hash algorithm of a digest.\n\nLater versions of the index may add values; clients should accept and keep values they do not know.\n\nKnown values:\n\n- `sha256`\n- `sha512`",
+        "description": "Hash algorithm of a digest.\n\nLater versions of the index may add values; clients must accept values they do not know.\n\nKnown values:\n\n- `sha256`\n- `sha512`",
         "type": "string"
       },
       "DistroList": {
@@ -216,7 +216,7 @@
         "description": "One distro as listed in `v1/index.json`.",
         "properties": {
           "checked_at": {
-            "description": "When the index last read this distro from its vendor successfully (UTC). A run that fails for a vendor keeps its previous data and this time, so an old value means the vendor's data is stale.",
+            "description": "When the index last regenerated this distro from its vendor (UTC). Facts a run could not read, such as a checksum file that did not answer, are carried over from the previous run. A run that fails for a vendor keeps its previous data and this time, so an old value means the vendor's data is stale.",
             "format": "date-time",
             "nullable": true,
             "type": "string"
@@ -226,7 +226,7 @@
             "type": "string"
           },
           "id": {
-            "description": "Our short name for the distro, also its directory name (e.g. `ubuntu`, `rocky`, `centos-stream`).",
+            "description": "Our short name for the distro, also its directory name (e.g. `ubuntu`, `rocky`, `centos-stream`). Follows the same rule as a build's `build`.",
             "type": "string"
           },
           "name": {
@@ -264,7 +264,7 @@
         "type": "object"
       },
       "Firmware": {
-        "description": "Firmware an image boots with.\n\nLater versions of the index may add values; clients should accept and keep values they do not know.\n\nKnown values:\n\n- `bios`\n- `uefi`",
+        "description": "Firmware an image boots with.\n\nLater versions of the index may add values; clients must accept values they do not know.\n\nKnown values:\n\n- `bios`\n- `uefi`",
         "type": "string"
       },
       "HttpMetadata": {
@@ -314,11 +314,11 @@
         "type": "object"
       },
       "ImageFormat": {
-        "description": "Disk image format of the file, once decompressed.\n\nLater versions of the index may add values; clients should accept and keep values they do not know.\n\nKnown values:\n\n- `qcow2`\n- `raw`\n- `vmdk`",
+        "description": "Disk image format of the file, once decompressed.\n\nLater versions of the index may add values; clients must accept values they do not know.\n\nKnown values:\n\n- `qcow2`\n- `raw`\n- `vmdk`",
         "type": "string"
       },
       "ImageList": {
-        "description": "`v1/images.json`: every current build in the index, one entry each, so a client can list or search them with a single request. Entries come in `v1/index.json`'s distro order, then each distro's releases newest first, then each release's current builds newest first. Archived builds are left out.",
+        "description": "`v1/images.json`: every current build in the index, one entry each, so a client can list or search them with a single request. Entries come in `v1/index.json`'s distro order, then each distro's releases in the order the vendor lists them, then each release's current builds newest first. Archived builds are left out. Pick a release by its aliases, not by its position: where a development release sorts differs between vendors.",
         "properties": {
           "images": {
             "items": {
@@ -390,7 +390,7 @@
         "type": "object"
       },
       "LocationKind": {
-        "description": "Which kind of download location this is.\n\nLater versions of the index may add values; clients should accept and keep values they do not know.\n\nKnown values:\n\n- `primary`: The vendor's main download tree.\n- `vault`: A vendor archive of builds no longer in the main tree.\n- `mirror`: A mirror the vendor names.",
+        "description": "Which kind of download location this is.\n\nLater versions of the index may add values; clients must accept values they do not know.\n\nKnown values:\n\n- `primary`: The vendor's main download tree.\n- `vault`: A vendor archive of builds no longer in the main tree.\n- `mirror`: A mirror the vendor names.",
         "type": "string"
       },
       "OsFamily": {
@@ -437,7 +437,7 @@
             "type": "string"
           },
           "id": {
-            "description": "Release token, also the release's directory name (e.g. `noble`, `9`, `1.14`). The same characters as a build id. For vendors that publish channels rather than releases it is what the channel resolved to (OmniOS `r151058`, Arch `rolling`).",
+            "description": "Release token, also the release's directory name (e.g. `noble`, `9`, `1.14`). Follows the same rule as a build's `build`. For vendors that publish channels rather than releases it is what the channel resolved to (OmniOS `r151058`, Arch `rolling`).",
             "type": "string"
           },
           "osinfo": {
@@ -493,7 +493,7 @@
         "type": "object"
       },
       "SignatureKind": {
-        "description": "Kind of vendor signature.\n\nLater versions of the index may add values; clients should accept and keep values they do not know.\n\nKnown values:\n\n- `pgp_detached`: Detached OpenPGP signature.\n- `pgp_clearsigned`: OpenPGP clear-signed document; `url` and `signs` are the same.",
+        "description": "Kind of vendor signature.\n\nLater versions of the index may add values; clients must accept values they do not know.\n\nKnown values:\n\n- `pgp_detached`: Detached OpenPGP signature.\n- `pgp_clearsigned`: OpenPGP clear-signed document; `url` and `signs` are the same.",
         "type": "string"
       }
     }

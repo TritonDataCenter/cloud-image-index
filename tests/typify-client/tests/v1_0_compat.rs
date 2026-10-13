@@ -5,13 +5,17 @@
 // Copyright 2026 Edgecast Cloud LLC.
 
 //! The 1.0 promise: within `v1/`, the format changes only compatibly.
-//! `fixtures/v1.0/` holds the published files as 1.0 shipped them, and
-//! is never regenerated. A client generated from that OpenAPI document
-//! must read what the index writes today, and a client generated from
-//! today's document must read what 1.0 wrote.
+//! `fixtures/v1.0/` holds 1.0's OpenAPI document and the examples as
+//! they were at 1.0, and is never regenerated (the API crate's
+//! `v1_0_schema` tests pin it). A client generated from that document
+//! must read today's examples, and a client generated from today's
+//! document must read the 1.0 examples.
 //!
-//! The documents read today are the examples, which the API crate's
-//! tests keep equal in shape to what the generator writes.
+//! The examples are written by hand; the API crate's tests check that
+//! they parse with today's types and pass the tree checks. Parsing
+//! cannot see a renamed or retyped optional field, which a client
+//! reads as absent; the `v1_0_schema` tests compare the schemas for
+//! that.
 
 use std::path::Path;
 
