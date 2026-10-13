@@ -68,9 +68,14 @@ main() {
         rm -f "$new"
         fail "the downloaded cloud-image does not run"
     }
-    "$new" man --out "$prefix/man/man8"
-    gzip -f "$prefix/man/man8/cloud-image.8"
+    # The man page is written beside the download and moved into place
+    # only after the binary, so a failure leaves both as they were.
+    if ! { "$new" man --out "$tmp" && gzip -f "$tmp/cloud-image.8"; }; then
+        rm -f "$new"
+        fail "the downloaded cloud-image could not write its man page"
+    fi
     mv -f "$new" "$prefix/sbin/cloud-image"
+    mv -f "$tmp/cloud-image.8.gz" "$prefix/man/man8/cloud-image.8.gz"
 
     echo "Installed $version as $prefix/sbin/cloud-image; see cloud-image(8)."
 }

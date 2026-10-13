@@ -80,4 +80,6 @@ git push origin v1.0.1
 ```
 
 The illumos workflow builds the binary and publishes it, with
-`SHA256SUMS` and `install.sh`, as a GitHub release.
+`SHA256SUMS` and `install.sh`, as a GitHub release, but only if the
+tagged commit is on `main`, passes `ci.yml`'s checks, and the tag
+matches the crate's version.

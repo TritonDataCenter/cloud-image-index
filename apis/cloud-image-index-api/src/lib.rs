@@ -295,8 +295,8 @@ pub struct BuildList {
 pub struct Build {
     /// The vendor's build id or serial (e.g. `20260927`,
     /// `9.8-20260525.0`, `1.14.2`). At most 64 characters from
-    /// `[A-Za-z0-9._-]`, never containing `..`, so clients can name files
-    /// and directories after it.
+    /// `[A-Za-z0-9._-]`, never `.`, never containing `..` and not starting
+    /// with `-`, so clients can name files and directories after it.
     pub build: String,
     /// Vendor point release this build belongs to, for distros that
     /// have them (e.g. `9.8`).

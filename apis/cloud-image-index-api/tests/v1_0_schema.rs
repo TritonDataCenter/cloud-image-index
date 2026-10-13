@@ -7,7 +7,8 @@
 //! The 1.0 promise, checked on the schema: within `v1/`, the format only
 //! gains optional fields and open-enum values. Compared with the OpenAPI
 //! document 1.0 published (`tests/typify-client/fixtures/v1.0/`), every
-//! schema and property must still be there with the same shape, no
+//! published path must answer with the same schema, every schema and
+//! property must still be there with the same shape, no
 //! field may become required or stop being required, `OsFamily` keeps
 //! its values, and each open enum keeps the values it had. Descriptions
 //! may change.
@@ -128,6 +129,19 @@ fn breaks(then: &Value, now: &Value) -> Vec<String> {
             }
             continue;
         }
+        // The schema's own keys (type, nullable, allOf ...), apart from
+        // its fields, which are compared one by one below.
+        let own = |s: &Value| {
+            let mut s = shape(s);
+            if let Some(map) = s.as_object_mut() {
+                map.remove("properties");
+                map.remove("required");
+            }
+            s
+        };
+        if own(was) != own(is) {
+            problems.push(format!("{name}: shape changed"));
+        }
         if required(was) != required(is) {
             problems.push(format!(
                 "{name}: required was {:?}, is {:?}",
@@ -151,6 +165,19 @@ fn breaks(then: &Value, now: &Value) -> Vec<String> {
             if required(is).contains(field) {
                 problems.push(format!("{name}.{field}: added as required"));
             }
+        }
+    }
+    // Each published path, and what it answers with.
+    let paths = |doc: &Value| doc["paths"].as_object().cloned().unwrap_or_default();
+    let new_paths = paths(now);
+    for (path, was) in &paths(then) {
+        let response = |p: &Value| shape(&p["get"]["responses"]["200"]);
+        match new_paths.get(path) {
+            None => problems.push(format!("{path}: removed")),
+            Some(is) if response(was) != response(is) => {
+                problems.push(format!("{path}: response changed"))
+            }
+            Some(_) => {}
         }
     }
     problems
@@ -253,6 +280,32 @@ fn breaking_changes_are_reported() -> Result<(), String> {
             Box::new(|v| {
                 if let Some(Value::Object(s)) = v.pointer_mut(SCHEMAS) {
                     s.remove("OsinfoRef");
+                }
+            }),
+        ),
+        (
+            "/v1/images.json: response changed",
+            Box::new(|v| {
+                let at =
+                    "/paths/~1v1~1images.json/get/responses/200/content/application~1json/schema";
+                if let Some(schema) = v.pointer_mut(at) {
+                    *schema = serde_json::json!({"$ref": "#/components/schemas/DistroList"});
+                }
+            }),
+        ),
+        (
+            "/v1/index.json: removed",
+            Box::new(|v| {
+                if let Some(Value::Object(paths)) = v.pointer_mut("/paths") {
+                    paths.remove("/v1/index.json");
+                }
+            }),
+        ),
+        (
+            "DistroSummary: shape changed",
+            Box::new(|v| {
+                if let Some(s) = v.pointer_mut(&format!("{SCHEMAS}/DistroSummary")) {
+                    s["nullable"] = true.into();
                 }
             }),
         ),
