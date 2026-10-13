@@ -31,6 +31,11 @@ cloud-init's NoCloud datasource. The image says so with the tag
 `org.smartos:cloudinit_datasource` set to `nocloud`, and asks for UEFI
 boot and virtio disks and network.
 
+A few images in the index have no cloud-init datasource (SmartOS
+itself, as a guest). They import the same way, but a guest made from
+one does not read the configuration below; `avail` and `import` say so
+in a note.
+
 ## How a guest gets its configuration
 
 Each time a VM made from one of these images starts, `vmadm` writes a

@@ -628,6 +628,12 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         info.vendor, info.series, info.version
     );
     println!("Source:  {url}");
+    if !import::reads_nocloud(artifact) {
+        eprintln!(
+            "note: {}",
+            import::without_nocloud_note(&info.vendor, &info.series)
+        );
+    }
     if import::needs_allow_unverified(&digests) && !args.allow_unverified {
         if digests.is_empty() {
             anyhow::bail!(

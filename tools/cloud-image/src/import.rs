@@ -310,6 +310,20 @@ pub async fn confirm_with_vendor(
     Ok((expected, notes))
 }
 
+/// Whether the image reads its configuration with cloud-init's NoCloud
+/// datasource, which is how SmartOS gives a bhyve guest its metadata.
+pub fn reads_nocloud(artifact: &Artifact) -> bool {
+    artifact.datasources.iter().any(|d| d == "nocloud")
+}
+
+/// What to tell someone about to use an image that does not read NoCloud.
+pub fn without_nocloud_note(distro: &str, release: &str) -> String {
+    format!(
+        "{distro} {release} has no cloud-init datasource: an instance of it \
+         will not read its configuration (SSH keys, user-data) from metadata"
+    )
+}
+
 /// How the built image is named and described, following tritonadm's
 /// nocloud images (`<distro>-<release>-nocloud`, version = the build).
 /// A variant other than the vendor's default is appended to the version
@@ -333,16 +347,26 @@ pub fn image_info(distro: &Distro, release: &str, build: &Build, artifact: &Arti
         (Some(variant), Some(false) | None) => format!("{}-{variant}", build.build),
         _ => build.build.clone(),
     };
+    let nocloud = reads_nocloud(artifact);
+    let description = if nocloud {
+        format!(
+            "{title} CloudInit NoCloud compatible image. Built to run on bhyve virtual machines."
+        )
+    } else {
+        format!(
+            "{title} image, with no cloud-init datasource. Built to run on bhyve virtual machines."
+        )
+    };
     ImageInfo {
         vendor: distro.id.clone(),
         series: release.to_string(),
         version,
         os: os.to_string(),
-        description: format!(
-            "{title} CloudInit NoCloud compatible image. Built to run on bhyve virtual machines."
-        ),
+        description,
         homepage: distro.homepage.clone().unwrap_or_default(),
-        ssh_key: artifact.ssh_key_injection.unwrap_or(true),
+        // When the index does not say, a NoCloud image takes keys from
+        // metadata, as cloud-init does by default.
+        ssh_key: artifact.ssh_key_injection.unwrap_or(nocloud),
     }
 }
 
@@ -416,6 +440,8 @@ pub struct Available {
     /// Whether the local image store has it; `None` when the store was
     /// not read (off SmartOS).
     pub installed: Option<bool>,
+    /// Whether the image reads NoCloud (see [`reads_nocloud`]).
+    pub nocloud: bool,
 }
 
 /// The image an import of the release in `builds` would produce, with the
@@ -440,6 +466,7 @@ pub fn available(distro: &Distro, builds: &BuildList) -> Result<Available> {
         check: Check::of(&digests),
         uuid: index_uuid(&digests),
         installed: None,
+        nocloud: reads_nocloud(artifact),
     })
 }
 
@@ -464,7 +491,12 @@ pub fn avail_rows(list: &ImageList, only: Option<&str>) -> Result<(Vec<Available
         }
         let (distro, builds) = one_image(image);
         match available(&distro, &builds) {
-            Ok(row) => rows.push(row),
+            Ok(row) => {
+                if !row.nocloud {
+                    notes.push(without_nocloud_note(&row.distro, &row.release));
+                }
+                rows.push(row);
+            }
             Err(e) => notes.push(format!(
                 "leaving out {} {}: {e:#}",
                 image.distro.id, image.release.id
@@ -834,6 +866,75 @@ mod tests {
         assert_ne!(
             directory_name(&image_info(&distro, &talos.release, build, artifact))?,
             directory_name(&image_info(&distro, &talos.release, &later, artifact))?,
+        );
+        Ok(())
+    }
+
+    /// An image without cloud-init's NoCloud datasource (the SmartOS USB
+    /// image) is not described as one, and is not assumed to take SSH
+    /// keys from metadata unless the index says it does.
+    #[test]
+    fn an_image_without_nocloud_is_not_described_as_one() -> anyhow::Result<()> {
+        let rocky = rocky9();
+        let (build, artifact) = choose_artifact(&rocky, "x86_64", None)?;
+        let info = image_info(&rocky_distro(), &rocky.release, build, artifact);
+        assert!(info.description.contains("NoCloud"), "{}", info.description);
+        assert!(info.ssh_key);
+
+        let plain = edited(&rocky, |a| {
+            a["datasources"] = serde_json::json!([]);
+            a["ssh_key_injection"] = serde_json::Value::Null;
+        });
+        let info = image_info(&rocky_distro(), &rocky.release, build, &plain);
+        assert!(
+            !info.description.contains("NoCloud"),
+            "{}",
+            info.description
+        );
+        assert!(
+            info.description.contains("no cloud-init datasource"),
+            "{}",
+            info.description
+        );
+        assert!(!info.ssh_key);
+
+        let unknown = edited(&rocky, |a| a["ssh_key_injection"] = serde_json::Value::Null);
+        let info = image_info(&rocky_distro(), &rocky.release, build, &unknown);
+        assert!(
+            info.ssh_key,
+            "a NoCloud image takes keys unless the index says not"
+        );
+        let refuses = edited(&rocky, |a| a["ssh_key_injection"] = false.into());
+        let info = image_info(&rocky_distro(), &rocky.release, build, &refuses);
+        assert!(!info.ssh_key);
+        Ok(())
+    }
+
+    /// `avail` still lists such an image, with a note saying what it lacks.
+    #[test]
+    fn avail_notes_an_image_without_nocloud() -> anyhow::Result<()> {
+        let mut json = serde_json::to_value(images())?;
+        let images = json["images"]
+            .as_array_mut()
+            .unwrap_or_else(|| panic!("images is a list"));
+        let rocky = images
+            .iter_mut()
+            .find(|i| i["distro"]["id"] == "rocky")
+            .unwrap_or_else(|| panic!("the examples have rocky"));
+        rocky["build"]["artifacts"][0]["datasources"] = serde_json::json!([]);
+        let rocky_release = rocky["release"]["id"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let list: client::types::ImageList = serde_json::from_value(json)?;
+        let (rows, notes) = avail_rows(&list, Some("rocky"))?;
+        assert!(rows.iter().any(|r| r.release == rocky_release));
+        assert!(
+            notes
+                .iter()
+                .any(|n| n.contains(&format!("rocky {rocky_release}"))
+                    && n.contains("no cloud-init datasource")),
+            "{notes:?}"
         );
         Ok(())
     }
