@@ -25,7 +25,7 @@ use clap::{Parser, Subcommand};
 /// `*.x86_64.zfs`.
 const ARCH: &str = "x86_64";
 
-const DEFAULT_INDEX: &str = "https://tritondatacenter.github.io/cloud-image-index/";
+const DEFAULT_INDEX: &str = "https://cloud-images.tritoncloud.io/";
 
 /// The date of the commit this binary was built from (`YYYY-MM-DD`), for
 /// the man pages. The illumos workflow sets it; local builds leave it out.

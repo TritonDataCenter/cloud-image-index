@@ -16,14 +16,11 @@ downloaded from the vendor, and clients decide for themselves how much
 to trust us versus cross-checking against the vendor.
 
 The index is published at
-<https://tritondatacenter.github.io/cloud-image-index/v1/index.json>,
-with every current build in one file at
-<https://tritondatacenter.github.io/cloud-image-index/v1/images.json>
+<https://cloud-images.tritoncloud.io/v1/index.json>, with every current
+build in one file at <https://cloud-images.tritoncloud.io/v1/images.json>
 and its OpenAPI description at
-<https://tritondatacenter.github.io/cloud-image-index/v1/openapi.json>,
-and regenerated daily. That address will change to a custom domain
-before any long-lived client depends on it. See
-[docs/design.md](docs/design.md).
+<https://cloud-images.tritoncloud.io/v1/openapi.json>, and regenerated
+daily. See [docs/design.md](docs/design.md).
 
 ## cloud-image for SmartOS
 

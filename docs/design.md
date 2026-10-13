@@ -66,13 +66,13 @@ JSON tree in git --(GitHub Pages)--> clients
 - **Scheduled GitHub Action**: runs the resolvers and writes the tree,
   committing every change directly. **Not built yet**: structural
   changes opening a pull request instead (see "Update policy").
-- **GitHub Pages** serves the tree. The first iteration publishes at
-  `tritondatacenter.github.io/cloud-image-index`. Before any long-lived
-  client (such as one shipped in a platform image) is released, the
-  index moves to a custom domain we control, so that such clients are
-  not tied to GitHub. Clients must never use `raw.githubusercontent.com`.
-  Clients take the base URL as configuration rather than compiling it
-  in.
+- **GitHub Pages** serves the tree at `cloud-images.tritoncloud.io`, a
+  domain we control (a CNAME to `tritondatacenter.github.io`), so that
+  clients are not tied to GitHub: the index can move to other hosting
+  without changing them. The `github.io` address redirects there.
+  Clients must never use `raw.githubusercontent.com`. Clients take the
+  base URL as configuration; `cloud-image` defaults to this address and
+  takes `--index` for another.
 - **Dropshot API trait**: defines every path and type, and generates
   the OpenAPI document published as `v1/openapi.json`. **Not built
   yet**: a small reference server implementing the trait by reading the
@@ -500,8 +500,5 @@ in monitor-reef or the second copy.
   ETag headers as of 2026-10-05).
 - This repository is MPL-2.0. Open: implications if osinfo-db data
   (GPL-2.0-or-later) is ever bundled rather than referenced.
-- The custom domain long-lived clients will use, and whether clients
-  must follow the redirect GitHub Pages issues from the `github.io`
-  address once a custom domain is configured.
 - Order of migration for `tritonadm` and the other Triton tooling to consume
   this repository's crates and index.
