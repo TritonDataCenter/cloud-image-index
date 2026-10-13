@@ -3,6 +3,7 @@
   "name": "SmartOS",
   "os_family": "illumos",
   "homepage": "https://smartos.org/",
+  "checked_at": "2026-10-13T15:35:22.606615899Z",
   "dev_channel": null,
   "releases": [
     {

@@ -3,6 +3,7 @@
   "name": "CentOS Stream",
   "os_family": "linux",
   "homepage": "https://www.centos.org/",
+  "checked_at": "2026-10-13T15:34:44.413899342Z",
   "dev_channel": null,
   "releases": [
     {

@@ -3,6 +3,7 @@
   "name": "Arch Linux",
   "os_family": "linux",
   "homepage": "https://archlinux.org/",
+  "checked_at": "2026-10-13T15:34:56.616149887Z",
   "dev_channel": null,
   "releases": [
     {

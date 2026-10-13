@@ -3,6 +3,7 @@
   "name": "AlmaLinux",
   "os_family": "linux",
   "homepage": "https://almalinux.org/",
+  "checked_at": "2026-10-13T15:35:06.600696914Z",
   "dev_channel": null,
   "releases": [
     {

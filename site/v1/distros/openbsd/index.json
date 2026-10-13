@@ -1,14 +1,15 @@
 {
   "id": "openbsd",
-  "name": "OpenBSD",
+  "name": "OpenBSD (community build)",
   "os_family": "bsd",
   "homepage": "https://bsd-cloud-image.org/",
+  "checked_at": "2026-10-13T15:35:09.422842591Z",
   "dev_channel": null,
   "releases": [
     {
       "id": "7.9",
       "version": "7.9",
-      "title": "OpenBSD 7.9",
+      "title": "OpenBSD (community build) 7.9",
       "aliases": [
         "latest"
       ],
