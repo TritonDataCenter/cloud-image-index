@@ -31,10 +31,11 @@ cloud-init's NoCloud datasource. The image says so with the tag
 `org.smartos:cloudinit_datasource` set to `nocloud`, and asks for UEFI
 boot and virtio disks and network.
 
-A few images in the index have no cloud-init datasource (SmartOS
-itself, as a guest). They import the same way, but a guest made from
-one does not read the configuration below; `avail` and `import` say so
-in a note.
+A few images in the index do not use cloud-init's NoCloud datasource
+(SmartOS itself, as a guest). They import the same way, but a guest
+made from one does not read the configuration described below;
+`import` and `avail <distro>` say so in a note. Such an image is still
+named `<distro>-<release>-nocloud` and carries the `nocloud` tag.
 
 ## How a guest gets its configuration
 

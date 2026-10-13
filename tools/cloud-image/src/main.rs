@@ -619,6 +619,7 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
     let (build, artifact) = import::choose_artifact(builds, ARCH, args.variant.as_deref())?;
     let format = import::source_format(&artifact.format, &artifact.compression)?;
     let url = import::primary_url(artifact)?;
+    import::check_ids(&distro, &builds.release, build, artifact)?;
     let info = import::image_info(&distro, &builds.release, build, artifact);
     let digests = import::index_digests(artifact)?;
     import::confirm_requested_uuid(requested_uuid, import::index_uuid(&digests))?;
@@ -634,20 +635,15 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
             import::without_nocloud_note(&info.vendor, &info.series)
         );
     }
+    let unknown = import::unknown_digest_algorithms(artifact);
     if import::needs_allow_unverified(&digests) && !args.allow_unverified {
-        if digests.is_empty() {
-            anyhow::bail!(
-                "{} publishes no digest for this image; pass --allow-unverified to \
-                 import it trusting TLS alone",
-                info.vendor
-            );
-        }
         anyhow::bail!(
-            "{} gives this image's digest only in a document with no generic \
-             layout, so it cannot confirm the index's digest; pass \
-             --allow-unverified to check the image against the index alone",
-            info.vendor
+            "{}",
+            import::why_unverified(&info.vendor, &digests, &unknown)
         );
+    }
+    if !unknown.is_empty() {
+        eprintln!("note: {}", import::unknown_digest_note(&unknown));
     }
     let (check, expected): (Box<dyn nocloud_import::SourceCheck>, _) = if digests.is_empty() {
         (Box::new(TlsOnly), Vec::new())
@@ -687,7 +683,7 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         Some(d) => d,
         None => host::default_dataset()?,
     };
-    let stub = import::directory_name(&info)?;
+    let stub = import::directory_name(&info);
     let workdir = args
         .workdir
         .unwrap_or_else(|| PathBuf::from(format!("/var/tmp/cloud-image/cache/{stub}")));
