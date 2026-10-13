@@ -387,6 +387,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "cloud-image-index-ids"
+version = "0.1.0"
+
+[[package]]
 name = "cloud-image-index-resolvers"
 version = "0.1.0"
 dependencies = [
@@ -394,6 +398,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "clap",
+ "cloud-image-index-ids",
  "regex",
  "reqwest",
  "rustls",

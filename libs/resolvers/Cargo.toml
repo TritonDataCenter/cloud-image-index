@@ -18,6 +18,7 @@ workspace = true
 name = "resolvers"
 
 [dependencies]
+ids = { package = "cloud-image-index-ids", path = "../ids" }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 chrono = { workspace = true }

@@ -8,6 +8,7 @@
 members = [
     "apis/cloud-image-index-api",
     "libs/client",
+    "libs/ids",
     "libs/resolvers",
     "tools/generate",
     "tools/cloud-image",

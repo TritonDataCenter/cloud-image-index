@@ -367,23 +367,15 @@ pub trait VendorProfile: Send + Sync {
     -> Result<ResolvedImage>;
 }
 
-/// Maximum accepted release-token length.
-const MAX_VERSION_TOKEN_LEN: usize = 64;
-
 /// Validate a release token before it reaches a resolver's URL template:
 /// bounded `[A-Za-z0-9._-]{1,64}` with an explicit `..` reject, so no
 /// path separator or dot-dot traversal can be smuggled into the
 /// per-vendor URL the resolver builds. A real version token (series
 /// name, version string, or channel like `latest`/`stable`) never needs
 /// anything outside this set. Enforced by [`VendorProfile::resolve`].
+/// The rule is the index's id rule ([`ids::is_valid_id`]).
 pub fn validate_version_token(token: &str) -> Result<()> {
-    let ok = !token.is_empty()
-        && token.len() <= MAX_VERSION_TOKEN_LEN
-        && !token.contains("..")
-        && token
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'));
-    if ok {
+    if ids::is_valid_id(token) {
         Ok(())
     } else {
         anyhow::bail!(
