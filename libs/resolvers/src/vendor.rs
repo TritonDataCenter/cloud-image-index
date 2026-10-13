@@ -348,9 +348,14 @@ pub trait VendorProfile: Send + Sync {
     /// caller: the per-vendor [`VendorProfile::resolve_release`] impls
     /// interpolate the token straight into URL templates, so an
     /// unbounded token is a path-injection / second-request vector.
+    ///
+    /// The build id the resolver reports (`version`) is held to the same
+    /// rule, since clients name directories after it.
     async fn resolve(&self, release: &str, http: &reqwest::Client) -> Result<ResolvedImage> {
         validate_version_token(release)?;
-        self.resolve_release(release, http).await
+        let image = self.resolve_release(release, http).await?;
+        validate_version_token(&image.version).context("build id")?;
+        Ok(image)
     }
 
     /// Resolve a release token into a concrete image. Callers must go
@@ -629,5 +634,74 @@ mod tests {
             Err(e) => e,
         };
         assert!(err.to_string().contains("invalid version token"));
+    }
+
+    /// Variants name files and directories too (see `resolve`).
+    #[test]
+    fn every_default_variant_is_a_valid_token() {
+        for vendor in Vendor::ALL {
+            let variant = vendor.default_variant();
+            assert!(validate_version_token(variant).is_ok(), "{variant:?}");
+        }
+    }
+
+    /// A profile whose resolver reports a given build id.
+    struct ReportsBuild(&'static str);
+
+    #[async_trait]
+    impl VendorProfile for ReportsBuild {
+        fn name(&self) -> &str {
+            "test"
+        }
+
+        async fn list_versions(&self, _http: &reqwest::Client) -> Result<Vec<VersionEntry>> {
+            Ok(Vec::new())
+        }
+
+        async fn resolve_release(
+            &self,
+            release: &str,
+            _http: &reqwest::Client,
+        ) -> Result<ResolvedImage> {
+            let url = Url::parse("https://example.com/image.qcow2")?;
+            PinnedQcow2 {
+                url: url.clone(),
+                series: release.to_string(),
+                version: self.0.to_string(),
+                description: String::new(),
+                homepage: "https://example.com/",
+                sha256: "0".repeat(64),
+                document: crate::verify::ChecksumDocument {
+                    url,
+                    filename: String::new(),
+                    style: crate::verify::SumsStyle::Bare,
+                },
+                point_release: None,
+                signatures: Vec::new(),
+            }
+            .into_resolved("test")
+        }
+    }
+
+    /// The build id names directories on the machines that import the
+    /// image, so a resolver cannot report one that would escape them.
+    #[tokio::test]
+    async fn resolve_rejects_a_bad_build_id() {
+        let http = crate::test_client_builder()
+            .build()
+            .unwrap_or_else(|e| panic!("{e}"));
+        for bad in ["../../etc", "a/b", ""] {
+            let err = match ReportsBuild(bad).resolve("9", &http).await {
+                Ok(_) => panic!("build id {bad:?} must be rejected"),
+                Err(e) => e,
+            };
+            assert!(format!("{err:#}").contains("build id"), "{err:#}");
+        }
+        assert!(
+            ReportsBuild("9.8-20260525.0")
+                .resolve("9", &http)
+                .await
+                .is_ok()
+        );
     }
 }

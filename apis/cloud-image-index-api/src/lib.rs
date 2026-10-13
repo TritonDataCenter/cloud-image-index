@@ -219,7 +219,7 @@ pub struct Distro {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Release {
     /// Release token, also the release's directory name (e.g. `noble`,
-    /// `9`, `1.14`). For vendors that publish channels rather than
+    /// `9`, `1.14`). The same characters as a build id. For vendors that publish channels rather than
     /// releases it is what the channel resolved to (OmniOS `r151058`,
     /// Arch `rolling`).
     pub id: String,
@@ -286,7 +286,9 @@ pub struct BuildList {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Build {
     /// The vendor's build id or serial (e.g. `20260927`,
-    /// `9.8-20260525.0`, `1.14.2`).
+    /// `9.8-20260525.0`, `1.14.2`). At most 64 characters from
+    /// `[A-Za-z0-9._-]`, never containing `..`, so clients can name files
+    /// and directories after it.
     pub build: String,
     /// Vendor point release this build belongs to, for distros that
     /// have them (e.g. `9.8`).
@@ -307,7 +309,7 @@ pub struct Build {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Artifact {
     /// The vendor's flavour of the image (e.g. `server`, `base`, `lvm`,
-    /// `genericcloud`, `nocloud`).
+    /// `genericcloud`, `nocloud`). The same characters as a build id.
     pub variant: Option<String>,
     /// Whether this is the vendor's default variant.
     pub default_variant: Option<bool>,

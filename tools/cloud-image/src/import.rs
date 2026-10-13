@@ -349,9 +349,17 @@ pub fn image_info(distro: &Distro, release: &str, build: &Build, artifact: &Arti
 /// The name of the directories an import keeps its download and its
 /// output in: one per build and variant, since the pipeline reuses a
 /// download it finds there, and some vendors name every build's file
-/// alike.
-pub fn directory_name(info: &ImageInfo) -> String {
-    format!("{}-{}-{}", info.vendor, info.series, info.version)
+/// alike. Each part comes from the index and must be a plain token, so
+/// the name cannot climb out of the directory it is made in.
+pub fn directory_name(info: &ImageInfo) -> Result<String> {
+    for (what, part) in [
+        ("distro", &info.vendor),
+        ("release", &info.series),
+        ("build", &info.version),
+    ] {
+        resolvers::validate_version_token(part).with_context(|| format!("{what} id"))?;
+    }
+    Ok(format!("{}-{}-{}", info.vendor, info.series, info.version))
 }
 
 /// How an import would be checked.
@@ -814,7 +822,7 @@ mod tests {
         let rocky = rocky9();
         let (build, lvm) = choose_artifact(&rocky, "x86_64", Some("lvm"))?;
         let info = image_info(&rocky_distro(), &rocky.release, build, lvm);
-        assert_eq!(directory_name(&info), "rocky-9-9.8-20260525.0-lvm");
+        assert_eq!(directory_name(&info)?, "rocky-9-9.8-20260525.0-lvm");
         let talos = talos();
         let (build, artifact) = choose_artifact(&talos, "x86_64", None)?;
         let mut later = build.clone();
@@ -824,9 +832,30 @@ mod tests {
             ..ubuntu_distro()
         };
         assert_ne!(
-            directory_name(&image_info(&distro, &talos.release, build, artifact)),
-            directory_name(&image_info(&distro, &talos.release, &later, artifact)),
+            directory_name(&image_info(&distro, &talos.release, build, artifact))?,
+            directory_name(&image_info(&distro, &talos.release, &later, artifact))?,
         );
+        Ok(())
+    }
+
+    /// The directory is made and written as root, so ids from the index
+    /// (which `--index` can point anywhere) must not escape it.
+    #[test]
+    fn ids_that_would_escape_the_directory_are_refused() -> anyhow::Result<()> {
+        let rocky = rocky9();
+        let (build, artifact) = choose_artifact(&rocky, "x86_64", None)?;
+        let mut bad = build.clone();
+        for id in ["../../etc", "a/b", ""] {
+            bad.build = id.to_string();
+            let info = image_info(&rocky_distro(), &rocky.release, &bad, artifact);
+            assert!(directory_name(&info).is_err(), "{id:?}");
+        }
+        let distro = Distro {
+            id: "../rocky".to_string(),
+            ..rocky_distro()
+        };
+        let info = image_info(&distro, &rocky.release, build, artifact);
+        assert!(directory_name(&info).is_err());
         Ok(())
     }
 

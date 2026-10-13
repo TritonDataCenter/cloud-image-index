@@ -79,7 +79,7 @@
             "type": "boolean"
           },
           "variant": {
-            "description": "The vendor's flavour of the image (e.g. `server`, `base`, `lvm`, `genericcloud`, `nocloud`).",
+            "description": "The vendor's flavour of the image (e.g. `server`, `base`, `lvm`, `genericcloud`, `nocloud`). The same characters as a build id.",
             "nullable": true,
             "type": "string"
           }
@@ -102,7 +102,7 @@
             "type": "array"
           },
           "build": {
-            "description": "The vendor's build id or serial (e.g. `20260927`, `9.8-20260525.0`, `1.14.2`).",
+            "description": "The vendor's build id or serial (e.g. `20260927`, `9.8-20260525.0`, `1.14.2`). At most 64 characters from `[A-Za-z0-9._-]`, never containing `..`, so clients can name files and directories after it.",
             "type": "string"
           },
           "first_seen": {
@@ -437,7 +437,7 @@
             "type": "string"
           },
           "id": {
-            "description": "Release token, also the release's directory name (e.g. `noble`, `9`, `1.14`). For vendors that publish channels rather than releases it is what the channel resolved to (OmniOS `r151058`, Arch `rolling`).",
+            "description": "Release token, also the release's directory name (e.g. `noble`, `9`, `1.14`). The same characters as a build id. For vendors that publish channels rather than releases it is what the channel resolved to (OmniOS `r151058`, Arch `rolling`).",
             "type": "string"
           },
           "osinfo": {

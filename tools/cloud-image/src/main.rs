@@ -681,7 +681,7 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         Some(d) => d,
         None => host::default_dataset()?,
     };
-    let stub = import::directory_name(&info);
+    let stub = import::directory_name(&info)?;
     let workdir = args
         .workdir
         .unwrap_or_else(|| PathBuf::from(format!("/var/tmp/cloud-image/cache/{stub}")));
