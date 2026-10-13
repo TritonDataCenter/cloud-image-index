@@ -680,6 +680,16 @@ pub fn confirm_requested_uuid(
     Ok(())
 }
 
+/// Why `import <uuid>` found no image with that UUID in the index.
+pub fn uuid_not_in_index(uuid: uuid::Uuid) -> String {
+    format!(
+        "no image in the index has UUID {uuid} (see `cloud-image avail`). An \
+         image whose vendor publishes no sha256 has no UUID in the index; a \
+         UUID `avail` shows for one comes from the local image store, and that \
+         image is installed already"
+    )
+}
+
 /// The image with this UUID, for `import <uuid>`.
 pub fn find_by_uuid(rows: &[Available], uuid: uuid::Uuid) -> Option<&Available> {
     rows.iter().find(|r| r.uuid == Some(uuid))
@@ -1268,6 +1278,18 @@ mod tests {
         let after: Vec<_> = ubuntu.iter().map(|r| r.uuid).collect();
         assert_eq!(before, after);
         Ok(())
+    }
+
+    /// A UUID `avail` showed from the local image store is not in the
+    /// index; the error says where it came from rather than contradict
+    /// `avail`.
+    #[test]
+    fn a_uuid_not_in_the_index_is_explained() {
+        let uuid = uuid::Uuid::nil();
+        let message = uuid_not_in_index(uuid);
+        assert!(message.contains(&uuid.to_string()), "{message}");
+        assert!(message.contains("local image store"), "{message}");
+        assert!(!message.contains("until it is downloaded"), "{message}");
     }
 
     /// `import` finds the installed image it would produce the same way

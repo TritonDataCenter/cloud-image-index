@@ -599,13 +599,8 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
              or --variant with it"
         );
         let (rows, _) = import::avail_rows(&list, None)?;
-        let row = import::find_by_uuid(&rows, uuid).with_context(|| {
-            format!(
-                "no image in the index has UUID {uuid} (see `cloud-image avail`; \
-                 an image whose vendor publishes no sha256 has no UUID until \
-                 it is downloaded)"
-            )
-        })?;
+        let row =
+            import::find_by_uuid(&rows, uuid).with_context(|| import::uuid_not_in_index(uuid))?;
         args.distro = row.distro.clone();
         args.release = Some(row.release.clone());
     }
@@ -633,6 +628,29 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         info.vendor, info.series, info.version
     );
     println!("Source:  {url}");
+    // An import that ends in imgadm stops here if the image is installed
+    // already, before fetching anything from the vendor or downloading
+    // and building it again (a dry run says the same). One that only
+    // builds the files (--no-install) goes on.
+    if !args.no_install && host::is_smartos()? {
+        match installed_images().await {
+            Ok(installed) => {
+                let found = import::installed_match(
+                    import::index_uuid(&digests),
+                    &info.image_name(),
+                    &info.version,
+                    &installed,
+                );
+                if let Some(image) = found {
+                    let uuid = image.uuid.map_or("-".to_string(), |u| u.to_string());
+                    println!();
+                    println!("Already installed as {uuid}; nothing to do.");
+                    return Ok(());
+                }
+            }
+            Err(e) => eprintln!("note: could not check whether it is installed already: {e:#}"),
+        }
+    }
     if !import::reads_nocloud(artifact) {
         eprintln!(
             "note: {}",
@@ -683,28 +701,6 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         "imgadm install needs the global zone (zonename={zone}); pass --no-install \
          to build the files only"
     );
-    // An import that ends in imgadm stops here if the image is installed
-    // already, rather than download and build it again. One that only
-    // builds the files (--no-install) goes on.
-    if !args.no_install {
-        match installed_images().await {
-            Ok(installed) => {
-                let found = import::installed_match(
-                    import::index_uuid(&digests),
-                    &info.image_name(),
-                    &info.version,
-                    &installed,
-                );
-                if let Some(image) = found {
-                    let uuid = image.uuid.map_or("-".to_string(), |u| u.to_string());
-                    println!();
-                    println!("Already installed as {uuid}; nothing to do.");
-                    return Ok(());
-                }
-            }
-            Err(e) => eprintln!("note: could not check whether it is installed already: {e:#}"),
-        }
-    }
     let dataset = match args.dataset {
         Some(d) => d,
         None => host::default_dataset()?,
