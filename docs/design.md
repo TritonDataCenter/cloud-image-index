@@ -206,8 +206,11 @@ are authoritative:
   - signature URL and type, and where to find the vendor's key;
   - when the vendor publishes no hash: the HTTP `Content-Length`,
     `Last-Modified` and `ETag` (flagged as opaque, not a hash).
-- Bookkeeping: `first_seen`. No "last checked" timestamps in data files,
-  so that polls without changes produce no commits.
+- Bookkeeping: `first_seen`, and per distro `checked_at`: when its
+  vendor was last read successfully. A failed vendor keeps its old
+  `checked_at` with its old data, so clients can tell stale data from
+  fresh. The cost is that every run changes the tree, so the index job
+  commits and deploys daily even when no image changed.
 
 ### Release aliases
 

@@ -306,6 +306,15 @@ fn digest_that_is_not_lowercase_hex_of_the_right_length_is_caught() -> Result<()
 }
 
 #[test]
+fn checked_at_differing_from_the_distro_list_is_caught() -> Result<(), String> {
+    let s = Scratch::new("checked-at")?;
+    s.edit_json("v1/distros/talos/index.json", |v| {
+        v["checked_at"] = serde_json::json!("2001-01-01T00:00:00Z");
+    })?;
+    s.expect_problem("talos: checked_at differs from v1/index.json")
+}
+
+#[test]
 fn missing_image_list_is_caught() -> Result<(), String> {
     let s = Scratch::new("missing-images")?;
     std::fs::remove_file(s.0.join("v1/images.json")).map_err(|e| e.to_string())?;

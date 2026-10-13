@@ -387,6 +387,7 @@ async fn generate_vendor(
         name: Some(vendor.label().to_string()),
         os_family: os_family(vendor),
         homepage: Some(homepage),
+        checked_at: Some(now),
         dev_channel: plan.dev_channel,
         releases,
     };

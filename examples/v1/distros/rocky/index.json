@@ -3,6 +3,7 @@
   "name": "Rocky Linux",
   "os_family": "linux",
   "homepage": "https://rockylinux.org/",
+  "checked_at": "2026-10-01T06:00:00Z",
   "dev_channel": null,
   "releases": [
     {

@@ -262,6 +262,9 @@ pub fn check(tree: &Tree) -> Vec<String> {
             if summary.homepage != distro.homepage {
                 problems.push(format!("{id}: homepage differs from v1/index.json"));
             }
+            if summary.checked_at != distro.checked_at {
+                problems.push(format!("{id}: checked_at differs from v1/index.json"));
+            }
         }
 
         let mut seen_releases = BTreeSet::new();

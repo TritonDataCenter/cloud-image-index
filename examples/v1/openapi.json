@@ -218,6 +218,12 @@
       "DistroSummary": {
         "description": "One distro as listed in `v1/index.json`.",
         "properties": {
+          "checked_at": {
+            "description": "When the index last read this distro from its vendor successfully (UTC). A run that fails for a vendor keeps its previous data and this time, so an old value means the vendor's data is stale.",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
           "homepage": {
             "nullable": true,
             "type": "string"

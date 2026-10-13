@@ -125,6 +125,10 @@ pub struct DistroSummary {
     pub name: Option<String>,
     pub os_family: OsFamily,
     pub homepage: Option<String>,
+    /// When the index last read this distro from its vendor successfully
+    /// (UTC). A run that fails for a vendor keeps its previous data and
+    /// this time, so an old value means the vendor's data is stale.
+    pub checked_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -194,6 +198,10 @@ pub struct Distro {
     pub name: Option<String>,
     pub os_family: OsFamily,
     pub homepage: Option<String>,
+    /// When the index last read this distro from its vendor successfully
+    /// (UTC). A run that fails for a vendor keeps its previous data and
+    /// this time, so an old value means the vendor's data is stale.
+    pub checked_at: Option<DateTime<Utc>>,
     /// The vendor's name for the channel the `dev` alias follows
     /// (e.g. `bloody`, `sid`, `rawhide`, `edge`). Null when the vendor
     /// has no development channel in the index.
