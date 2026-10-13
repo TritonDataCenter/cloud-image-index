@@ -371,19 +371,20 @@ pub trait VendorProfile: Send + Sync {
     -> Result<ResolvedImage>;
 }
 
-/// Validate a release token before it reaches a resolver's URL template:
-/// bounded `[A-Za-z0-9._-]{1,64}` with an explicit `..` reject, so no
-/// path separator or dot-dot traversal can be smuggled into the
-/// per-vendor URL the resolver builds. A real version token (series
+/// Validate a release token before it reaches a resolver's URL template,
+/// against the index's id rule ([`ids::is_valid_id`]), so no path
+/// separator or dot-dot traversal can be smuggled into the per-vendor URL
+/// the resolver builds. A real version token (series
 /// name, version string, or channel like `latest`/`stable`) never needs
-/// anything outside this set. Enforced by [`VendorProfile::resolve`].
-/// The rule is the index's id rule ([`ids::is_valid_id`]).
+/// anything outside this set. Enforced by [`VendorProfile::resolve`],
+/// and used for every id a client names files after.
 pub fn validate_version_token(token: &str) -> Result<()> {
     if ids::is_valid_id(token) {
         Ok(())
     } else {
         anyhow::bail!(
-            "invalid version token {token:?}: expected [A-Za-z0-9._-]{{1,64}} with no '..'"
+            "invalid id {token:?}: expected 1 to 64 of [A-Za-z0-9._-], not '.', \
+             without '..', not starting with '-'"
         );
     }
 }
@@ -632,7 +633,7 @@ mod tests {
             Ok(_) => panic!("dot-dot token must be rejected"),
             Err(e) => e,
         };
-        assert!(err.to_string().contains("invalid version token"));
+        assert!(err.to_string().contains("invalid id"));
     }
 
     /// Variants name files and directories too (see `resolve`).

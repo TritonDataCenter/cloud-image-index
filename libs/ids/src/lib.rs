@@ -13,14 +13,17 @@
 pub const MAX_ID_LEN: usize = 64;
 
 /// Whether `id` is a valid distro, release, build or variant id: 1 to
-/// [`MAX_ID_LEN`] characters from `[A-Za-z0-9._-]`, never containing
-/// `..`. Clients name files and directories after these ids, and the
-/// generator puts release tokens into vendor URLs, so none may carry a
-/// path separator or climb out of a directory.
+/// [`MAX_ID_LEN`] characters from `[A-Za-z0-9._-]`, never `.`, never
+/// containing `..`, and not starting with `-`. Clients name files and
+/// directories after these ids, and the generator puts release tokens
+/// into vendor URLs, so none may carry a path separator, name the
+/// directory it is in or its parent, or read as an option.
 pub fn is_valid_id(id: &str) -> bool {
     !id.is_empty()
         && id.len() <= MAX_ID_LEN
+        && id != "."
         && !id.contains("..")
+        && !id.starts_with('-')
         && id
             .bytes()
             .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
@@ -47,7 +50,9 @@ mod tests {
 
     #[test]
     fn ids_that_could_name_another_path_are_not() {
-        for id in ["", "..", "a..b", "../etc", "a/b", "a\\b", "a b", "\u{e9}"] {
+        for id in [
+            "", ".", "..", "a..b", "../etc", "a/b", "a\\b", "a b", "\u{e9}", "-", "-rf",
+        ] {
             assert!(!is_valid_id(id), "{id:?}");
         }
         assert!(!is_valid_id(&"a".repeat(MAX_ID_LEN + 1)));
