@@ -13,7 +13,7 @@
 //! (see "Schema evolution" in docs/design.md).
 //!
 //! The base URL is the directory containing `v1/`, e.g.
-//! `https://tritondatacenter.github.io/cloud-image-index`.
+//! `https://cloud-images.tritoncloud.io`.
 
 #[allow(
     clippy::all,
