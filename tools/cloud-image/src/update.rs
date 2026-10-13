@@ -50,6 +50,16 @@ pub fn decide(current: &semver::Version, release: &semver::Version, named: bool)
     }
 }
 
+/// The exit status of `self-update --check`: 0 when there is nothing to
+/// install, 2 when a release is available. Errors exit 1, as every command
+/// does.
+pub fn check_exit_status(decision: &Decision) -> u8 {
+    match decision {
+        Decision::Update => 2,
+        Decision::UpToDate | Decision::Newer => 0,
+    }
+}
+
 /// Where install.sh puts the man page for a binary at `exe`: beside the
 /// binary's directory, `<prefix>/sbin/cloud-image` and
 /// `<prefix>/man/man8/cloud-image.8.gz`.
@@ -269,6 +279,15 @@ mod tests {
                 .contains("v0.8.0")
         );
         Ok(())
+    }
+
+    /// `self-update --check`: 0 when there is nothing to install, 2 when a
+    /// release is available (1 is left for errors).
+    #[test]
+    fn check_exits_2_only_when_an_update_is_available() {
+        assert_eq!(check_exit_status(&Decision::Update), 2);
+        assert_eq!(check_exit_status(&Decision::UpToDate), 0);
+        assert_eq!(check_exit_status(&Decision::Newer), 0);
     }
 
     /// The man page sits where install.sh puts it, beside the binary's

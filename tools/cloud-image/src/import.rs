@@ -484,6 +484,25 @@ fn one_image(image: &Image) -> (Distro, BuildList) {
     (distro, builds)
 }
 
+/// For `import <uuid>`: the image about to be imported must be the one
+/// asked for. The UUID is looked up in `v1/images.json` and the image then
+/// resolved from the release's own file, so if the index changed between
+/// the two reads they can differ, and nothing is imported.
+pub fn confirm_requested_uuid(
+    requested: Option<uuid::Uuid>,
+    resolved: Option<uuid::Uuid>,
+) -> Result<()> {
+    if let Some(requested) = requested {
+        anyhow::ensure!(
+            resolved == Some(requested),
+            "asked for image {requested}, but the index now gives {}; see \
+             `cloud-image avail`",
+            resolved.map_or("an image with no known UUID".to_string(), |u| u.to_string())
+        );
+    }
+    Ok(())
+}
+
 /// The image with this UUID, for `import <uuid>`.
 pub fn find_by_uuid(rows: &[Available], uuid: uuid::Uuid) -> Option<&Available> {
     rows.iter().find(|r| r.uuid == Some(uuid))
@@ -528,9 +547,10 @@ pub fn mark_installed(rows: &mut [Available], installed: &[Installed]) {
     }
 }
 
-/// `rows` as a table in the style of `imgadm avail`.
-/// An INSTALLED column is added when the rows say whether they are
-/// installed.
+/// `rows` as a table in the style of `imgadm avail`. An INSTALLED column
+/// (`yes` or `no`) is added when the rows say whether they are installed.
+/// Every row has every field, `-` when empty, so that scripts splitting on
+/// whitespace find each column in the same place.
 pub fn avail_table(rows: &[Available], header: bool) -> String {
     let known = rows.iter().any(|r| r.installed.is_some());
     let mut lines: Vec<Vec<String>> = Vec::new();
@@ -547,14 +567,18 @@ pub fn avail_table(rows: &[Available], header: bool) -> String {
             row.name.clone(),
             row.version.clone(),
             row.os.clone(),
-            row.aliases.join(","),
+            if row.aliases.is_empty() {
+                "-".to_string()
+            } else {
+                row.aliases.join(",")
+            },
             row.check.as_str().to_string(),
         ];
         if known {
             let mark = if row.installed == Some(true) {
                 "yes"
             } else {
-                ""
+                "no"
             };
             cells.push(mark.to_string());
         }
@@ -888,7 +912,7 @@ mod tests {
         let lines: Vec<&str> = table.lines().collect();
         assert!(lines[0].ends_with("CHECK   INSTALLED"), "{table}");
         assert!(lines[1].ends_with("vendor  yes"), "{table}");
-        assert!(lines[2].ends_with("vendor"), "{table}");
+        assert!(lines[2].ends_with("vendor  no"), "{table}");
         assert_eq!(avail_json(&rows)[0]["installed"], serde_json::json!(true));
         assert_eq!(avail_json(&rows)[1]["installed"], serde_json::json!(false));
         Ok(())
@@ -936,6 +960,34 @@ mod tests {
         assert!(!avail_table(&rows, false).contains("UUID"));
     }
 
+    /// Every row has the same number of fields, so `awk` or `cut` find the
+    /// same column in each: an empty cell is `-`.
+    #[test]
+    fn every_row_has_every_field() -> anyhow::Result<()> {
+        let (mut rows, _) = avail_rows(&images(), None)?;
+        for table in [avail_table(&rows, false), {
+            mark_installed(&mut rows, &parse_imgadm_list(IMGADM_LIST)?);
+            avail_table(&rows, false)
+        }] {
+            let counts: Vec<usize> = table
+                .lines()
+                .map(|l| l.split_whitespace().count())
+                .collect();
+            assert!(
+                counts.windows(2).all(|w| w[0] == w[1]),
+                "{counts:?}\n{table}"
+            );
+        }
+        let noble = avail_table(&rows, false)
+            .lines()
+            .find(|l| l.contains("ubuntu-noble-nocloud"))
+            .map(str::to_string)
+            .unwrap_or_default();
+        assert!(noble.contains("  -  "), "{noble}");
+        assert!(noble.ends_with("vendor  no"), "{noble}");
+        Ok(())
+    }
+
     #[test]
     fn a_uuid_finds_its_image() {
         let row = ubuntu_row();
@@ -946,6 +998,25 @@ mod tests {
             Some(&row.release)
         );
         assert!(find_by_uuid(&rows, uuid::Uuid::nil()).is_none());
+    }
+
+    /// `import <uuid>` installs that image or nothing: if the index moved
+    /// on between the lookup and the import, the UUIDs differ.
+    #[test]
+    fn an_import_by_uuid_must_get_that_uuid() {
+        let asked = uuid::Uuid::from_u128(1);
+        let other = uuid::Uuid::from_u128(2);
+        assert!(confirm_requested_uuid(None, Some(other)).is_ok());
+        assert!(confirm_requested_uuid(Some(asked), Some(asked)).is_ok());
+        let err = confirm_requested_uuid(Some(asked), Some(other))
+            .err()
+            .map(|e| format!("{e:#}"))
+            .unwrap_or_default();
+        assert!(
+            err.contains(&asked.to_string()) && err.contains(&other.to_string()),
+            "{err}"
+        );
+        assert!(confirm_requested_uuid(Some(asked), None).is_err());
     }
 
     /// Without a release, the user is shown what they could import.

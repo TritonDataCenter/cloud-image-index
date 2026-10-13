@@ -75,6 +75,8 @@ enum Command {
     /// is rewritten to match. SmartOS only.
     SelfUpdate(SelfUpdateArgs),
     /// Write the man page, `cloud-image.8`, into a directory.
+    // Hidden, but stable: install.sh and `self-update` run the newly
+    // installed binary's `man --out` to write its own page.
     #[command(hide = true)]
     Man {
         /// The directory to write the pages to, created if missing.
@@ -85,7 +87,8 @@ enum Command {
 
 #[derive(clap::Args)]
 struct SelfUpdateArgs {
-    /// Only say whether there is a newer release.
+    /// Only say whether there is a newer release, and exit 2 if there is
+    /// (0 if not).
     #[arg(long)]
     check: bool,
     /// Install this release (e.g. `v0.9.0`) instead of the newest, even
@@ -147,7 +150,8 @@ struct ImportArgs {
     /// Import an image the vendor cannot confirm: one with no published
     /// digest (trusting the TLS connection alone), or one whose digest
     /// the vendor gives only in a document with no generic layout
-    /// (checked against the index's digest alone).
+    /// (checked against the index's digest alone). The image's decoders
+    /// then run, as root, on bytes the vendor has not vouched for.
     #[arg(long)]
     allow_unverified: bool,
     /// Resolve the image and check the index against the vendor, but
@@ -601,7 +605,8 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
     let base = &args.index.trim_end_matches('/').to_string();
     let index = client::Client::new_with_client(base, http.clone());
     // A UUID from `avail` names a release's current image, default variant.
-    if let Ok(uuid) = uuid::Uuid::parse_str(&args.distro) {
+    let requested_uuid = uuid::Uuid::parse_str(&args.distro).ok();
+    if let Some(uuid) = requested_uuid {
         anyhow::ensure!(
             args.release.is_none() && args.variant.is_none(),
             "an image UUID names the release and variant itself; give no release \
@@ -644,6 +649,7 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
     let url = import::primary_url(artifact)?;
     let info = import::image_info(&distro, &builds.release, build, artifact);
     let digests = import::index_digests(artifact)?;
+    import::confirm_requested_uuid(requested_uuid, import::index_uuid(&digests))?;
 
     println!(
         "Image:   {} {} build {}",
@@ -714,14 +720,8 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
     // The pipeline creates it too, but would not say which path failed.
     create_dir(&output_dir)?;
     let lock = host::acquire_workdir_lock(&workdir)?;
-    // Where the pipeline keeps the download and its lock: the last segment
-    // of the URL, and `.lock` (nocloud-import's names).
-    let source_file = workdir.join(
-        url.path_segments()
-            .and_then(|mut s| s.next_back())
-            .unwrap_or_default(),
-    );
-    let lock_file = workdir.join(".lock");
+    let source_file = nocloud_import::download_path(&workdir, &url)?;
+    let lock_file = host::workdir_lock_path(&workdir);
 
     let source = nocloud_import::Source { url, format };
     let result = async {
@@ -748,14 +748,8 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         anyhow::Ok(outputs)
     }
     .await;
-    drop(lock);
 
-    let plan = cleanup_plan(
-        args.keep,
-        args.no_install,
-        result.is_ok(),
-        !digests.is_empty(),
-    );
+    let plan = cleanup_plan(args.keep, args.no_install, result.is_ok());
     let mut files = Vec::new();
     if plan.source {
         files.extend([source_file.clone(), lock_file]);
@@ -764,6 +758,9 @@ async fn import_cmd(mut args: ImportArgs) -> Result<()> {
         files.extend([outputs.gz_path.clone(), outputs.manifest_path.clone()]);
     }
     remove_leftovers(&files, &[workdir.clone(), output_dir]);
+    // Only now: another import of this image waiting on the lock must not
+    // find its download, or the lock file, removed under it.
+    drop(lock);
 
     let outputs = match result {
         Ok(outputs) => outputs,
@@ -802,19 +799,15 @@ struct Cleanup {
 }
 
 /// After an install, nothing is left; with `--no-install`, the image and
-/// manifest; with `--keep`, everything. A failed import keeps a download
-/// that a digest check will vet before it is reused (the pipeline reuses
-/// a download it finds, and an interrupted one is truncated), and its
-/// outputs, for installing by hand.
-fn cleanup_plan(keep: bool, no_install: bool, succeeded: bool, verified: bool) -> Cleanup {
-    if keep {
+/// manifest; with `--keep`, everything. A failed import keeps its download
+/// for the next try (the pipeline only ever leaves a complete download
+/// under its name, and checks it again before reusing it) and, when it got
+/// as far as `imgadm`, its image and manifest, for installing by hand; a
+/// failed build leaves none, as the pipeline removes them.
+fn cleanup_plan(keep: bool, no_install: bool, succeeded: bool) -> Cleanup {
+    if keep || !succeeded {
         Cleanup {
             source: false,
-            outputs: false,
-        }
-    } else if !succeeded {
-        Cleanup {
-            source: !verified,
             outputs: false,
         }
     } else {
@@ -842,7 +835,7 @@ fn remove_leftovers(files: &[PathBuf], dirs: &[PathBuf]) {
     }
 }
 
-async fn self_update_cmd(args: SelfUpdateArgs) -> Result<()> {
+async fn self_update_cmd(args: SelfUpdateArgs) -> Result<std::process::ExitCode> {
     let http = http_client()?;
     let current = semver::Version::parse(env!("CARGO_PKG_VERSION"))?;
     let tag = update::release_tag(&http, &update::releases_api()?, args.release.as_deref()).await?;
@@ -857,11 +850,11 @@ async fn self_update_cmd(args: SelfUpdateArgs) -> Result<()> {
     };
     if let Some(message) = staying {
         println!("{message}");
-        return Ok(());
+        return Ok(update::check_exit_status(&decision).into());
     }
     if args.check {
         println!("cloud-image {current}; {tag} is available");
-        return Ok(());
+        return Ok(update::check_exit_status(&decision).into());
     }
     anyhow::ensure!(
         nocloud_import::host::is_smartos()?,
@@ -874,18 +867,18 @@ async fn self_update_cmd(args: SelfUpdateArgs) -> Result<()> {
         Some(page) => println!("Updated {}.", page.display()),
         None => println!("No installed man page beside it to update."),
     }
-    Ok(())
+    Ok(std::process::ExitCode::SUCCESS)
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<std::process::ExitCode> {
     match Args::parse().command {
         Command::Avail(args) => avail_cmd(args).await?,
         Command::Import(args) => import_cmd(args).await?,
-        Command::SelfUpdate(args) => self_update_cmd(args).await?,
+        Command::SelfUpdate(args) => return self_update_cmd(args).await,
         Command::Man { out } => write_man_page(&out, COMMIT_DATE)?,
     }
-    Ok(())
+    Ok(std::process::ExitCode::SUCCESS)
 }
 
 #[cfg(test)]
@@ -940,6 +933,10 @@ mod tests {
         for wanted in [
             ".SS \"How a guest gets its configuration\"",
             ".SH \"FURTHER READING\"",
+            ".SH VERIFICATION",
+            ".SH FILES",
+            ".SH \"EXIT STATUS\"",
+            "/var/tmp/cloud\\-image/cache/",
             "\\fBcloud\\-init:user\\-data\\fR",
             ".nf\n",
             "    \"cloud\\-init:user\\-data\": $userdata",
@@ -968,9 +965,7 @@ mod tests {
     /// only a download a digest check will vet before it is reused.
     #[test]
     fn cleanup_keeps_only_what_is_wanted() {
-        let plan = |keep, no_install, succeeded, verified| {
-            cleanup_plan(keep, no_install, succeeded, verified)
-        };
+        let plan = |keep, no_install, succeeded| cleanup_plan(keep, no_install, succeeded);
         let all = Cleanup {
             source: true,
             outputs: true,
@@ -983,15 +978,13 @@ mod tests {
             source: false,
             outputs: false,
         };
-        assert_eq!(plan(false, false, true, true), all);
-        assert_eq!(plan(false, false, true, false), all);
-        assert_eq!(plan(false, true, true, true), source_only);
-        assert_eq!(plan(true, false, true, true), nothing);
-        assert_eq!(plan(true, true, false, false), nothing);
-        // A failed import keeps a download the digest check will vet on
-        // the next run, but not one nothing would check.
-        assert_eq!(plan(false, false, false, true), nothing);
-        assert_eq!(plan(false, false, false, false), source_only);
+        assert_eq!(plan(false, false, true), all);
+        assert_eq!(plan(false, true, true), source_only);
+        assert_eq!(plan(true, false, true), nothing);
+        assert_eq!(plan(true, true, false), nothing);
+        // A failed import keeps its download for the next try: the
+        // pipeline only ever leaves a complete download under its name.
+        assert_eq!(plan(false, false, false), nothing);
     }
 
     /// Only the files the import made are removed, and a directory only
