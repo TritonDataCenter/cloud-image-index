@@ -292,6 +292,32 @@ pub fn artifact(
     }
 }
 
+/// A vendor that publishes a checksum file for an artifact must not have
+/// it published without a digest. When this run could not read the file
+/// (`checksum_failed`) and the previous run left no digest to carry over
+/// (see [`fill_from_previous`]), this fails, so the vendor fails and keeps
+/// its previous data rather than publish a build nobody can verify.
+pub fn require_digest(
+    source: &ChecksumSource,
+    artifact: &Artifact,
+    checksum_failed: bool,
+) -> anyhow::Result<()> {
+    let has_digest = artifact
+        .integrity
+        .as_ref()
+        .is_some_and(|i| !i.digests.is_empty());
+    if let ChecksumSource::Document { url, .. } = source
+        && checksum_failed
+        && !has_digest
+    {
+        anyhow::bail!(
+            "could not read the checksum file {url}, and no earlier run published a digest \
+             for this image"
+        );
+    }
+    Ok(())
+}
+
 /// When this run could not read an artifact's HEAD metadata
 /// (`head_failed`), its vendor checksum (`checksum_failed`) or whether
 /// its signatures exist (`signatures_failed`), for a reason that does
@@ -587,6 +613,34 @@ mod tests {
         fill_from_previous(&mut current, Some(&previous), false, true, false);
         assert_eq!(integrity(&current).digests, sha("old"));
         assert_eq!(current.size, Some(43));
+    }
+
+    /// A vendor that publishes a checksum file must not get a build with
+    /// no digest: when the file cannot be read and no earlier run
+    /// published a digest for the URL, the vendor fails (and keeps its
+    /// previous data) rather than publish an unverifiable build.
+    #[test]
+    fn a_new_build_whose_checksum_cannot_be_read_fails() {
+        let document = ChecksumSource::Document {
+            url: Url::parse("https://v.example/SHA256SUMS").unwrap_or_else(|e| panic!("{e}")),
+            filename: "image.qcow2".to_string(),
+            style: SumsStyle::Gnu,
+            algorithm: HashAlgorithm::Sha256,
+        };
+        let no_digest = sample_artifact(None, None, Vec::new());
+        let err = require_digest(&document, &no_digest, true)
+            .err()
+            .map(|e| format!("{e:#}"))
+            .unwrap_or_default();
+        assert!(err.contains("SHA256SUMS"), "{err}");
+        // Digests carried over from the previous run will do.
+        assert!(require_digest(&document, &sample_artifact(None, None, sha("old")), true).is_ok());
+        // A source with no checksum file, or a fetch that worked.
+        let none = ChecksumSource::None {
+            note: "no digest".to_string(),
+        };
+        assert!(require_digest(&none, &no_digest, false).is_ok());
+        assert!(require_digest(&document, &sample_artifact(None, None, sha("new")), false).is_ok());
     }
 
     #[test]
