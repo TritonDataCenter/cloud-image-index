@@ -5,9 +5,9 @@
 // Copyright 2026 Edgecast Cloud LLC.
 
 //! The rule for ids in the cloud-image-index. It lives in its own crate,
-//! with no dependencies, so the format crate, the resolvers and the
-//! client can share it without the client pulling in the format crate's
-//! server dependencies.
+//! with no dependencies, so the format crate and the resolvers (and,
+//! through them, the client) can share it without the client pulling in
+//! the format crate's server dependencies.
 
 /// The longest id the index publishes.
 pub const MAX_ID_LEN: usize = 64;

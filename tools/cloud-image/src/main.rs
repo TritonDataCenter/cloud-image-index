@@ -63,7 +63,9 @@ enum Command {
     /// confirms the index), `index` (the index's digest alone) or `none`;
     /// the last two need `import --allow-unverified`. On SmartOS, INSTALLED
     /// marks the images already in the local image store (`-` when it
-    /// could not be read).
+    /// could not be read). NAME follows tritonadm's naming,
+    /// `<distro>-<release>-nocloud`, whether or not the image uses
+    /// NoCloud.
     Avail(AvailArgs),
     /// Build a distro's image from the index and install it with imgadm.
     ///
@@ -125,6 +127,7 @@ struct ImportArgs {
     /// The distro, as the index names it (e.g. `ubuntu`, `rocky`), or an
     /// image's UUID or NAME from `cloud-image avail` (e.g.
     /// `ubuntu-resolute-nocloud`), which names the release too.
+    #[arg(value_name = "IMAGE")]
     distro: String,
     /// A release (e.g. `noble`, `9`) or alias (`latest`, `lts`, `dev`).
     /// Without one, lists the distro's releases and imports nothing.
@@ -164,7 +167,8 @@ struct ImportArgs {
     #[arg(long)]
     allow_unverified: bool,
     /// Resolve the image and check the index against the vendor, but
-    /// download and build nothing.
+    /// download and build nothing (on SmartOS, an image installed already
+    /// is reported as such, as an import would).
     #[arg(long)]
     dry_run: bool,
 }
@@ -918,7 +922,7 @@ mod tests {
         for wanted in [
             ".SH COMMANDS",
             ".SS \"cloud\\-image avail [OPTIONS] [DISTRO]\"",
-            ".SS \"cloud\\-image import [OPTIONS] <DISTRO> [RELEASE]\"",
+            ".SS \"cloud\\-image import [OPTIONS] <IMAGE> [RELEASE]\"",
             "\\-\\-allow\\-unverified",
             "\\-\\-no\\-header",
             "imgadm",

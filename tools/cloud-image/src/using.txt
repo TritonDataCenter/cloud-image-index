@@ -65,8 +65,8 @@ the guest.
 
 ## Creating a VM
 
-Find the image's UUID with `imgadm list`, or `cloud-image avail` before
-importing. Write the user-data, for example `cloud-init.yml`:
+Find the image's UUID with `imgadm list`, or `cloud-image avail` (for an
+image whose vendor publishes no sha256, once it is installed). Write the user-data, for example `cloud-init.yml`:
 
     #cloud-config
     users:
