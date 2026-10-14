@@ -3,10 +3,10 @@
   "release": "9",
   "builds": [
     {
-      "build": "20261006.0",
+      "build": "20261013.0",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-10-07T11:44:46.379903101Z",
+      "first_seen": "2026-10-14T05:30:03.398966119Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 1276248064,
+          "size": 1276641280,
           "locations": [
             {
-              "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261006.0.x86_64.qcow2",
+              "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261013.0.x86_64.qcow2",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,18 +32,18 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "bc181b85ceaac9bc48651faab29ca0707fc7ff597854adaef1f0fa5f144ac01f",
+                "value": "6178901e812a08e1c36e5adac2992be65a409dfb61812a6b630b2488fc0644b3",
                 "source": {
-                  "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261006.0.x86_64.qcow2.SHA256SUM",
+                  "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261013.0.x86_64.qcow2.SHA256SUM",
                   "format": "bsd",
-                  "filename": "CentOS-Stream-GenericCloud-9-20261006.0.x86_64.qcow2"
+                  "filename": "CentOS-Stream-GenericCloud-9-20261013.0.x86_64.qcow2"
                 }
               }
             ],
             "signatures": [],
             "http": {
-              "last_modified": "Wed, 07 Oct 2026 06:20:18 GMT",
-              "etag": "\"4c120000-65d3a1bef2813\""
+              "last_modified": "Wed, 14 Oct 2026 02:43:23 GMT",
+              "etag": "\"4c180000-65dc3e518fcc2\""
             }
           }
         }
