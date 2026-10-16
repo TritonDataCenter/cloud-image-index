@@ -3,10 +3,10 @@
   "release": "rolling",
   "builds": [
     {
-      "build": "20261001.604814",
+      "build": "20261015.611680",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-10-06T20:41:51.309888513Z",
+      "first_seen": "2026-10-16T05:29:53.777358496Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 578080256,
+          "size": 576680960,
           "locations": [
             {
-              "url": "https://geo.mirror.pkgbuild.com/images/v20261001.604814/Arch-Linux-x86_64-cloudimg-20261001.604814.qcow2",
+              "url": "https://geo.mirror.pkgbuild.com/images/v20261015.611680/Arch-Linux-x86_64-cloudimg-20261015.611680.qcow2",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,18 +32,18 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "360f0fa49db6813bdc8e35bed230a2dc2ae3567b7b5ab74719c0a706e4e34e87",
+                "value": "08754e28d91b1680086c6211ef4df13559e766fff7cdb4006489b14b5d281f08",
                 "source": {
-                  "url": "https://geo.mirror.pkgbuild.com/images/v20261001.604814/Arch-Linux-x86_64-cloudimg-20261001.604814.qcow2.SHA256",
+                  "url": "https://geo.mirror.pkgbuild.com/images/v20261015.611680/Arch-Linux-x86_64-cloudimg-20261015.611680.qcow2.SHA256",
                   "format": "gnu",
-                  "filename": "Arch-Linux-x86_64-cloudimg-20261001.604814.qcow2"
+                  "filename": "Arch-Linux-x86_64-cloudimg-20261015.611680.qcow2"
                 }
               }
             ],
             "signatures": [],
             "http": {
-              "last_modified": "Thu, 01 Oct 2026 12:21:15 GMT",
-              "etag": "\"6abe503b-2274ce00\""
+              "last_modified": "Thu, 15 Oct 2026 12:13:13 GMT",
+              "etag": "\"6ad0c359-225f7400\""
             }
           }
         }

@@ -3,10 +3,10 @@
   "release": "16.0",
   "builds": [
     {
-      "build": "16.0-Build18.75",
+      "build": "16.0-Build18.81",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-10-08T05:33:29.211838159Z",
+      "first_seen": "2026-10-16T05:29:31.828210604Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -23,7 +23,7 @@
           "size": 338000896,
           "locations": [
             {
-              "url": "https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.x86_64-Cloud-Build18.75.qcow2",
+              "url": "https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.x86_64-Cloud-Build18.81.qcow2",
               "kind": "primary",
               "redirects_off_host": true
             }
@@ -32,11 +32,11 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "71930479c898c4e83cb7a25215b648c991bd1265350449b021ea6c3e1f76cee0",
+                "value": "ed375c62192b801293b279aa3e8f3bfbb9a73cd3d0cced73dd1fe2e08932a31b",
                 "source": {
-                  "url": "https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.x86_64-Cloud-Build18.75.qcow2.sha256",
+                  "url": "https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.x86_64-Cloud-Build18.81.qcow2.sha256",
                   "format": "gnu",
-                  "filename": "Leap-16.0-Minimal-VM.x86_64-Cloud-Build18.75.qcow2"
+                  "filename": "Leap-16.0-Minimal-VM.x86_64-Cloud-Build18.81.qcow2"
                 }
               }
             ],
