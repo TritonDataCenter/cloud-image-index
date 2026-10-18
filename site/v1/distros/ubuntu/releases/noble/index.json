@@ -3,10 +3,10 @@
   "release": "noble",
   "builds": [
     {
-      "build": "20260926",
+      "build": "20261017",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-10-06T20:41:54.153023691Z",
+      "first_seen": "2026-10-18T05:27:23.358638722Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 625612288,
+          "size": 621284352,
           "locations": [
             {
-              "url": "https://cloud-images.ubuntu.com/server/releases/noble/release-20260926/ubuntu-24.04-server-cloudimg-amd64.img",
+              "url": "https://cloud-images.ubuntu.com/server/releases/noble/release-20261017/ubuntu-24.04-server-cloudimg-amd64.img",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,9 +32,9 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "6a81c37564db9b1ee84e141922625e1d7c5b389b99bb3c572e0243607d5bb4d2",
+                "value": "04e8f2461a16a44e78a370284471f29616cdd9baf1893df25807b71f985b6c94",
                 "source": {
-                  "url": "https://cloud-images.ubuntu.com/server/releases/noble/release-20260926/SHA256SUMS",
+                  "url": "https://cloud-images.ubuntu.com/server/releases/noble/release-20261017/SHA256SUMS",
                   "format": "gnu",
                   "filename": "ubuntu-24.04-server-cloudimg-amd64.img"
                 }
@@ -42,15 +42,15 @@
             ],
             "signatures": [
               {
-                "url": "https://cloud-images.ubuntu.com/server/releases/noble/release-20260926/SHA256SUMS.gpg",
+                "url": "https://cloud-images.ubuntu.com/server/releases/noble/release-20261017/SHA256SUMS.gpg",
                 "kind": "pgp_detached",
-                "signs": "https://cloud-images.ubuntu.com/server/releases/noble/release-20260926/SHA256SUMS",
+                "signs": "https://cloud-images.ubuntu.com/server/releases/noble/release-20261017/SHA256SUMS",
                 "key_url": null
               }
             ],
             "http": {
-              "last_modified": "Sat, 26 Sep 2026 18:31:16 GMT",
-              "etag": "\"254a1600-65c6709d0ff5c\""
+              "last_modified": "Sat, 17 Oct 2026 20:31:19 GMT",
+              "etag": "\"25080c00-65e0f29cd93d4\""
             }
           }
         }

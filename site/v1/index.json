@@ -5,105 +5,105 @@
       "name": "Ubuntu",
       "os_family": "linux",
       "homepage": "https://ubuntu.com/",
-      "checked_at": "2026-10-17T05:27:40.594292374Z"
+      "checked_at": "2026-10-18T05:27:23.358638722Z"
     },
     {
       "id": "debian",
       "name": "Debian",
       "os_family": "linux",
       "homepage": "https://www.debian.org/",
-      "checked_at": "2026-10-17T05:27:33.124819413Z"
+      "checked_at": "2026-10-18T05:27:29.148137348Z"
     },
     {
       "id": "rocky",
       "name": "Rocky Linux",
       "os_family": "linux",
       "homepage": "https://rockylinux.org/",
-      "checked_at": "2026-10-17T05:27:31.462193813Z"
+      "checked_at": "2026-10-18T05:27:38.915706787Z"
     },
     {
       "id": "alma",
       "name": "AlmaLinux",
       "os_family": "linux",
       "homepage": "https://almalinux.org/",
-      "checked_at": "2026-10-17T05:27:33.318607558Z"
+      "checked_at": "2026-10-18T05:28:51.585569872Z"
     },
     {
       "id": "centos-stream",
       "name": "CentOS Stream",
       "os_family": "linux",
       "homepage": "https://www.centos.org/",
-      "checked_at": "2026-10-17T05:27:32.580420924Z"
+      "checked_at": "2026-10-18T05:27:22.575002921Z"
     },
     {
       "id": "fedora",
       "name": "Fedora",
       "os_family": "linux",
       "homepage": "https://fedoraproject.org/",
-      "checked_at": "2026-10-17T05:27:43.509727695Z"
+      "checked_at": "2026-10-18T05:27:32.679679345Z"
     },
     {
       "id": "oracle",
       "name": "Oracle Linux",
       "os_family": "linux",
       "homepage": "https://www.oracle.com/linux/",
-      "checked_at": "2026-10-17T05:27:54.951219283Z"
+      "checked_at": "2026-10-18T05:27:22.377429419Z"
     },
     {
       "id": "opensuse",
       "name": "openSUSE Leap",
       "os_family": "linux",
       "homepage": "https://www.opensuse.org/",
-      "checked_at": "2026-10-17T05:27:45.873983004Z"
+      "checked_at": "2026-10-18T05:28:32.584622884Z"
     },
     {
       "id": "alpine",
       "name": "Alpine Linux",
       "os_family": "linux",
       "homepage": "https://alpinelinux.org/",
-      "checked_at": "2026-10-17T05:27:32.847478703Z"
+      "checked_at": "2026-10-18T05:27:23.556164824Z"
     },
     {
       "id": "arch",
       "name": "Arch Linux",
       "os_family": "linux",
       "homepage": "https://archlinux.org/",
-      "checked_at": "2026-10-17T05:27:56.552416577Z"
+      "checked_at": "2026-10-18T05:27:40.304818836Z"
     },
     {
       "id": "freebsd",
       "name": "FreeBSD",
       "os_family": "bsd",
       "homepage": "https://www.freebsd.org/",
-      "checked_at": "2026-10-17T05:27:33.288284981Z"
+      "checked_at": "2026-10-18T05:27:21.368913251Z"
     },
     {
       "id": "openbsd",
       "name": "OpenBSD (community build)",
       "os_family": "bsd",
       "homepage": "https://bsd-cloud-image.org/",
-      "checked_at": "2026-10-17T05:27:47.581611954Z"
+      "checked_at": "2026-10-18T05:27:49.202819Z"
     },
     {
       "id": "omnios",
       "name": "OmniOS",
       "os_family": "illumos",
       "homepage": "https://omnios.org/",
-      "checked_at": "2026-10-17T05:27:44.321312975Z"
+      "checked_at": "2026-10-18T05:27:35.369398894Z"
     },
     {
       "id": "smartos",
       "name": "SmartOS",
       "os_family": "illumos",
       "homepage": "https://smartos.org/",
-      "checked_at": "2026-10-17T05:27:44.443942713Z"
+      "checked_at": "2026-10-18T05:27:23.994065095Z"
     },
     {
       "id": "talos",
       "name": "Talos Linux",
       "os_family": "linux",
       "homepage": "https://www.talos.dev/",
-      "checked_at": "2026-10-17T05:27:55.599194180Z"
+      "checked_at": "2026-10-18T05:27:44.930402841Z"
     }
   ]
 }
