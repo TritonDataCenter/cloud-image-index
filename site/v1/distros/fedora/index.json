@@ -3,7 +3,7 @@
   "name": "Fedora",
   "os_family": "linux",
   "homepage": "https://fedoraproject.org/",
-  "checked_at": "2026-10-18T05:27:32.679679345Z",
+  "checked_at": "2026-10-19T05:30:36.939283247Z",
   "dev_channel": "beta",
   "releases": [
     {
