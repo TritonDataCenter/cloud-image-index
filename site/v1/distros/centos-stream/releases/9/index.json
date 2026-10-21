@@ -3,10 +3,10 @@
   "release": "9",
   "builds": [
     {
-      "build": "20261013.0",
+      "build": "20261019.0",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-10-14T05:30:03.398966119Z",
+      "first_seen": "2026-10-21T05:30:12.437305760Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 1276641280,
+          "size": 1276706816,
           "locations": [
             {
-              "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261013.0.x86_64.qcow2",
+              "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261019.0.x86_64.qcow2",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,18 +32,18 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "6178901e812a08e1c36e5adac2992be65a409dfb61812a6b630b2488fc0644b3",
+                "value": "8cae6687232bb36f6e0d344f97c02d02c61fa46c1ede1da744eeefeb6b094e1e",
                 "source": {
-                  "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261013.0.x86_64.qcow2.SHA256SUM",
+                  "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261019.0.x86_64.qcow2.SHA256SUM",
                   "format": "bsd",
-                  "filename": "CentOS-Stream-GenericCloud-9-20261013.0.x86_64.qcow2"
+                  "filename": "CentOS-Stream-GenericCloud-9-20261019.0.x86_64.qcow2"
                 }
               }
             ],
             "signatures": [],
             "http": {
-              "last_modified": "Wed, 14 Oct 2026 02:43:23 GMT",
-              "etag": "\"4c180000-65dc3e518fcc2\""
+              "last_modified": "Tue, 20 Oct 2026 18:19:13 GMT",
+              "etag": "\"4c190000-65e49aaf1d503\""
             }
           }
         }

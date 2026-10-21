@@ -3,10 +3,10 @@
   "release": "resolute",
   "builds": [
     {
-      "build": "20260927",
+      "build": "20261016",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-10-06T20:41:54.153023691Z",
+      "first_seen": "2026-10-21T05:30:23.221535260Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 865115136,
+          "size": 859090944,
           "locations": [
             {
-              "url": "https://cloud-images.ubuntu.com/server/releases/resolute/release-20260927/ubuntu-26.04-server-cloudimg-amd64.img",
+              "url": "https://cloud-images.ubuntu.com/server/releases/resolute/release-20261016/ubuntu-26.04-server-cloudimg-amd64.img",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,9 +32,9 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "8800651811af9a85465ad1d552add729947bb16488dddb4a9b5305a3d97332b2",
+                "value": "5645d0318ad21f643ebb1ac4567514620e9893380b07b0201fda163baa5b7eb5",
                 "source": {
-                  "url": "https://cloud-images.ubuntu.com/server/releases/resolute/release-20260927/SHA256SUMS",
+                  "url": "https://cloud-images.ubuntu.com/server/releases/resolute/release-20261016/SHA256SUMS",
                   "format": "gnu",
                   "filename": "ubuntu-26.04-server-cloudimg-amd64.img"
                 }
@@ -42,15 +42,15 @@
             ],
             "signatures": [
               {
-                "url": "https://cloud-images.ubuntu.com/server/releases/resolute/release-20260927/SHA256SUMS.gpg",
+                "url": "https://cloud-images.ubuntu.com/server/releases/resolute/release-20261016/SHA256SUMS.gpg",
                 "kind": "pgp_detached",
-                "signs": "https://cloud-images.ubuntu.com/server/releases/resolute/release-20260927/SHA256SUMS",
+                "signs": "https://cloud-images.ubuntu.com/server/releases/resolute/release-20261016/SHA256SUMS",
                 "key_url": null
               }
             ],
             "http": {
-              "last_modified": "Tue, 29 Sep 2026 00:41:16 GMT",
-              "etag": "\"33909c00-65c9470b9e7b6\""
+              "last_modified": "Tue, 20 Oct 2026 16:41:17 GMT",
+              "etag": "\"3334b000-65e484cb1cdd9\""
             }
           }
         }
