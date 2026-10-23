@@ -3,10 +3,10 @@
   "release": "rolling",
   "builds": [
     {
-      "build": "20261009T131447Z",
+      "build": "20261023T001807Z",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-10-09T19:39:48.115067946Z",
+      "first_seen": "2026-10-23T05:29:38.337866939Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -18,10 +18,10 @@
           "firmware": [],
           "datasources": [],
           "ssh_key_injection": false,
-          "size": 224178098,
+          "size": 224453624,
           "locations": [
             {
-              "url": "https://us-central.manta.mnx.io/Joyent_Dev/public/SmartOS/20261009T131447Z/smartos-20261009T131447Z-USB.img.gz",
+              "url": "https://us-central.manta.mnx.io/Joyent_Dev/public/SmartOS/20261023T001807Z/smartos-20261023T001807Z-USB.img.gz",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -30,18 +30,18 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "4b94ae50e449f1651abf8561265a905a902a665450e0055bfa60592394ea1616",
+                "value": "eb05340c7162002082915f404198a9818b0c86cf9ea67a45bfdb8921cdf80ed6",
                 "source": {
-                  "url": "https://us-central.manta.mnx.io/Joyent_Dev/public/SmartOS/20261009T131447Z/sha256sums.txt",
+                  "url": "https://us-central.manta.mnx.io/Joyent_Dev/public/SmartOS/20261023T001807Z/sha256sums.txt",
                   "format": "gnu",
-                  "filename": "smartos-20261009T131447Z-USB.img.gz"
+                  "filename": "smartos-20261023T001807Z-USB.img.gz"
                 }
               }
             ],
             "signatures": [],
             "http": {
-              "last_modified": "Fri, 09 Oct 2026 16:16:44 GMT",
-              "etag": "a56deff3-bcbf-4f8f-9e3f-1f4f6d40e3fe"
+              "last_modified": "Fri, 23 Oct 2026 03:25:56 GMT",
+              "etag": "c9c8c6d9-1624-41e8-8a41-bf1d04b530c8"
             }
           }
         }
