@@ -3,15 +3,24 @@
   "name": "Ubuntu",
   "os_family": "linux",
   "homepage": "https://ubuntu.com/",
-  "checked_at": "2026-10-23T05:29:38.412916382Z",
+  "checked_at": "2026-10-24T05:28:22.043864153Z",
   "dev_channel": null,
   "releases": [
+    {
+      "id": "stonking",
+      "version": "26.10",
+      "title": "26.10",
+      "aliases": [
+        "latest"
+      ],
+      "eol_date": "2027-07-15",
+      "osinfo": null
+    },
     {
       "id": "resolute",
       "version": "26.04",
       "title": "26.04 LTS",
       "aliases": [
-        "latest",
         "lts"
       ],
       "eol_date": "2031-05-29",

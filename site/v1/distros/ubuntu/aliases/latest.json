@@ -1,12 +1,12 @@
 {
   "distro": "ubuntu",
-  "release": "resolute",
+  "release": "stonking",
   "builds": [
     {
-      "build": "20261016",
+      "build": "20261019",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-10-21T05:30:23.221535260Z",
+      "first_seen": "2026-10-24T05:28:22.043864153Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 859090944,
+          "size": 876937216,
           "locations": [
             {
-              "url": "https://cloud-images.ubuntu.com/server/releases/resolute/release-20261016/ubuntu-26.04-server-cloudimg-amd64.img",
+              "url": "https://cloud-images.ubuntu.com/server/releases/stonking/release-20261019/ubuntu-26.10-server-cloudimg-amd64.img",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,25 +32,25 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "5645d0318ad21f643ebb1ac4567514620e9893380b07b0201fda163baa5b7eb5",
+                "value": "a021682aff9c0d455315230f229138e4d1413c5bce96ec336e453a69086d9c2f",
                 "source": {
-                  "url": "https://cloud-images.ubuntu.com/server/releases/resolute/release-20261016/SHA256SUMS",
+                  "url": "https://cloud-images.ubuntu.com/server/releases/stonking/release-20261019/SHA256SUMS",
                   "format": "gnu",
-                  "filename": "ubuntu-26.04-server-cloudimg-amd64.img"
+                  "filename": "ubuntu-26.10-server-cloudimg-amd64.img"
                 }
               }
             ],
             "signatures": [
               {
-                "url": "https://cloud-images.ubuntu.com/server/releases/resolute/release-20261016/SHA256SUMS.gpg",
+                "url": "https://cloud-images.ubuntu.com/server/releases/stonking/release-20261019/SHA256SUMS.gpg",
                 "kind": "pgp_detached",
-                "signs": "https://cloud-images.ubuntu.com/server/releases/resolute/release-20261016/SHA256SUMS",
+                "signs": "https://cloud-images.ubuntu.com/server/releases/stonking/release-20261019/SHA256SUMS",
                 "key_url": null
               }
             ],
             "http": {
-              "last_modified": "Tue, 20 Oct 2026 16:41:17 GMT",
-              "etag": "\"3334b000-65e484cb1cdd9\""
+              "last_modified": "Mon, 19 Oct 2026 23:39:12 GMT",
+              "etag": "\"34450000-65e3a0573ea92\""
             }
           }
         }
