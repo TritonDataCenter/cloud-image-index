@@ -3,10 +3,10 @@
   "release": "stonking",
   "builds": [
     {
-      "build": "20261019",
+      "build": "20261025",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-10-24T05:28:22.043864153Z",
+      "first_seen": "2026-10-26T05:33:06.086465687Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 876937216,
+          "size": 876878336,
           "locations": [
             {
-              "url": "https://cloud-images.ubuntu.com/server/releases/stonking/release-20261019/ubuntu-26.10-server-cloudimg-amd64.img",
+              "url": "https://cloud-images.ubuntu.com/server/releases/stonking/release-20261025/ubuntu-26.10-server-cloudimg-amd64.img",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,9 +32,9 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "a021682aff9c0d455315230f229138e4d1413c5bce96ec336e453a69086d9c2f",
+                "value": "46d1d848cd8bfc05a2e729f70b02e0b4b97502bf7839b8928186d3c643c13b33",
                 "source": {
-                  "url": "https://cloud-images.ubuntu.com/server/releases/stonking/release-20261019/SHA256SUMS",
+                  "url": "https://cloud-images.ubuntu.com/server/releases/stonking/release-20261025/SHA256SUMS",
                   "format": "gnu",
                   "filename": "ubuntu-26.10-server-cloudimg-amd64.img"
                 }
@@ -42,15 +42,15 @@
             ],
             "signatures": [
               {
-                "url": "https://cloud-images.ubuntu.com/server/releases/stonking/release-20261019/SHA256SUMS.gpg",
+                "url": "https://cloud-images.ubuntu.com/server/releases/stonking/release-20261025/SHA256SUMS.gpg",
                 "kind": "pgp_detached",
-                "signs": "https://cloud-images.ubuntu.com/server/releases/stonking/release-20261019/SHA256SUMS",
+                "signs": "https://cloud-images.ubuntu.com/server/releases/stonking/release-20261025/SHA256SUMS",
                 "key_url": null
               }
             ],
             "http": {
-              "last_modified": "Mon, 19 Oct 2026 23:39:12 GMT",
-              "etag": "\"34450000-65e3a0573ea92\""
+              "last_modified": "Sun, 25 Oct 2026 19:39:13 GMT",
+              "etag": "\"34441a00-65eaf5e3df359\""
             }
           }
         }
