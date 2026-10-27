@@ -25,6 +25,7 @@ pub mod dirlist;
 pub mod fedora;
 pub mod freebsd;
 pub mod github_release;
+pub mod nixos;
 pub mod omnios;
 pub mod openbsd;
 pub mod opensuse;
@@ -85,6 +86,7 @@ pub enum Vendor {
     Debian,
     Fedora,
     Freebsd,
+    Nixos,
     Omnios,
     Openbsd,
     Opensuse,
@@ -99,7 +101,7 @@ impl Vendor {
     /// Every built-in vendor, in display order. The single source of
     /// truth for [`all_vendors`] and any caller that needs to enumerate
     /// the catalog.
-    pub const ALL: [Vendor; 15] = [
+    pub const ALL: [Vendor; 16] = [
         Vendor::Ubuntu,
         Vendor::Debian,
         Vendor::Rocky,
@@ -110,6 +112,7 @@ impl Vendor {
         Vendor::Opensuse,
         Vendor::Alpine,
         Vendor::Arch,
+        Vendor::Nixos,
         Vendor::Freebsd,
         Vendor::Openbsd,
         Vendor::Omnios,
@@ -134,6 +137,9 @@ impl Vendor {
             Vendor::Debian => "Debian",
             Vendor::Fedora => "Fedora",
             Vendor::Freebsd => "FreeBSD",
+            // The images are a community build, not the NixOS
+            // project's (see the nixos module).
+            Vendor::Nixos => "NixOS (community build)",
             Vendor::Omnios => "OmniOS",
             // The images are a community build, not the OpenBSD
             // project's (see the openbsd module).
@@ -159,6 +165,7 @@ impl Vendor {
             Vendor::Debian => "genericcloud",
             Vendor::Fedora => "cloud-base-generic",
             Vendor::Freebsd => "basic-cloudinit-zfs",
+            Vendor::Nixos => "smartos",
             Vendor::Omnios => "cloud",
             Vendor::Openbsd => "min",
             Vendor::Opensuse => "minimal-vm-cloud",
@@ -469,6 +476,7 @@ pub fn lookup(vendor: Vendor) -> Box<dyn VendorProfile> {
         Vendor::Debian => Box::new(debian::Debian),
         Vendor::Fedora => Box::new(fedora::Fedora),
         Vendor::Freebsd => Box::new(freebsd::FreeBsd),
+        Vendor::Nixos => Box::new(nixos::Nixos),
         Vendor::Omnios => Box::new(omnios::Omnios),
         Vendor::Openbsd => Box::new(openbsd::OpenBsd),
         Vendor::Opensuse => Box::new(opensuse::OpenSuse),
@@ -510,6 +518,7 @@ mod tests {
             (Vendor::Debian, "genericcloud"),
             (Vendor::Fedora, "cloud-base-generic"),
             (Vendor::Freebsd, "basic-cloudinit-zfs"),
+            (Vendor::Nixos, "smartos"),
             (Vendor::Omnios, "cloud"),
             (Vendor::Openbsd, "min"),
             (Vendor::Opensuse, "minimal-vm-cloud"),

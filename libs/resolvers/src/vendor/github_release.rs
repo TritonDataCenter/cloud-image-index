@@ -5,8 +5,8 @@
 // Copyright 2026 Edgecast Cloud LLC.
 
 //! Shared helpers for images published as GitHub release assets with a
-//! `<asset>.sha256` sidecar beside them. Used by openbsd release
-//! discovery.
+//! `<asset>.sha256` sidecar beside them. Used by openbsd and nixos
+//! release discovery.
 //!
 //! Trust roots in TLS to `api.github.com` / `github.com`. GitHub
 //! requires a User-Agent on API requests; the caller's client must set
@@ -20,6 +20,8 @@ pub struct Release {
     pub tag_name: String,
     #[serde(default)]
     pub published_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default)]
+    pub prerelease: bool,
     #[serde(default)]
     pub assets: Vec<Asset>,
 }
