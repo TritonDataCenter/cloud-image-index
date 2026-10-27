@@ -24,6 +24,7 @@ pub mod debian;
 pub mod dirlist;
 pub mod fedora;
 pub mod freebsd;
+pub mod github_release;
 pub mod omnios;
 pub mod openbsd;
 pub mod opensuse;
