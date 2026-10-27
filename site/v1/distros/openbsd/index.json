@@ -3,13 +3,13 @@
   "name": "OpenBSD (community build)",
   "os_family": "bsd",
   "homepage": "https://bsd-cloud-image.org/",
-  "checked_at": "2026-10-26T05:33:05.876964833Z",
+  "checked_at": "2026-10-27T05:31:08.706664079Z",
   "dev_channel": null,
   "releases": [
     {
-      "id": "7.9",
-      "version": "7.9",
-      "title": "OpenBSD (community build) 7.9",
+      "id": "8.0",
+      "version": "8.0",
+      "title": "OpenBSD (community build) 8.0",
       "aliases": [
         "latest"
       ],

@@ -3,10 +3,10 @@
   "release": "bookworm",
   "builds": [
     {
-      "build": "20261021-2638",
+      "build": "20261026-2643",
       "point_release": "12.15",
       "published_at": null,
-      "first_seen": "2026-10-22T05:30:07.501508159Z",
+      "first_seen": "2026-10-27T05:31:09.109009074Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 347799552,
+          "size": 349831168,
           "locations": [
             {
-              "url": "https://cloud.debian.org/images/cloud/bookworm/20261021-2638/debian-12-genericcloud-amd64-20261021-2638.qcow2",
+              "url": "https://cloud.debian.org/images/cloud/bookworm/20261026-2643/debian-12-genericcloud-amd64-20261026-2643.qcow2",
               "kind": "primary",
               "redirects_off_host": true
             }
@@ -32,11 +32,11 @@
             "digests": [
               {
                 "algorithm": "sha512",
-                "value": "9f181877006e8d9ca4f4554eba8729a829936f0f7d1db5e77f69b1ef0f6bc372b4d46f3dae39b10d84f9131496c2cc1d449264f26577fe934a79de5a5512a3dd",
+                "value": "0464b5d4ae3aa4f658468d88da83af7857b71548b30d46dcb6282770955a747fb95a983476db90d25afd0653af607224c7ebd05122ab71faa106fd712aaad652",
                 "source": {
-                  "url": "https://cloud.debian.org/images/cloud/bookworm/20261021-2638/SHA512SUMS",
+                  "url": "https://cloud.debian.org/images/cloud/bookworm/20261026-2643/SHA512SUMS",
                   "format": "gnu",
-                  "filename": "debian-12-genericcloud-amd64-20261021-2638.qcow2"
+                  "filename": "debian-12-genericcloud-amd64-20261026-2643.qcow2"
                 }
               }
             ],
