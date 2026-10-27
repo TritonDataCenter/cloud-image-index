@@ -15,11 +15,15 @@ we tell you what the vendor publishes and where. Images are always
 downloaded from the vendor, and clients decide for themselves how much
 to trust us versus cross-checking against the vendor.
 
-One exception: the OpenBSD project does not publish cloud images, so
+Two exceptions: the OpenBSD project does not publish cloud images, so
 the index lists a community build from
 <https://github.com/hcartiaux/openbsd-cloud-image>, as "OpenBSD
 (community build)". Its checksums come from the same place, so for
 OpenBSD "the vendor" means that project, not the OpenBSD project.
+Likewise the NixOS project publishes no image for SmartOS, so the index
+lists a community build from
+<https://github.com/nshalman/nixos-cloud-image>, as "NixOS (community
+build)", and for NixOS "the vendor" means that project.
 
 The index is published at
 <https://cloud-images.tritoncloud.io/v1/index.json>, with every current
