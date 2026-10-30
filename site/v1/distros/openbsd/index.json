@@ -3,7 +3,7 @@
   "name": "OpenBSD (community build)",
   "os_family": "bsd",
   "homepage": "https://bsd-cloud-image.org/",
-  "checked_at": "2026-10-29T05:23:56.248903361Z",
+  "checked_at": "2026-10-30T05:23:48.662864261Z",
   "dev_channel": null,
   "releases": [
     {
