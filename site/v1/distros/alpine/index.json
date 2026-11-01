@@ -3,7 +3,7 @@
   "name": "Alpine Linux",
   "os_family": "linux",
   "homepage": "https://alpinelinux.org/",
-  "checked_at": "2026-10-31T05:22:25.780049646Z",
+  "checked_at": "2026-11-01T05:21:48.403510199Z",
   "dev_channel": null,
   "releases": [
     {
@@ -30,14 +30,6 @@
       "title": "Alpine Linux v3.22",
       "aliases": [],
       "eol_date": "2027-05-01",
-      "osinfo": null
-    },
-    {
-      "id": "3.21",
-      "version": "3.21.9",
-      "title": "Alpine Linux v3.21",
-      "aliases": [],
-      "eol_date": "2026-11-01",
       "osinfo": null
     }
   ]
