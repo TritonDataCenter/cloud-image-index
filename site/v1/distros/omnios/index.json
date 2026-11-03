@@ -3,13 +3,13 @@
   "name": "OmniOS",
   "os_family": "illumos",
   "homepage": "https://omnios.org/",
-  "checked_at": "2026-11-02T05:22:26.684055113Z",
+  "checked_at": "2026-11-03T05:21:59.668937455Z",
   "dev_channel": "bloody",
   "releases": [
     {
-      "id": "r151058",
-      "version": "r151058",
-      "title": "OmniOS r151058",
+      "id": "r151060",
+      "version": "r151060",
+      "title": "OmniOS r151060",
       "aliases": [
         "latest"
       ],
