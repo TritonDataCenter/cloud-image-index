@@ -3,26 +3,24 @@
   "name": "Fedora",
   "os_family": "linux",
   "homepage": "https://fedoraproject.org/",
-  "checked_at": "2026-11-03T05:22:00.969707280Z",
-  "dev_channel": "beta",
+  "checked_at": "2026-11-04T05:22:48.199269670Z",
+  "dev_channel": null,
   "releases": [
     {
-      "id": "45_Beta",
-      "version": "45 Beta",
-      "title": "Fedora 45 Beta",
+      "id": "45",
+      "version": "45",
+      "title": "Fedora 45",
       "aliases": [
-        "dev"
+        "latest"
       ],
-      "eol_date": null,
+      "eol_date": "2027-12-08",
       "osinfo": null
     },
     {
       "id": "44",
       "version": "44",
       "title": "Fedora 44",
-      "aliases": [
-        "latest"
-      ],
+      "aliases": [],
       "eol_date": "2027-06-02",
       "osinfo": null
     },

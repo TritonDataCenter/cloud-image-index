@@ -3,10 +3,10 @@
   "release": "9",
   "builds": [
     {
-      "build": "20261023.1",
+      "build": "20261103.0",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-10-25T05:28:17.386139054Z",
+      "first_seen": "2026-11-04T05:22:46.747612158Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 1276837888,
+          "size": 1277231104,
           "locations": [
             {
-              "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261023.1.x86_64.qcow2",
+              "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261103.0.x86_64.qcow2",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,18 +32,18 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "c705412b3b80cace91f1a205c685fc1da168637fed4f3fce022c2147d5276d18",
+                "value": "ab9c97dd5be775a0171af19d31af5d1b8a79be485d2ac75303bdf76fdbafeed6",
                 "source": {
-                  "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261023.1.x86_64.qcow2.SHA256SUM",
+                  "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261103.0.x86_64.qcow2.SHA256SUM",
                   "format": "bsd",
-                  "filename": "CentOS-Stream-GenericCloud-9-20261023.1.x86_64.qcow2"
+                  "filename": "CentOS-Stream-GenericCloud-9-20261103.0.x86_64.qcow2"
                 }
               }
             ],
             "signatures": [],
             "http": {
-              "last_modified": "Sat, 24 Oct 2026 06:24:43 GMT",
-              "etag": "\"4c1b0000-65e902708b222\""
+              "last_modified": "Wed, 04 Nov 2026 00:12:57 GMT",
+              "etag": "\"4c210000-65f683dba1295\""
             }
           }
         }
