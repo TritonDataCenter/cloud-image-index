@@ -12,7 +12,7 @@ Finding the current cloud image for an operating system means knowing
 each vendor's own way of publishing it: Canonical's Simple Streams,
 Fedora's `releases.json`, Debian's apt `Release` files, HTML directory
 listings (FreeBSD, Rocky, CentOS Stream), an HTML table (Oracle), the
-GitHub Releases API (Talos, OpenBSD), MirrorCache JSON (openSUSE), and
+GitHub Releases API (Talos, OpenBSD, NixOS), MirrorCache JSON (openSUSE), and
 so on. These formats change, and new OS releases appear, on the
 vendors' schedules rather than ours.
 
@@ -341,7 +341,7 @@ Breaking changes go to a new `v2/` tree published alongside `v1/`.
   release is offered only if the vendor lists it as supported and
   endoflife.date does not say it has ended (`isEol`, or its `eolFrom`
   date has passed). endoflife.date covers 11 of our distros (not Arch,
-  OmniOS, SmartOS or Talos); it only removes releases, never adds one,
+  NixOS, OmniOS, SmartOS or Talos); it only removes releases, never adds one,
   and nothing from it is published: `eol_date` is the vendor's or empty.
   It catches what vendor data misses: Oracle, Rocky, Alma, CentOS
   Stream, FreeBSD and OpenBSD publish no lifecycle the resolvers read,
@@ -451,7 +451,7 @@ tree. It is a first approximation. Known gaps, as of a full run on 2026-10-05:
   Alpine, Fedora), except Arch's and openSUSE's, which their resolvers
   note but do not publish yet; signing-key URLs are not yet known. EOL dates come
   only from Alpine and Ubuntu feeds and Fedora's Bodhi; publish dates only from GitHub
-  (OpenBSD, Talos `latest`); point releases from Alma, Rocky, Oracle,
+  (OpenBSD, NixOS, Talos `latest`); point releases from Alma, Rocky, Oracle,
   Alpine and Debian (Debian's only when the dated build is newer than
   the current apt point release; otherwise it is unknown). No osinfo ids (needs a decision on where the ids
   come from) and no firmware (no vendor states it, beyond Alpine's
