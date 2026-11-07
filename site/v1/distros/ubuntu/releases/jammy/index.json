@@ -3,10 +3,10 @@
   "release": "jammy",
   "builds": [
     {
-      "build": "20261020",
+      "build": "20261106",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-10-21T05:30:23.221535260Z",
+      "first_seen": "2026-11-07T05:21:40.826972805Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 730529792,
+          "size": 730617344,
           "locations": [
             {
-              "url": "https://cloud-images.ubuntu.com/server/releases/jammy/release-20261020/ubuntu-22.04-server-cloudimg-amd64.img",
+              "url": "https://cloud-images.ubuntu.com/server/releases/jammy/release-20261106/ubuntu-22.04-server-cloudimg-amd64.img",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,9 +32,9 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "2099e63da0b822ef8e05e3d596c1b402eaaae658fc08ab919cb8495bfcdc488b",
+                "value": "f77bc6d59cb8deaa9657095736b5f5003f7705b47055f01823459715c967de6a",
                 "source": {
-                  "url": "https://cloud-images.ubuntu.com/server/releases/jammy/release-20261020/SHA256SUMS",
+                  "url": "https://cloud-images.ubuntu.com/server/releases/jammy/release-20261106/SHA256SUMS",
                   "format": "gnu",
                   "filename": "ubuntu-22.04-server-cloudimg-amd64.img"
                 }
@@ -42,15 +42,15 @@
             ],
             "signatures": [
               {
-                "url": "https://cloud-images.ubuntu.com/server/releases/jammy/release-20261020/SHA256SUMS.gpg",
+                "url": "https://cloud-images.ubuntu.com/server/releases/jammy/release-20261106/SHA256SUMS.gpg",
                 "kind": "pgp_detached",
-                "signs": "https://cloud-images.ubuntu.com/server/releases/jammy/release-20261020/SHA256SUMS",
+                "signs": "https://cloud-images.ubuntu.com/server/releases/jammy/release-20261106/SHA256SUMS",
                 "key_url": null
               }
             ],
             "http": {
-              "last_modified": "Tue, 20 Oct 2026 19:11:34 GMT",
-              "etag": "\"2b8b0000-65e4a6620ca8d\""
+              "last_modified": "Fri, 06 Nov 2026 20:11:28 GMT",
+              "etag": "\"2b8c5600-65fa137a228e7\""
             }
           }
         }
