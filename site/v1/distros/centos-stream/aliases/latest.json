@@ -3,10 +3,10 @@
   "release": "10",
   "builds": [
     {
-      "build": "20261103.0",
+      "build": "20261106.0",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-11-04T05:22:46.747612158Z",
+      "first_seen": "2026-11-10T05:21:57.584189362Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 1047199744,
+          "size": 1044709376,
           "locations": [
             {
-              "url": "https://cloud.centos.org/centos/10-stream/x86_64/images/CentOS-Stream-GenericCloud-10-20261103.0.x86_64.qcow2",
+              "url": "https://cloud.centos.org/centos/10-stream/x86_64/images/CentOS-Stream-GenericCloud-10-20261106.0.x86_64.qcow2",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,18 +32,18 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "901b4c1d06e5e79968abee8d4274bfc915777bbd08a340de0be6dd8e6d28576d",
+                "value": "c708f66fdb4124740be637cfd0b5533990cc9a7b6f9579eb00f014fa8225032e",
                 "source": {
-                  "url": "https://cloud.centos.org/centos/10-stream/x86_64/images/CentOS-Stream-GenericCloud-10-20261103.0.x86_64.qcow2.SHA256SUM",
+                  "url": "https://cloud.centos.org/centos/10-stream/x86_64/images/CentOS-Stream-GenericCloud-10-20261106.0.x86_64.qcow2.SHA256SUM",
                   "format": "bsd",
-                  "filename": "CentOS-Stream-GenericCloud-10-20261103.0.x86_64.qcow2"
+                  "filename": "CentOS-Stream-GenericCloud-10-20261106.0.x86_64.qcow2"
                 }
               }
             ],
             "signatures": [],
             "http": {
-              "last_modified": "Wed, 04 Nov 2026 01:05:50 GMT",
-              "etag": "\"3e6b0000-65f68fae750c6\""
+              "last_modified": "Tue, 10 Nov 2026 01:54:01 GMT",
+              "etag": "\"3e450000-65fe25a430053\""
             }
           }
         }
