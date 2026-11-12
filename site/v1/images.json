@@ -6,7 +6,7 @@
         "name": "Ubuntu",
         "os_family": "linux",
         "homepage": "https://ubuntu.com/",
-        "checked_at": "2026-11-11T05:22:12.415042168Z"
+        "checked_at": "2026-11-12T05:22:32.750409078Z"
       },
       "release": {
         "id": "stonking",
@@ -79,7 +79,7 @@
         "name": "Ubuntu",
         "os_family": "linux",
         "homepage": "https://ubuntu.com/",
-        "checked_at": "2026-11-11T05:22:12.415042168Z"
+        "checked_at": "2026-11-12T05:22:32.750409078Z"
       },
       "release": {
         "id": "resolute",
@@ -152,7 +152,7 @@
         "name": "Ubuntu",
         "os_family": "linux",
         "homepage": "https://ubuntu.com/",
-        "checked_at": "2026-11-11T05:22:12.415042168Z"
+        "checked_at": "2026-11-12T05:22:32.750409078Z"
       },
       "release": {
         "id": "noble",
@@ -223,7 +223,7 @@
         "name": "Ubuntu",
         "os_family": "linux",
         "homepage": "https://ubuntu.com/",
-        "checked_at": "2026-11-11T05:22:12.415042168Z"
+        "checked_at": "2026-11-12T05:22:32.750409078Z"
       },
       "release": {
         "id": "jammy",
@@ -294,79 +294,15 @@
         "name": "Debian",
         "os_family": "linux",
         "homepage": "https://www.debian.org/",
-        "checked_at": "2026-11-11T05:22:12.963074043Z"
-      },
-      "release": {
-        "id": "trixie",
-        "version": "13.7",
-        "title": "Debian 13.7 (trixie) — stable",
-        "aliases": [
-          "latest"
-        ],
-        "eol_date": null,
-        "osinfo": null
-      },
-      "build": {
-        "build": "20261103-2651",
-        "point_release": "13.7",
-        "published_at": null,
-        "first_seen": "2026-11-04T05:22:46.729817330Z",
-        "osinfo": null,
-        "artifacts": [
-          {
-            "variant": "genericcloud",
-            "default_variant": true,
-            "arch": "x86_64",
-            "format": "qcow2",
-            "compression": "none",
-            "firmware": [],
-            "datasources": [
-              "nocloud"
-            ],
-            "ssh_key_injection": true,
-            "size": 341180416,
-            "locations": [
-              {
-                "url": "https://cloud.debian.org/images/cloud/trixie/20261103-2651/debian-13-genericcloud-amd64-20261103-2651.qcow2",
-                "kind": "primary",
-                "redirects_off_host": true
-              }
-            ],
-            "integrity": {
-              "digests": [
-                {
-                  "algorithm": "sha512",
-                  "value": "d25999de0770d4cde1be72c299ba3ad94eac7ea8fd4d18f8cc86c69df69337e2e8a91d64465a9bfd8f2a78c566fcbcb0842eacc91c09efdef72d719d9f13b535",
-                  "source": {
-                    "url": "https://cloud.debian.org/images/cloud/trixie/20261103-2651/SHA512SUMS",
-                    "format": "gnu",
-                    "filename": "debian-13-genericcloud-amd64-20261103-2651.qcow2"
-                  }
-                }
-              ],
-              "signatures": [],
-              "http": {
-                "last_modified": null,
-                "etag": null
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "distro": {
-        "id": "debian",
-        "name": "Debian",
-        "os_family": "linux",
-        "homepage": "https://www.debian.org/",
-        "checked_at": "2026-11-11T05:22:12.963074043Z"
+        "checked_at": "2026-11-12T05:23:44.056797193Z"
       },
       "release": {
         "id": "bookworm",
         "version": "12.15",
         "title": "Debian 12.15 (bookworm) — oldstable",
-        "aliases": [],
+        "aliases": [
+          "latest"
+        ],
         "eol_date": null,
         "osinfo": null
       },
@@ -424,7 +360,7 @@
         "name": "Rocky Linux",
         "os_family": "linux",
         "homepage": "https://rockylinux.org/",
-        "checked_at": "2026-11-11T05:22:12.066390043Z"
+        "checked_at": "2026-11-12T05:22:33.314986072Z"
       },
       "release": {
         "id": "10",
@@ -497,7 +433,7 @@
         "name": "Rocky Linux",
         "os_family": "linux",
         "homepage": "https://rockylinux.org/",
-        "checked_at": "2026-11-11T05:22:12.066390043Z"
+        "checked_at": "2026-11-12T05:22:33.314986072Z"
       },
       "release": {
         "id": "9",
@@ -568,7 +504,7 @@
         "name": "Rocky Linux",
         "os_family": "linux",
         "homepage": "https://rockylinux.org/",
-        "checked_at": "2026-11-11T05:22:12.066390043Z"
+        "checked_at": "2026-11-12T05:22:33.314986072Z"
       },
       "release": {
         "id": "8",
@@ -632,7 +568,7 @@
         "name": "AlmaLinux",
         "os_family": "linux",
         "homepage": "https://almalinux.org/",
-        "checked_at": "2026-11-11T05:22:11.705128732Z"
+        "checked_at": "2026-11-12T05:22:33.403205113Z"
       },
       "release": {
         "id": "10",
@@ -705,7 +641,7 @@
         "name": "AlmaLinux",
         "os_family": "linux",
         "homepage": "https://almalinux.org/",
-        "checked_at": "2026-11-11T05:22:11.705128732Z"
+        "checked_at": "2026-11-12T05:22:33.403205113Z"
       },
       "release": {
         "id": "9",
@@ -776,7 +712,7 @@
         "name": "AlmaLinux",
         "os_family": "linux",
         "homepage": "https://almalinux.org/",
-        "checked_at": "2026-11-11T05:22:11.705128732Z"
+        "checked_at": "2026-11-12T05:22:33.403205113Z"
       },
       "release": {
         "id": "8",
@@ -847,7 +783,7 @@
         "name": "CentOS Stream",
         "os_family": "linux",
         "homepage": "https://www.centos.org/",
-        "checked_at": "2026-11-11T05:22:12.134890360Z"
+        "checked_at": "2026-11-12T05:22:36.141960460Z"
       },
       "release": {
         "id": "10",
@@ -913,7 +849,7 @@
         "name": "CentOS Stream",
         "os_family": "linux",
         "homepage": "https://www.centos.org/",
-        "checked_at": "2026-11-11T05:22:12.134890360Z"
+        "checked_at": "2026-11-12T05:22:36.141960460Z"
       },
       "release": {
         "id": "9",
@@ -1192,7 +1128,7 @@
         "name": "Oracle Linux",
         "os_family": "linux",
         "homepage": "https://www.oracle.com/linux/",
-        "checked_at": "2026-11-11T05:22:10.403854480Z"
+        "checked_at": "2026-11-12T05:22:32.952981535Z"
       },
       "release": {
         "id": "10",
@@ -1258,7 +1194,7 @@
         "name": "Oracle Linux",
         "os_family": "linux",
         "homepage": "https://www.oracle.com/linux/",
-        "checked_at": "2026-11-11T05:22:10.403854480Z"
+        "checked_at": "2026-11-12T05:22:32.952981535Z"
       },
       "release": {
         "id": "9",
@@ -1322,7 +1258,7 @@
         "name": "Oracle Linux",
         "os_family": "linux",
         "homepage": "https://www.oracle.com/linux/",
-        "checked_at": "2026-11-11T05:22:10.403854480Z"
+        "checked_at": "2026-11-12T05:22:32.952981535Z"
       },
       "release": {
         "id": "8",
@@ -1386,7 +1322,7 @@
         "name": "openSUSE Leap",
         "os_family": "linux",
         "homepage": "https://www.opensuse.org/",
-        "checked_at": "2026-11-11T05:22:13.120393328Z"
+        "checked_at": "2026-11-12T05:22:33.891603792Z"
       },
       "release": {
         "id": "16.1",
@@ -1452,7 +1388,7 @@
         "name": "openSUSE Leap",
         "os_family": "linux",
         "homepage": "https://www.opensuse.org/",
-        "checked_at": "2026-11-11T05:22:13.120393328Z"
+        "checked_at": "2026-11-12T05:22:33.891603792Z"
       },
       "release": {
         "id": "16.0",
@@ -1516,7 +1452,7 @@
         "name": "Alpine Linux",
         "os_family": "linux",
         "homepage": "https://alpinelinux.org/",
-        "checked_at": "2026-11-11T05:22:15.676973183Z"
+        "checked_at": "2026-11-12T05:22:33.308968571Z"
       },
       "release": {
         "id": "3.24",
@@ -1589,7 +1525,7 @@
         "name": "Alpine Linux",
         "os_family": "linux",
         "homepage": "https://alpinelinux.org/",
-        "checked_at": "2026-11-11T05:22:15.676973183Z"
+        "checked_at": "2026-11-12T05:22:33.308968571Z"
       },
       "release": {
         "id": "3.23",
@@ -1660,7 +1596,7 @@
         "name": "Alpine Linux",
         "os_family": "linux",
         "homepage": "https://alpinelinux.org/",
-        "checked_at": "2026-11-11T05:22:15.676973183Z"
+        "checked_at": "2026-11-12T05:22:33.308968571Z"
       },
       "release": {
         "id": "3.22",
@@ -1731,7 +1667,7 @@
         "name": "Arch Linux",
         "os_family": "linux",
         "homepage": "https://archlinux.org/",
-        "checked_at": "2026-11-11T05:22:12.503230777Z"
+        "checked_at": "2026-11-12T05:22:32.692436414Z"
       },
       "release": {
         "id": "rolling",
@@ -1797,7 +1733,7 @@
         "name": "FreeBSD",
         "os_family": "bsd",
         "homepage": "https://www.freebsd.org/",
-        "checked_at": "2026-11-11T05:22:13.012936296Z"
+        "checked_at": "2026-11-12T05:22:43.691251890Z"
       },
       "release": {
         "id": "15.1",
@@ -1863,7 +1799,7 @@
         "name": "FreeBSD",
         "os_family": "bsd",
         "homepage": "https://www.freebsd.org/",
-        "checked_at": "2026-11-11T05:22:13.012936296Z"
+        "checked_at": "2026-11-12T05:22:43.691251890Z"
       },
       "release": {
         "id": "14.5",
@@ -1927,7 +1863,7 @@
         "name": "FreeBSD",
         "os_family": "bsd",
         "homepage": "https://www.freebsd.org/",
-        "checked_at": "2026-11-11T05:22:13.012936296Z"
+        "checked_at": "2026-11-12T05:22:43.691251890Z"
       },
       "release": {
         "id": "14.4",
@@ -1991,7 +1927,7 @@
         "name": "OpenBSD (community build)",
         "os_family": "bsd",
         "homepage": "https://bsd-cloud-image.org/",
-        "checked_at": "2026-11-11T05:22:18.170853968Z"
+        "checked_at": "2026-11-12T05:22:32.920320628Z"
       },
       "release": {
         "id": "8.0",
@@ -2057,7 +1993,7 @@
         "name": "OmniOS",
         "os_family": "illumos",
         "homepage": "https://omnios.org/",
-        "checked_at": "2026-11-11T05:22:12.044754572Z"
+        "checked_at": "2026-11-12T05:22:34.259843837Z"
       },
       "release": {
         "id": "r151060",
@@ -2123,7 +2059,7 @@
         "name": "OmniOS",
         "os_family": "illumos",
         "homepage": "https://omnios.org/",
-        "checked_at": "2026-11-11T05:22:12.044754572Z"
+        "checked_at": "2026-11-12T05:22:34.259843837Z"
       },
       "release": {
         "id": "r151054r",
@@ -2189,7 +2125,7 @@
         "name": "OmniOS",
         "os_family": "illumos",
         "homepage": "https://omnios.org/",
-        "checked_at": "2026-11-11T05:22:12.044754572Z"
+        "checked_at": "2026-11-12T05:22:34.259843837Z"
       },
       "release": {
         "id": "20261007",
@@ -2255,7 +2191,7 @@
         "name": "SmartOS",
         "os_family": "illumos",
         "homepage": "https://smartos.org/",
-        "checked_at": "2026-11-11T05:22:12.312629101Z"
+        "checked_at": "2026-11-12T05:22:33.243437117Z"
       },
       "release": {
         "id": "rolling",
@@ -2319,7 +2255,7 @@
         "name": "Talos Linux",
         "os_family": "linux",
         "homepage": "https://www.talos.dev/",
-        "checked_at": "2026-11-11T05:22:16.101586070Z"
+        "checked_at": "2026-11-12T05:22:44.091217125Z"
       },
       "release": {
         "id": "1.14",
@@ -2332,10 +2268,10 @@
         "osinfo": null
       },
       "build": {
-        "build": "1.14.5",
+        "build": "1.14.6",
         "point_release": null,
-        "published_at": "2026-10-26T15:31:11Z",
-        "first_seen": "2026-10-27T05:31:28.223108470Z",
+        "published_at": "2026-11-11T19:51:33Z",
+        "first_seen": "2026-11-12T05:22:44.091217125Z",
         "osinfo": null,
         "artifacts": [
           {
@@ -2349,10 +2285,10 @@
               "nocloud"
             ],
             "ssh_key_injection": false,
-            "size": 232462540,
+            "size": 233302384,
             "locations": [
               {
-                "url": "https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.14.5/nocloud-amd64.raw.xz",
+                "url": "https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.14.6/nocloud-amd64.raw.xz",
                 "kind": "primary",
                 "redirects_off_host": false
               }

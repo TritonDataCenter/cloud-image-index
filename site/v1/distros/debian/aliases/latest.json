@@ -1,12 +1,12 @@
 {
   "distro": "debian",
-  "release": "trixie",
+  "release": "bookworm",
   "builds": [
     {
-      "build": "20261103-2651",
-      "point_release": "13.7",
+      "build": "20261026-2643",
+      "point_release": "12.15",
       "published_at": null,
-      "first_seen": "2026-11-04T05:22:46.729817330Z",
+      "first_seen": "2026-10-27T05:31:09.109009074Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 341180416,
+          "size": 349831168,
           "locations": [
             {
-              "url": "https://cloud.debian.org/images/cloud/trixie/20261103-2651/debian-13-genericcloud-amd64-20261103-2651.qcow2",
+              "url": "https://cloud.debian.org/images/cloud/bookworm/20261026-2643/debian-12-genericcloud-amd64-20261026-2643.qcow2",
               "kind": "primary",
               "redirects_off_host": true
             }
@@ -32,11 +32,11 @@
             "digests": [
               {
                 "algorithm": "sha512",
-                "value": "d25999de0770d4cde1be72c299ba3ad94eac7ea8fd4d18f8cc86c69df69337e2e8a91d64465a9bfd8f2a78c566fcbcb0842eacc91c09efdef72d719d9f13b535",
+                "value": "0464b5d4ae3aa4f658468d88da83af7857b71548b30d46dcb6282770955a747fb95a983476db90d25afd0653af607224c7ebd05122ab71faa106fd712aaad652",
                 "source": {
-                  "url": "https://cloud.debian.org/images/cloud/trixie/20261103-2651/SHA512SUMS",
+                  "url": "https://cloud.debian.org/images/cloud/bookworm/20261026-2643/SHA512SUMS",
                   "format": "gnu",
-                  "filename": "debian-13-genericcloud-amd64-20261103-2651.qcow2"
+                  "filename": "debian-12-genericcloud-amd64-20261026-2643.qcow2"
                 }
               }
             ],
