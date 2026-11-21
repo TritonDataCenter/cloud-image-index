@@ -1,12 +1,12 @@
 {
   "distro": "omnios",
-  "release": "20261007",
+  "release": "20261120",
   "builds": [
     {
-      "build": "20261007",
+      "build": "20261120",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-10-08T05:33:49.296878441Z",
+      "first_seen": "2026-11-21T05:21:59.024464818Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 1173422080,
+          "size": 1284898816,
           "locations": [
             {
-              "url": "https://downloads.omnios.org/media/bloody/omnios-bloody-20261007.cloud.vmdk",
+              "url": "https://downloads.omnios.org/media/bloody/omnios-bloody-20261120.cloud.vmdk",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,9 +32,9 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "7e13bfbc65899040f66fe333fe54101c1ab2ecac6b17179b89c66a71a1d51eaa",
+                "value": "760ffe54b08343f8adcc6abd1466333fec9cb74909371aff448b0d3fffed5785",
                 "source": {
-                  "url": "https://downloads.omnios.org/media/bloody/omnios-bloody-20261007.cloud.vmdk.sha256",
+                  "url": "https://downloads.omnios.org/media/bloody/omnios-bloody-20261120.cloud.vmdk.sha256",
                   "format": "bare",
                   "filename": null
                 }
@@ -42,8 +42,8 @@
             ],
             "signatures": [],
             "http": {
-              "last_modified": "Wed, 07 Oct 2026 22:32:14 GMT",
-              "etag": "\"6ac6c86e-45f10000\""
+              "last_modified": "Fri, 20 Nov 2026 20:14:38 GMT",
+              "etag": "\"6b00aa2e-4c960000\""
             }
           }
         }
