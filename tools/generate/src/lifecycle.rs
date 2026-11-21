@@ -37,7 +37,9 @@ pub fn product(vendor: Vendor) -> Option<&'static str> {
         Vendor::Oracle => "oracle-linux",
         Vendor::Freebsd => "freebsd",
         Vendor::Openbsd => "openbsd",
-        Vendor::Arch | Vendor::Omnios | Vendor::Smartos | Vendor::Talos => return None,
+        Vendor::Arch | Vendor::Nixos | Vendor::Omnios | Vendor::Smartos | Vendor::Talos => {
+            return None;
+        }
     })
 }
 

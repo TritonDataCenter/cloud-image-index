@@ -16,7 +16,7 @@
 //! ## HTTP client
 //!
 //! Every profile takes the caller's `reqwest::Client`, which must set a
-//! User-Agent identifying the caller: GitHub's API (Talos, OpenBSD) and
+//! User-Agent identifying the caller: GitHub's API (Talos, OpenBSD, NixOS) and
 //! `cloud.centos.org` (behind CloudFront) refuse requests without one.
 //! Profiles do not set their own, so vendors see who is really asking.
 //!
