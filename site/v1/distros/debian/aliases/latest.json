@@ -4,7 +4,7 @@
   "builds": [
     {
       "build": "20261116-2664",
-      "point_release": "13.7",
+      "point_release": null,
       "published_at": null,
       "first_seen": "2026-11-17T05:22:09.326101494Z",
       "osinfo": null,

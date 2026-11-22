@@ -3,7 +3,7 @@
   "name": "FreeBSD",
   "os_family": "bsd",
   "homepage": "https://www.freebsd.org/",
-  "checked_at": "2026-11-21T05:21:59.086613973Z",
+  "checked_at": "2026-11-22T05:22:03.340940855Z",
   "dev_channel": null,
   "releases": [
     {

@@ -3,13 +3,13 @@
   "name": "Debian",
   "os_family": "linux",
   "homepage": "https://www.debian.org/",
-  "checked_at": "2026-11-21T05:21:59.909803010Z",
+  "checked_at": "2026-11-22T05:22:03.320049275Z",
   "dev_channel": null,
   "releases": [
     {
       "id": "trixie",
-      "version": "13.7",
-      "title": "Debian 13.7 (trixie) — stable",
+      "version": "13.8",
+      "title": "Debian 13.8 (trixie) — stable",
       "aliases": [
         "latest"
       ],
