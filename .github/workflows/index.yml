@@ -114,6 +114,9 @@ jobs:
       - name: Generate ${{ matrix.vendor }}
         env:
           VENDOR: ${{ matrix.vendor }}
+          # For the GitHub API's higher rate limit (Talos, OpenBSD):
+          # unauthenticated requests share a per-IP budget.
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           chmod +x "$GENERATE"
           "$GENERATE" vendor "$VENDOR" --previous site --out "fragments/$VENDOR"
