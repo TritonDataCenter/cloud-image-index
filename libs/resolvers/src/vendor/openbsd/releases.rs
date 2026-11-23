@@ -26,6 +26,8 @@
 use anyhow::{Context, Result};
 use serde::Deserialize;
 
+use crate::vendor::github_api;
+
 const REPO: &str = "hcartiaux/openbsd-cloud-image";
 const ASSET_NAME: &str = "openbsd-min.qcow2";
 
@@ -117,11 +119,7 @@ async fn fetch_release(http: &reqwest::Client, release: &str) -> Result<Release>
 }
 
 async fn github_get<T: for<'de> Deserialize<'de>>(http: &reqwest::Client, url: &str) -> Result<T> {
-    let body = http
-        .get(url)
-        // GitHub requires a User-Agent on API requests; the caller's
-        // client sets one (see the crate documentation).
-        .header("Accept", "application/vnd.github+json")
+    let body = github_api::get(http, url)
         .send()
         .await
         .with_context(|| format!("GET {url}"))?
