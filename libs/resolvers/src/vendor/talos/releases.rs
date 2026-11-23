@@ -16,6 +16,8 @@
 use anyhow::{Context, Result};
 use serde::Deserialize;
 
+use crate::vendor::github_api;
+
 const LATEST_URL: &str = "https://api.github.com/repos/siderolabs/talos/releases/latest";
 
 #[derive(Deserialize)]
@@ -45,11 +47,7 @@ fn latest_from(release: GitHubRelease) -> Latest {
 
 pub async fn find_latest(http: &reqwest::Client) -> Result<Latest> {
     eprintln!("Fetching Talos latest release from GitHub ...");
-    // GitHub returns 403 to requests without a User-Agent; the caller's
-    // client sets one (see the crate documentation).
-    let resp = http
-        .get(LATEST_URL)
-        .header("Accept", "application/vnd.github+json")
+    let resp = github_api::get(http, LATEST_URL)
         .send()
         .await
         .with_context(|| format!("GET {LATEST_URL}"))?

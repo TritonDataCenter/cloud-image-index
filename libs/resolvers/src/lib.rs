@@ -20,6 +20,10 @@
 //! `cloud.centos.org` (behind CloudFront) refuse requests without one.
 //! Profiles do not set their own, so vendors see who is really asking.
 //!
+//! When `GITHUB_TOKEN` is set, the GitHub API requests send it as a
+//! bearer token, for the higher rate limit (see `vendor::github_api`).
+//! No other request sends it.
+//!
 //! The workspace builds reqwest with rustls but without a default crypto
 //! provider, so a caller must install one before building its client,
 //! e.g. `rustls::crypto::ring::default_provider().install_default()`.
