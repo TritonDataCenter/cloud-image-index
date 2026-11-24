@@ -3,10 +3,10 @@
   "release": "8",
   "builds": [
     {
-      "build": "8.10-20261026",
+      "build": "8.10-20261123",
       "point_release": "8.10",
       "published_at": null,
-      "first_seen": "2026-10-27T05:31:07.882933495Z",
+      "first_seen": "2026-11-24T05:22:53.447821514Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 1664221184,
+          "size": 1807941632,
           "locations": [
             {
-              "url": "https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/AlmaLinux-8-GenericCloud-8.10-20261026.x86_64.qcow2",
+              "url": "https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/AlmaLinux-8-GenericCloud-8.10-20261123.x86_64.qcow2",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,11 +32,11 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "e9e4e53fa4e9aef65ec6d16e80f1d18acbe1d1a44a47550f9095c4b1ca31f0d7",
+                "value": "5c3f62b9649fd5649faaaa204c763d0ce671ba7a3012168f73a20df7a219d9c2",
                 "source": {
                   "url": "https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/CHECKSUM",
                   "format": "gnu",
-                  "filename": "AlmaLinux-8-GenericCloud-8.10-20261026.x86_64.qcow2"
+                  "filename": "AlmaLinux-8-GenericCloud-8.10-20261123.x86_64.qcow2"
                 }
               }
             ],
@@ -49,8 +49,8 @@
               }
             ],
             "http": {
-              "last_modified": "Mon, 26 Oct 2026 04:47:21 GMT",
-              "etag": "\"6adedb59-63320000\""
+              "last_modified": "Mon, 23 Nov 2026 04:37:04 GMT",
+              "etag": "\"6b03c2f0-6bc30000\""
             }
           }
         }
