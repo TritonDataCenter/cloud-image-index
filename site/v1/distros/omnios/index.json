@@ -3,7 +3,7 @@
   "name": "OmniOS",
   "os_family": "illumos",
   "homepage": "https://omnios.org/",
-  "checked_at": "2026-11-24T05:22:43.917018048Z",
+  "checked_at": "2026-11-25T05:23:33.417892125Z",
   "dev_channel": "bloody",
   "releases": [
     {

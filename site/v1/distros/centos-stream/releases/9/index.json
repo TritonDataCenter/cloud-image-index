@@ -3,10 +3,10 @@
   "release": "9",
   "builds": [
     {
-      "build": "20261118.0",
+      "build": "20261124.0",
       "point_release": null,
       "published_at": null,
-      "first_seen": "2026-11-20T05:22:24.626606688Z",
+      "first_seen": "2026-11-25T05:23:34.587968515Z",
       "osinfo": null,
       "artifacts": [
         {
@@ -20,10 +20,10 @@
             "nocloud"
           ],
           "ssh_key_injection": true,
-          "size": 1277362176,
+          "size": 1277493248,
           "locations": [
             {
-              "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261118.0.x86_64.qcow2",
+              "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261124.0.x86_64.qcow2",
               "kind": "primary",
               "redirects_off_host": false
             }
@@ -32,18 +32,18 @@
             "digests": [
               {
                 "algorithm": "sha256",
-                "value": "bc5f617303c0cf02f19c135bd29910d27f73e86339613b174998a5aee7f3f0cd",
+                "value": "ff634dc597a8e19ac04eeca177701edf6e4b6d7caa95d56a741d67ca8be1d014",
                 "source": {
-                  "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261118.0.x86_64.qcow2.SHA256SUM",
+                  "url": "https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-20261124.0.x86_64.qcow2.SHA256SUM",
                   "format": "bsd",
-                  "filename": "CentOS-Stream-GenericCloud-9-20261118.0.x86_64.qcow2"
+                  "filename": "CentOS-Stream-GenericCloud-9-20261124.0.x86_64.qcow2"
                 }
               }
             ],
             "signatures": [],
             "http": {
-              "last_modified": "Thu, 19 Nov 2026 08:25:02 GMT",
-              "etag": "\"4c230000-6609cdd2d2bd0\""
+              "last_modified": "Wed, 25 Nov 2026 02:56:16 GMT",
+              "etag": "\"4c250000-66110f8811ae5\""
             }
           }
         }
